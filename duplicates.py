@@ -13,9 +13,10 @@ from bds.HubRestApi import HubInstance
 username="sysadmin"
 password="blackduck"
 
-cleanup = True
+# To clean up duplicates set cleanup = True
+cleanup = False
 
-urlbase="https://ec2-34-201-23-208.compute-1.amazonaws.com"
+urlbase="https://ec2-18-207-241-64.compute-1.amazonaws.com"
 
 
 hub = HubInstance(urlbase, username, password, insecure=True)
