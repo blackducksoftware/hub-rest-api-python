@@ -16,10 +16,14 @@ Usage:
     projects = hub.get_projects()
 ```    
 
-## Example: Find versions that have identical BOM and optionally delete redundant data
+## Example: 
+
+Find versions that have identical BOM and optionally delete redundant data
 
 ```
 python3 duplicates.py
 ```
 
 Set cleanup=True to remove redundant data
+
+## Python 3 and requests package are required
