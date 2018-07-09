@@ -1,7 +1,7 @@
 # HUB REST API Python
 
 Wrapper for common HUB API queries. 
-Upon initialization BEarer tocken is obtained and used for all subsequent calls
+Upon initialization Bearer tocken is obtained and used for all subsequent calls
 
 Usage: 
 ```
