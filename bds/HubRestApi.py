@@ -21,6 +21,7 @@ Usage:
     
 '''
 import requests
+import json
 
 class HubInstance(object):
     '''
@@ -28,7 +29,7 @@ class HubInstance(object):
     '''
 
 
-    def __init__(self, baseurl, username, password, insecure=False):
+    def __init__(self, baseurl, username, password, insecure=False, debug=False):
         '''
         Constructor
         '''
@@ -43,27 +44,34 @@ class HubInstance(object):
         authendpoint="/j_spring_security_check"
         url = self.baseurl + authendpoint
         session=requests.session()
-        response = session.post(url, {"j_username" : "sysadmin" , "j_password" : "blackduck"}, verify= not self.insecure)
+        credentials = dict()
+        credentials['j_username'] = self.username
+        credentials['j_password'] = self.password
+        response = session.post(url, credentials, verify= not self.insecure)
         cookie = response.headers['Set-Cookie']
         token = cookie[cookie.index('=')+1:cookie.index(';')]
         return token
     
-    def get_projects(self):
-        url = self.baseurl + "/api/projects"
+    def get_projects(self, limit=100):
         headers = {"Authorization":"Bearer " + self.token}
+        paramstring = "?limit={}".format(limit)
+        url = self.baseurl + "/api/projects" + paramstring
+        print (url)
         response = requests.get(url, headers=headers, verify = not self.insecure)
         jsondata = response.json()
         return jsondata
 
-    def get_project_versions(self, project):
-        url = project['_meta']['href'] + "/versions"
+    def get_project_versions(self, project, limit=100):
+        paramstring = "?limit={}".format(limit)
+        url = project['_meta']['href'] + "/versions" + paramstring
         headers = {"Authorization":"Bearer " + self.token}
         response = requests.get(url, headers=headers, verify = not self.insecure)
         jsondata = response.json()
         return jsondata
         
-    def get_version_components(self, projectversion):
-        url = projectversion['_meta']['href'] + "/components"
+    def get_version_components(self, projectversion, limit=500):
+        paramstring = "?limit={}".format(limit)
+        url = projectversion['_meta']['href'] + "/components" + paramstring
         headers = {"Authorization":"Bearer " + self.token}
         response = requests.get(url, headers=headers, verify = not self.insecure)
         jsondata = response.json()
@@ -80,7 +88,7 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
     
-    def get_codelocations(self, version):
+    def get_codelocations(self, version, limit=100):
         apibase = self.baseurl + "/api"
         internalapibase = self.baseurl + "/api/internal"
         paramstring = "?limit=100&offset=0"
