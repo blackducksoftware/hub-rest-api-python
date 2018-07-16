@@ -1,29 +1,13 @@
-# HUB REST API Python
+## Overview ##
+The hub-rest-api-python provides Python bindings for Hub REST API.
 
-Wrapper for common HUB API queries. 
-Upon initialization Bearer tocken is obtained and used for all subsequent calls
+## Build ##
 
-Usage: 
-```
-    from bds_hub_api import HubInstance
-    
-    username="sysadmin"
-    password="blackduck"
-    urlbase="https://ec2-34-201-23-208.compute-1.amazonaws.com"
-    
-    hub = HubInstance(urlbase, username, password, insecure=True)
-    
-    projects = hub.get_projects()
-```    
+Include project directory in your PYTHONPATH or add HubRestAPI.py file directly to your project tree
 
-## Example: 
+## Where can I get the latest release? ##
+Clone or download from this page
 
-Find versions that have identical BOM and optionally delete redundant data
+## Documentation ##
+Documentation for hub-rest-api-python can be found on the base project:  https://github.com/blackducksoftware/hub-rest-api-python/wiki
 
-```
-python3 duplicates.py
-```
-
-Set cleanup=True to remove redundant data
-
-## Python 3 and requests package are required
