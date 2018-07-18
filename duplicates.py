@@ -10,16 +10,10 @@ If two releases are identical, there is an option to delete older one
 
 from bds.HubRestApi import HubInstance
 
-username="sysadmin"
-password="genesys"
-
 # To clean up duplicates set cleanup = True
 cleanup = False
 
-urlbase="https://ec2-18-208-209-223.compute-1.amazonaws.com"
-
-
-hub = HubInstance(urlbase, username, password, insecure=True)
+hub = HubInstance()
 
 projects = hub.get_projects(limit=100)
 
