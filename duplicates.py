@@ -10,13 +10,13 @@ If two releases are identical, there is an option to delete older one
 
 from bds.HubRestApi import HubInstance
 
-username="kumykov"
-password="Ch@ngeIt"
+username="sysadmin"
+password="genesys"
 
 # To clean up duplicates set cleanup = True
 cleanup = False
 
-urlbase="https://ec2-34-201-31-133.compute-1.amazonaws.com"
+urlbase="https://ec2-18-208-209-223.compute-1.amazonaws.com"
 
 
 hub = HubInstance(urlbase, username, password, insecure=True)
