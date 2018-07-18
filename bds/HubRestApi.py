@@ -8,6 +8,25 @@ Upon initialization Bearer tocken is obtained and used for all subsequent calls
 
 Usage: 
 
+credentials and hub URL could be placed in the .restconfig.json file
+    
+    {
+      "baseurl": "https://ec2-18-208-209-223.compute-1.amazonaws.com",
+      "username": "sysadmin",
+      "password": "genesys",
+      "insecure": true,
+      "debug": false
+    }
+
+    .restconfig.json should be present in the current directory.
+    
+    from bds_hub_api import HubInstance
+    
+    hub = HubInstance()
+    projects = hub.get_projects()
+
+It is possible to generate config file by initalizing API as following:
+   
     from bds_hub_api import HubInstance
     
     username="sysadmin"
@@ -15,8 +34,6 @@ Usage:
     urlbase="https://ec2-34-201-23-208.compute-1.amazonaws.com"
     
     hub = HubInstance(urlbase, username, password, insecure=True)
-    
-    projects = hub.get_projects()
     
     
 '''
