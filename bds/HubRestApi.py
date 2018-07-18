@@ -61,6 +61,14 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
+    def get_project_by_id(self, project_id, limit=100):
+        headers = {"Authorization":"Bearer " + self.token}
+        paramstring = "?limit={}".format(limit)
+        url = self.baseurl + "/api/projects/" + project_id + paramstring
+        response = requests.get(url, headers=headers, verify = not self.insecure)
+        jsondata = response.json()
+        return jsondata
+
     def get_project_versions(self, project, limit=100):
         paramstring = "?limit={}".format(limit)
         url = project['_meta']['href'] + "/versions" + paramstring
@@ -69,7 +77,7 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
         
-    def get_version_components(self, projectversion, limit=500):
+    def get_version_components(self, projectversion, limit=1000):
         paramstring = "?limit={}".format(limit)
         url = projectversion['_meta']['href'] + "/components" + paramstring
         headers = {"Authorization":"Bearer " + self.token}
