@@ -25,7 +25,7 @@ credentials and hub URL could be placed in the .restconfig.json file
     hub = HubInstance()
     projects = hub.get_projects()
 
-It is possible to generate config file by initalizing API as following:
+It is possible to generate generate_config file by initalizing API as following:
    
     from bds_hub_api import HubInstance
     
