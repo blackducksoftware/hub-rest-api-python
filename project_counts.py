@@ -8,6 +8,7 @@ Projects with largest number of versions first
 
 '''
 from bds.HubRestApi import HubInstance
+from sys import argv
 
 # To clean up duplicates set cleanup = True
 cleanup = False
@@ -30,3 +31,8 @@ for project in projects['items']:
 print () 
 for s in sorted(projectlist, key=lambda x: x[1], reverse=True):
     print ("{0:36} {1:6} {2}".format(s[0],s[1], s[2]))
+    
+if argv[1]:
+    with open(argv[1],"w") as f:
+        for s in sorted(projectlist, key=lambda x: x[1], reverse=True):
+            f.write ("{0:36} {1:6} {2}\n".format(s[0],s[1], s[2])) 
