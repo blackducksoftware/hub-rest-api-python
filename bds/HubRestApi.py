@@ -137,10 +137,9 @@ class HubInstance(object):
     
     def get_version_codelocations(self, version, limit=100):
         apibase = self.config['baseurl'] + "/api"
-        internalapibase = self.config['baseurl'] + "/api/internal"
         paramstring = "?limit=100&offset=0"
-        projectversion = version['_meta']['href'].replace(apibase, '')
-        url = internalapibase + projectversion + "/codelocations" + paramstring
+        projectversion = version['_meta']['href']
+        url = projectversion + "/codelocations" + paramstring
         headers = {"Authorization":"Bearer " + self.token}
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
@@ -163,7 +162,7 @@ class HubInstance(object):
         return jsondata
 
     def delete_codelocation(self, locationid):
-        url = self.config['baseurl'] + "/api/v1/composite/codelocations/" + locationid
+        url = self.config['baseurl'] + "/api/codelocations/" + locationid
         headers = {"Authorization":"Bearer " + self.token}
         response = requests.delete(url, headers=headers, verify = not self.config['insecure'])
         return response

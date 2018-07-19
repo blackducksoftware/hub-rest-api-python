@@ -11,12 +11,12 @@ from bds.HubRestApi import HubInstance
 # To clean up duplicates set cleanup = True
 
 cleanupEmpty = False
-cleanup = False
+cleanup = True
 
 
 hub = HubInstance()
 
-project = hub.get_project_by_id('17155144-404e-43b4-b5e4-d43efb31cbfc', limit=100)
+project = hub.get_project_by_id('d518e396-2bfc-4528-9ff9-fb2673b85bc3', limit=100)
 
 
 print (project['name'])
@@ -43,7 +43,5 @@ for index in range(len(versionlist) - 1):
         print(hub.execute_delete(va['_meta']['href']))
         for codelocation in codelocations['items']:
             print (codelocation['_meta']['href'])
-            locationid = codelocation['_meta']['href'].split("/")[6]
-            print (locationid)
-            print (hub.delete_codelocation(locationid))
+            print (hub.execute_delete(codelocation['_meta']['href']))
 
