@@ -135,7 +135,7 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
     
-    def get_codelocations(self, version, limit=100):
+    def get_version_codelocations(self, version, limit=100):
         apibase = self.config['baseurl'] + "/api"
         internalapibase = self.config['baseurl'] + "/api/internal"
         paramstring = "?limit=100&offset=0"
@@ -146,6 +146,14 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
         
+    def get_codelocations(self, limit=100):
+        apibase = self.config['baseurl'] + "/api"
+        paramstring = "?limit={}&offset=0".format(limit)
+        url = apibase + "/codelocations" + paramstring
+        headers = {"Authorization":"Bearer " + self.token}
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
     
     def get_scanlocations(self):
         url = self.config['baseurl'] + "/api/v1/scanlocations"
