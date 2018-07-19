@@ -12,7 +12,7 @@ from sys import argv
 # main
 # 
 
-cleanup = len(argv) > 2
+cleanup = len(argv) > 1
 hub = HubInstance()
 
 response = hub.get_codelocations(limit=5000)

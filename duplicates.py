@@ -34,7 +34,7 @@ for project in projects['items']:
             continue
         vb = versionlist[index + 1]
         result = hub.compare_project_versions(va, vb)
-        codelocations = hub.get_codelocations(va)
+        codelocations = hub.get_version_codelocations(va)
         print ("comparing version {} to version {} total changes {}".format(
             vb['versionName'], 
             va['versionName'],
