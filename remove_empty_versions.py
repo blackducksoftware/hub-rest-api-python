@@ -33,6 +33,8 @@ def remove_empty_versions(project_id, cleanup=False):
             except Exception:
                 count += 1
                 print ("Oops! Attempt number {} failed".format(count))
+                if count > 3:
+                    break
                 continue
             else:
                 break
@@ -42,9 +44,6 @@ def remove_empty_versions(project_id, cleanup=False):
 #
 # main
 # 
-
-
-
 cleanup = len(argv) > 2
 with open(argv[1], "r") as f:
     projectlist = f.readlines() 
