@@ -3,7 +3,7 @@ Created on Jul 18, 2018
 
 @author: kumykov
 
-Removes versions from a project that have no bom components
+Removes project versions that have an emty BOM
 '''
 from bds.HubRestApi import HubInstance
 from sys import argv
