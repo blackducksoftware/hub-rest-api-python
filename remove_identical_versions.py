@@ -40,10 +40,11 @@ for index in range(len(versionlist) - 1):
         result['totalCount']))
     print ("version {} has {} codelocations".format(va['versionName'], codelocations['totalCount']))
     if result['totalCount'] == 0:
-        print(va['_meta']['href'])
-    if cleanup and result['totalCount'] == 0:
-        print(hub.execute_delete(va['_meta']['href']))
+        print (va['_meta']['href'])
+        if cleanup:
+            print(hub.execute_delete(va['_meta']['href']))
         for codelocation in codelocations['items']:
             print (codelocation['_meta']['href'])
-            print (hub.execute_delete(codelocation['_meta']['href']))
+            if cleanup:
+                print (hub.execute_delete(codelocation['_meta']['href']))
 
