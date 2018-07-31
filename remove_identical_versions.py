@@ -11,7 +11,7 @@ from bds.HubRestApi import HubInstance
 # To clean up duplicates set cleanup = True
 
 cleanupEmpty = False
-cleanup = True
+cleanup = False
 
 
 hub = HubInstance()
@@ -39,6 +39,8 @@ for index in range(len(versionlist) - 1):
         va['versionName'],
         result['totalCount']))
     print ("version {} has {} codelocations".format(va['versionName'], codelocations['totalCount']))
+    if result['totalCount'] == 0:
+        print(va['_meta']['href'])
     if cleanup and result['totalCount'] == 0:
         print(hub.execute_delete(va['_meta']['href']))
         for codelocation in codelocations['items']:
