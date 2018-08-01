@@ -172,4 +172,8 @@ class HubInstance(object):
         response = requests.delete(url, headers=headers, verify = not self.config['insecure'])
         return response
 
+    def execute_get(self, url):
+        headers = {"Authorization":"Bearer " + self.token}
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        return response
         
