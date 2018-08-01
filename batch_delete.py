@@ -21,7 +21,7 @@ if (len(argv) < 2):
     exit()
 
 with open(argv[1], "r") as f:
-    urllist = f.readlines()
+    urllist = [x.strip() for x in f.readlines()]
      
 hub = HubInstance()
 

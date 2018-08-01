@@ -29,10 +29,10 @@ for project in projects['items']:
     print ("\b.", end='')
    
 print () 
-for s in sorted(projectlist, key=lambda x: x[1], reverse=True):
+for s in sorted(projectlist, key=lambda x: x[1], reverse=False):
     print ("{0:36} {1:6} {2}".format(s[0],s[1], s[2]))
     
 if len(argv) > 1:
     with open(argv[1],"w") as f:
-        for s in sorted(projectlist, key=lambda x: x[1], reverse=True):
+        for s in sorted(projectlist, key=lambda x: x[1], reverse=False):
             f.write ("{0:36} {1:6} {2}\n".format(s[0],s[1], s[2])) 

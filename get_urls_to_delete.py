@@ -2,6 +2,8 @@
 Created on Aug 1, 2018
 
 @author: kumykov
+
+Produces URL lists for batch processing
 '''
 import os
 import errno
