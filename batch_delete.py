@@ -27,4 +27,5 @@ hub = HubInstance()
 
 for url in urllist:
     print ("Processing {} ".format(url))
+    print(hub.execute_get(url))
     print(hub.execute_delete(url))
