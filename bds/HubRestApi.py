@@ -40,6 +40,12 @@ It is possible to generate generate_config file by initalizing API as following:
 import requests
 import json
 
+class CreateFailedAlreadyExists(Exception):
+    pass
+
+class CreateFailedUnknown(Exception):
+    pass
+
 class HubInstance(object):
     '''
     classdocs
@@ -63,7 +69,7 @@ class HubInstance(object):
             requests.packages.urllib3.disable_warnings()
         
         if self.config['debug']:
-            print(self.config)
+            json.dumps(self.config)
         
         self.token = self.get_auth_token()
         
@@ -76,6 +82,11 @@ class HubInstance(object):
         with open(self.configfile,'w') as f:
             json.dump(self.config, f, indent=3)
                
+    def create_policy(self, policy_json):
+        url = self.config["baseurl"] + "/api/policy-rules"
+        location = self._create(url, policy_json)
+        return location
+
     def get_auth_token(self):
         authendpoint="/j_spring_security_check"
         url = self.config['baseurl'] + authendpoint
@@ -154,12 +165,20 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
     
+    def get_component_by_id(self, component_id):
+        url = self.config['baseurl'] + "/api/components/{}".format(component_id)
+        return self.execute_get(url)
+
     def get_scanlocations(self):
         url = self.config['baseurl'] + "/api/v1/scanlocations"
         headers = {"Authorization":"Bearer " + self.token}
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
+
+    def update_component(self, component_id, update_json):
+        url = self.config["baseurl"] + "/api/components/{}".format(component_id)
+        return self.execute_put(url, update_json)
 
     def delete_codelocation(self, locationid):
         url = self.config['baseurl'] + "/api/codelocations/" + locationid
@@ -177,3 +196,29 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         return response
         
+    def execute_put(self, url, data):
+        headers = {"Authorization":"Bearer " + self.token}
+        response = requests.put(url, headers=headers, data=data, verify = not self.config['insecure'])
+        return response
+
+    def _create(self, url, json_body):
+        response = self.execute_post(url, json_body)
+        if response.status_code == 201 and "location" in response.headers:
+            return (response.headers["location"])
+        elif response.status_code == 412:
+            raise CreateFailedAlreadyExists("Failed to create the object because it already exists - url {}, body {}, response {}".format(url, json_body, response))
+        else:
+            raise CreateFailedUnknown("Failed to create the object for an unknown reason - url {}, body {}, response {}".format(url, json_body, response))
+
+    def execute_post(self, url, data):
+        headers = {"Authorization":"Bearer " + self.token, "Content-Type": "application/json"}
+        response = requests.post(url, headers=headers, data=data, verify = not self.config['insecure'])
+        return response
+
+
+
+
+
+
+
+
