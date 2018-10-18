@@ -14,9 +14,6 @@ import json
 import copy
 import argparse
 
-# To clean up duplicates set cleanup = True
-cleanup = False
-
 hub = HubInstance()
 
 parser = argparse.ArgumentParser(description="Ignore Snippets that already have BOM File entries to a Component")
