@@ -9,7 +9,7 @@ Ignores found Snippets that are already part of a BOM Match
 
 '''
 from bds.HubRestApi import HubInstance
-from sys import argv
+import sys
 import json
 import copy
 import argparse
@@ -134,8 +134,8 @@ def ignore_snippet_matches(hub_release_id, component_snippet_by_path_map):
                 print("SUCCESS")
             else:
                 print("FAILED: ", cur_status)
-            snippets_ignored = snippets_ignored + cur_num_snippet_bom_entries
-
+            snippets_ignored = snippets_ignored + cur_status
+            
     return snippets_ignored
 
 # Returns the set of paths in the files entry for a component
@@ -183,6 +183,9 @@ def process_bom_component(project_id, version_id, bom_component, snippet_path_ma
 # Main method
 def main():
     target_project = get_project_id(target_project_name)
+    if not target_project:
+        print("Project ", target_project_name, " not found.")
+        sys.exit(1)
 
     print("Found target project: " + target_project['name'])
 
@@ -191,29 +194,33 @@ def main():
     print("Got version data as: ", version_data)
 
     for cur_version in version_data:
-        project_name = cur_version[0]
-        project_id = cur_version[1]
-        version_name = cur_version[2]
-        version_id = cur_version[3]
+        potential_snippets_remaining = True
+        while potential_snippets_remaining:
+            project_name = cur_version[0]
+            project_id = cur_version[1]
+            version_name = cur_version[2]
+            version_id = cur_version[3]
 
-        # Get Snippets and process them into a map based on path
-        snippet_data = hub.get_snippet_bom_entries(project_id, version_id)
-        snippet_path_map = get_snippet_path_map(snippet_data)
-        
-        print("***********Project Snippets ***************************")
-        print("# Snippet Files: ", snippet_data['totalCount'])
-        print("Snippet file list:")
-        for file in getSnippetNames(snippet_data):
-            print(file)
+            # Get Snippets and process them into a map based on path
+            snippet_data = hub.get_snippet_bom_entries(project_id, version_id)
+            snippet_path_map = get_snippet_path_map(snippet_data)
+            
+            print("***********Project Snippets ***************************")
+            print("# Snippet Files: ", snippet_data['totalCount'])
+            print("Snippet file list:")
+            for file in getSnippetNames(snippet_data):
+                print(file)
 
-        version_components = get_bom_components(project_id, version_id)
-        total_snippets_ignored = 0
-        
-        for cur_item in version_components['items']:
-            total_snippets_ignored = total_snippets_ignored + process_bom_component(project_id, version_id, cur_item, 
-                snippet_path_map)
+            version_components = get_bom_components(project_id, version_id)
+            total_snippets_ignored = 0
+            
+            for cur_item in version_components['items']:
+                total_snippets_ignored = total_snippets_ignored + process_bom_component(project_id, version_id, cur_item, 
+                    snippet_path_map)
 
-        print("Ignored: ", total_snippets_ignored, " for: ", project_name, " - ", version_name)
+            print("Ignored: ", total_snippets_ignored, " for: ", project_name, " - ", version_name)
+            if total_snippets_ignored == 0:
+                potential_snippets_remaining = False
     
 if __name__ == "__main__":
     main()
