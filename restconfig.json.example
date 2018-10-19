@@ -1,0 +1,8 @@
+{
+ "username": "",
+ "password": "",
+ "baseurl": "https://127.0.0.1",
+ "insecure": "True",
+ "debug": "True"
+
+}
