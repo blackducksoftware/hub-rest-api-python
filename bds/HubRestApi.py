@@ -150,12 +150,24 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
+    def get_file_bom_entries(self, hub_release_id, limit=100):
+        headers = self.get_headers()
+        paramstring = self.get_limit_paramstring(limit)
+        url = self.get_apibase() + \
+            "/v1/releases/{}/file-bom-entries".format(hub_release_id)
+        print("GET ", url)
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
+
+
     def get_file_matches_for_component_with_version(self, project_id, version_id, component_id, component_version_id, limit=1000):
         headers = self.get_headers()
         paramstring = self.get_limit_paramstring(limit)
         url = self.get_apibase() + \
             "/projects/{}/versions/{}/components/{}/versions/{}/matched-files".format(project_id, version_id, \
                 component_id, component_version_id)
+        print("GET ", url)
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -210,10 +222,18 @@ class HubInstance(object):
         return jsondata
         
     def get_codelocations(self, limit=100):
-        apibase = self.config['baseurl'] + "/api"
         paramstring = "?limit={}&offset=0".format(limit)
-        url = apibase + "/codelocations" + paramstring
         headers = self.get_headers()
+        url = self.get_apibase() + "/codelocations" + paramstring
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
+
+    def get_codelocation_scan_summaries(self, code_location_id, limit=100):
+        paramstring = "?limit={}&offset=0".format(limit)
+        headers = self.get_headers()
+        url = self.get_apibase() + \
+            "/codelocations/{}/scan-summaries".format(code_location_id)
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
