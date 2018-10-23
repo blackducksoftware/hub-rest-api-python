@@ -13,7 +13,7 @@ env:
   - COPILOT_DETECT_OPTIONS="--detect.pip.requirements.path=./requirements.txt"
 # There aren't any tests (yet); just supplying a script to give the build something to do
 script:
-  - python -m unittest
+  - pytest
 
 after_success:
   - bash <(curl -s https://copilot.blackducksoftware.com/ci/travis/scripts/upload)
