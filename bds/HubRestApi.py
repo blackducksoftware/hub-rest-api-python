@@ -11,7 +11,7 @@ Usage:
 credentials and hub URL could be placed in the .restconfig.json file
     
     {
-      "baseurl": "https://hostname",
+      "baseurl": "https://hub-hostname",
       "username": "<username goes here>",
       "password": "<password goes here>",
       "insecure": true,
