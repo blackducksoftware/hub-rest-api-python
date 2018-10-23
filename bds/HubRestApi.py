@@ -89,8 +89,16 @@ class HubInstance(object):
         return location
 
     def find_component_info_for_protex_component(self, protex_component_id, protex_component_release_id):
+        '''Will return the Hub component corresponding to the protex_component_id, and if a release (version) id
+        is given, the response will also include the component-version. Returns an empty list if there were
+        no components found.
+        '''
         url = self.config['baseurl'] + "/api/components"
-        with_query = url + "?q=bdsuite:{}%23{}&limit=9999".format(protex_component_id, protex_component_release_id)
+        if protex_component_release_id:
+            query = "?q=bdsuite:{}%23{}&limit=9999".format(protex_component_id, protex_component_release_id)
+        else:
+            query = "?q=bdsuite:{}&limit=9999".format(protex_component_id)
+        with_query = url + query
         logging.debug("Finding the Hub componet for Protex component id {}, release id {} using query/url {}".format(
             protex_component_id, protex_component_release_id, with_query))
         response = self.execute_get(with_query)
