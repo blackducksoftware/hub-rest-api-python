@@ -11,9 +11,9 @@ Usage:
 credentials and hub URL could be placed in the .restconfig.json file
     
     {
-      "baseurl": "https://ec2-18-208-209-223.compute-1.amazonaws.com",
-      "username": "sysadmin",
-      "password": "genesys",
+      "baseurl": "https://hostname",
+      "username": "<username goes here>",
+      "password": "<password goes here>",
       "insecure": true,
       "debug": false
     }
@@ -29,9 +29,9 @@ It is possible to generate generate_config file by initalizing API as following:
    
     from bds_hub_api import HubInstance
     
-    username="sysadmin"
-    password="blackduck"
-    urlbase="https://ec2-34-201-23-208.compute-1.amazonaws.com"
+    username="<username goes here>"
+    password="<password goes here>"
+    urlbase="https://hub-hostname"
     
     hub = HubInstance(urlbase, username, password, insecure=True)
     
