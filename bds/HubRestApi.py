@@ -37,8 +37,15 @@ It is possible to generate generate_config file by initalizing API as following:
     
     
 '''
+import logging
 import requests
 import json
+
+class CreateFailedAlreadyExists(Exception):
+    pass
+
+class CreateFailedUnknown(Exception):
+    pass
 
 class HubInstance(object):
     '''
@@ -63,7 +70,7 @@ class HubInstance(object):
             requests.packages.urllib3.disable_warnings()
         
         if self.config['debug']:
-            print(self.config)
+            print(self.configfile)
         
         self.token = self.get_auth_token()
         
@@ -76,6 +83,33 @@ class HubInstance(object):
         with open(self.configfile,'w') as f:
             json.dump(self.config, f, indent=3)
                
+    def create_policy(self, policy_json):
+        url = self.config["baseurl"] + "/api/policy-rules"
+        location = self._create(url, policy_json)
+        return location
+
+    def find_component_info_for_protex_component(self, protex_component_id, protex_component_release_id):
+        '''Will return the Hub component corresponding to the protex_component_id, and if a release (version) id
+        is given, the response will also include the component-version. Returns an empty list if there were
+        no components found.
+        '''
+        url = self.config['baseurl'] + "/api/components"
+        if protex_component_release_id:
+            query = "?q=bdsuite:{}%23{}&limit=9999".format(protex_component_id, protex_component_release_id)
+        else:
+            query = "?q=bdsuite:{}&limit=9999".format(protex_component_id)
+        with_query = url + query
+        logging.debug("Finding the Hub componet for Protex component id {}, release id {} using query/url {}".format(
+            protex_component_id, protex_component_release_id, with_query))
+        response = self.execute_get(with_query)
+        logging.debug("query results in status code {}, json data: {}".format(response.status_code, response.json()))
+        # TODO: Error checking and retry? For now, as POC just assuming it worked
+        component_list_d = response.json()
+        if component_list_d['totalCount'] == 1:
+            return component_list_d['items'][0]
+        else:
+            return component_list_d['items']
+
     def get_auth_token(self):
         authendpoint="/j_spring_security_check"
         url = self.config['baseurl'] + authendpoint
@@ -238,12 +272,28 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
     
+    def get_component_by_id(self, component_id):
+        url = self.config['baseurl'] + "/api/components/{}".format(component_id)
+        return self.get_component_by_url(url)
+
+    def get_component_by_url(self, component_url):
+        response = self.execute_get(component_url)
+        jsondata = response.json()
+        return jsondata
+
     def get_scanlocations(self):
         url = self.config['baseurl'] + "/api/v1/scanlocations"
         headers = self.get_headers()
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
+
+    def update_component_by_id(self, component_id, update_json):
+        url = self.config["baseurl"] + "/api/components/{}".format(component_id)
+        return self.update_component_by_url(url, update_json)
+
+    def update_component_by_url(self, component_url, update_json):
+        return self.execute_put(component_url, update_json)
 
     def delete_codelocation(self, locationid):
         url = self.config['baseurl'] + "/api/codelocations/" + locationid
@@ -261,3 +311,38 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         return response
         
+    def _validated_json_data(self, data_to_validate):
+        if isinstance(data_to_validate, dict):
+            json_data = json.dumps(data_to_validate)
+        else:
+            json_data = data_to_validate
+        return json_data
+
+    def execute_put(self, url, data):
+        data = self._validated_json_data(data)
+        headers = {"Authorization":"Bearer " + self.token, "Content-Type": "application/json"}
+        response = requests.put(url, headers=headers, data=data, verify = not self.config['insecure'])
+        return response
+
+    def _create(self, url, json_body):
+        response = self.execute_post(url, json_body)
+        if response.status_code == 201 and "location" in response.headers:
+            return (response.headers["location"])
+        elif response.status_code == 412:
+            raise CreateFailedAlreadyExists("Failed to create the object because it already exists - url {}, body {}, response {}".format(url, json_body, response))
+        else:
+            raise CreateFailedUnknown("Failed to create the object for an unknown reason - url {}, body {}, response {}".format(url, json_body, response))
+
+    def execute_post(self, url, data):
+        data = self._validated_json_data(data)
+        headers = {"Authorization":"Bearer " + self.token, "Content-Type": "application/json"}
+        response = requests.post(url, headers=headers, data=data, verify = not self.config['insecure'])
+        return response
+
+
+
+
+
+
+
+
