@@ -1,0 +1,19 @@
+language: python
+
+# If your build needs more advanced behavior, see detailed Travis CI instructions:
+# https://docs.travis-ci.com/user/languages/python/
+
+python:
+  - "3.6"
+
+install:
+  - pip install -r requirements.txt
+
+env:
+  - COPILOT_DETECT_OPTIONS="--detect.pip.requirements.path=./requirements.txt"
+# There aren't any tests (yet); just supplying a script to give the build something to do
+script:
+  - pytest
+
+after_success:
+  - bash <(curl -s https://copilot.blackducksoftware.com/ci/travis/scripts/upload)
