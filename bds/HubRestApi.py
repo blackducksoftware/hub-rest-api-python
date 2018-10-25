@@ -177,3 +177,38 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         return response
         
+    def get_ldap_state(self):
+        url = self.config['baseurl'] + "/api/v1/ldap/state"
+        headers = {"Authorization":"Bearer " + self.token}
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
+
+    def enable_ldap(self):
+        url = self.config['baseurl'] + "/api/v1/ldap/state"
+        headers = {"Authorization":"Bearer " + self.token}
+        payload = {}
+        payload['ldapEnabled'] = True
+        response = requests.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
+        jsondata = response.json()
+        return jsondata
+        
+    def disable_ldap(self):
+        url = self.config['baseurl'] + "/api/v1/ldap/state"
+        headers = {"Authorization":"Bearer " + self.token}
+        payload = {}
+        payload['ldapEnabled'] = False
+        response = requests.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
+        jsondata = response.json()
+        return jsondata
+        
+    def get_ldap_configs(self):
+        url = self.config['baseurl'] + "/api/v1/ldap/configs"
+        headers = dict()
+        headers['Content-Type']  = "application/json"
+        headers["Authorization"] = "Bearer " + self.token
+        print (headers)
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
+    
