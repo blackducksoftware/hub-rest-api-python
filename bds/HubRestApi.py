@@ -105,7 +105,7 @@ class HubInstance(object):
         logging.debug("query results in status code {}, json data: {}".format(response.status_code, response.json()))
         # TODO: Error checking and retry? For now, as POC just assuming it worked
         component_list_d = response.json()
-        if component_list_d['totalCount'] == 1:
+        if component_list_d['totalCount'] >= 1:
             return component_list_d['items'][0]
         else:
             return component_list_d['items']
