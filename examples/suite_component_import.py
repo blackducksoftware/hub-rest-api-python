@@ -4,7 +4,7 @@ import csv
 import logging
 from pprint import pprint
 
-from bds.HubRestApi import HubInstance
+from blackduck.HubRestApi import HubInstance
 
 
 class SuiteComponentImport(object):

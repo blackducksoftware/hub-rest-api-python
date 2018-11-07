@@ -6,7 +6,7 @@ Created on Jul 19, 2018
 Removes scanlocation wthat are not mapped to any project
 
 '''
-from bds.HubRestApi import HubInstance
+from blackduck.HubRestApi import HubInstance
 from sys import argv
 #
 # main

@@ -6,7 +6,7 @@ Created on Jul 18, 2018
 Compares adjacent versions in a project and removes older one if there are no changes detected
 
 '''
-from bds.HubRestApi import HubInstance
+from blackduck.HubRestApi import HubInstance
 
 # To clean up duplicates set cleanup = True
 

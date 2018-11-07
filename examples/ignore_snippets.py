@@ -8,7 +8,7 @@ Looks for Snippets that belong to a File that has already been declared in the B
 Ignores found Snippets that are already part of a BOM Match
 
 '''
-from bds.HubRestApi import HubInstance
+from blackduck.HubRestApi import HubInstance
 import sys
 import json
 import copy

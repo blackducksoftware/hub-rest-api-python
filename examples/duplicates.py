@@ -8,7 +8,7 @@ If two releases are identical, there is an option to delete older one
 
 '''
 
-from bds.HubRestApi import HubInstance
+from blackduck.HubRestApi import HubInstance
 
 # To clean up duplicates set cleanup = True
 cleanup = False

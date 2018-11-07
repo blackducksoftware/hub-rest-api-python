@@ -7,7 +7,7 @@ Produces a report that includes project id, number of versuons and name
 Projects with largest number of versions first
 
 '''
-from bds.HubRestApi import HubInstance
+from blackduck.HubRestApi import HubInstance
 from sys import argv
 
 # To clean up duplicates set cleanup = True

@@ -9,7 +9,7 @@ Finds and prints a Hub component given the Protex (or CC) component id and relea
 Note: If no release id is provided, the search will result in a (parent) Hub component (no specific version)
 
 '''
-from bds.HubRestApi import HubInstance
+from blackduck.HubRestApi import HubInstance
 from pprint import pprint
 from sys import argv
 
