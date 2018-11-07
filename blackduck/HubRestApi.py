@@ -18,16 +18,25 @@ credentials and hub URL could be placed in the .restconfig.json file
       "debug": false
     }
 
+    OR, using API Token
+
+    {
+      "baseurl": "https://hub-hostname",
+      "api_token": "<API token goes here>",
+      "insecure": true,
+      "debug": false
+    }
+
     .restconfig.json should be present in the current directory.
     
-    from bds_hub_api import HubInstance
+    from blackduck.HubRestApi import HubInstance
     
     hub = HubInstance()
     projects = hub.get_projects()
 
 It is possible to generate generate_config file by initalizing API as following:
    
-    from bds_hub_api import HubInstance
+    from blackduck.HubRestApi import HubInstance
     
     username="<username goes here>"
     password="<password goes here>"
@@ -57,11 +66,12 @@ class HubInstance(object):
     def __init__(self, *args, **kwargs):
         # Config needs to be an instance variable for thread-safety, concurrent use of HubInstance()
         self.config = {}
+
         try:
             self.config['baseurl'] = args[0]
-            self.api_token = kwargs.get('api_token', False)
-            if self.api_token:
-                self.config['api_token'] = self.api_token
+            api_token = kwargs.get('api_token', False)
+            if api_token:
+                self.config['api_token'] = api_token
             else:
                 self.config['username'] = args[1]
                 self.config['password'] = args[2]
@@ -79,7 +89,7 @@ class HubInstance(object):
         if self.config['debug']:
             print(self.configfile)
         
-        self.token, self.csrf_token = self.get_auth_token(api_token=self.api_token)
+        self.token, self.csrf_token = self.get_auth_token()
         
         
     def read_config(self):
@@ -90,13 +100,18 @@ class HubInstance(object):
         with open(self.configfile,'w') as f:
             json.dump(self.config, f, indent=3)
           
-    def get_auth_token(self, api_token=False):
+    def get_auth_token(self):
+        api_token = self.config.get('api_token', False)
         if api_token:
             authendpoint = "/api/tokens/authenticate"
             url = self.config['baseurl'] + authendpoint
             session = requests.session()
-            response = session.post(url, data={}, headers={'Authorization': 'token {}'.format(api_token)}, verify=not self.config['insecure'])
-
+            response = session.post(
+                url, 
+                data={}, 
+                headers={'Authorization': 'token {}'.format(api_token)}, 
+                verify=not self.config['insecure']
+            )
             csrf_token = response.headers['X-CSRF-TOKEN']
             bearer_token = json.loads(response.content.decode('utf-8'))['bearerToken']
             return (bearer_token, csrf_token)
@@ -116,7 +131,7 @@ class HubInstance(object):
         return self.config['baseurl']
 
     def get_headers(self):
-        if self.api_token:
+        if self.config.get('api_token', False):
             return {
                 'X-CSRF-TOKEN': self.csrf_token, 
                 'Authorization': 'Bearer {}'.format(self.token), 

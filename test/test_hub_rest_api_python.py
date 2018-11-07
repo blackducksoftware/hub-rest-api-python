@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import os
 import pytest
 from blackduck.HubRestApi import HubInstance
 from unittest.mock import patch, MagicMock, mock_open
@@ -21,7 +22,22 @@ def return_auth_token(api_token):
 
 invalid_bearer_token="anInvalidTokenValue"
 invalid_csrf_token="anInvalidCSRFTokenValue"
+made_up_api_token="theMadeUpAPIToken"
 
+def setup_function(function):
+    # Remove .restconfig file before running any test
+    try:
+        os.remove(HubInstance.configfile)
+    except OSError:
+        pass
+
+def teardown_function(function):
+    # Remove .restconfig file after running any test
+    try:
+        os.remove(HubInstance.configfile)
+    except OSError:
+        pass
+        
 @pytest.fixture()
 def mock_hub_instance(requests_mock):
     requests_mock.post(
@@ -41,7 +57,7 @@ def mock_hub_instance_using_api_token(requests_mock):
             }
     )
 
-    yield HubInstance(fake_hub_host, api_token=invalid_bearer_token)
+    yield HubInstance(fake_hub_host, api_token=made_up_api_token)
 
 @pytest.fixture()
 def policy_info_json(requests_mock):
@@ -70,11 +86,21 @@ def test_get_parameter_string(mock_hub_instance):
 def test_hub_instance_username_password_for_auth(mock_hub_instance):
     assert mock_hub_instance.get_headers() == {"Authorization":"Bearer {}".format(invalid_bearer_token)}
 
+    assert 'api_token' not in mock_hub_instance.config
+    assert 'baseurl' in mock_hub_instance.config
+    assert 'username' in mock_hub_instance.config
+    assert 'password' in mock_hub_instance.config
+
 def test_hub_instance_api_token_for_auth(mock_hub_instance_using_api_token):
     assert mock_hub_instance_using_api_token.get_headers() == {
                 'X-CSRF-TOKEN': invalid_csrf_token, 
                 'Authorization': 'Bearer {}'.format(invalid_bearer_token), 
                 'Content-Type': 'application/json'}
+
+    assert 'api_token' in mock_hub_instance_using_api_token.config
+    assert 'baseurl' in mock_hub_instance_using_api_token.config
+    assert 'username' not in mock_hub_instance_using_api_token.config
+    assert 'password' not in mock_hub_instance_using_api_token.config
 
 def test_hub_instance_with_write_config(requests_mock):
     requests_mock.post(
