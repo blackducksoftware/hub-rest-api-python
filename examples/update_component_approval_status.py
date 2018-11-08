@@ -8,7 +8,7 @@ Created on Oct 14, 2018
 Updates the approval status for a component given it's component ID
 
 '''
-from bds.HubRestApi import HubInstance
+from blackduck.HubRestApi import HubInstance
 from pprint import pprint
 from sys import argv
 

@@ -6,7 +6,7 @@ Created on Aug 1, 2018
 Execute batch request  
 '''
 from sys import argv,exit
-from bds.HubRestApi import HubInstance
+from blackduck.HubRestApi import HubInstance
 
 def print_usage():
     print("\n\n\t python3 {} urllist ".format(argv[0]))
