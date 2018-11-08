@@ -76,7 +76,7 @@ class HubInstance(object):
                 self.config['username'] = args[1]
                 self.config['password'] = args[2]
             self.config['insecure'] = kwargs.get('insecure', False)
-            self.config['debug'] = kwargs.get('insecure', False)
+            self.config['debug'] = kwargs.get('debug', False)
 
             if kwargs.get('write_config_flag', True):
                 self.write_config()
