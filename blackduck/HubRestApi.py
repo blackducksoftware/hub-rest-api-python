@@ -76,7 +76,7 @@ class HubInstance(object):
                 self.config['username'] = args[1]
                 self.config['password'] = args[2]
             self.config['insecure'] = kwargs.get('insecure', False)
-            self.config['debug'] = kwargs.get('insecure', False)
+            self.config['debug'] = kwargs.get('debug', False)
 
             if kwargs.get('write_config_flag', True):
                 self.write_config()
@@ -149,6 +149,11 @@ class HubInstance(object):
         parameter_string = "&".join(["{}={}".format(k,v) for k,v in parameters.items()])
         return "?" + parameter_string
 
+    ###
+    #
+    # Policy stuff
+    #
+    ###
     def _get_policy_url(self):
         return self.config['baseurl'] + "/api/policy-rules"
 
@@ -184,6 +189,24 @@ class HubInstance(object):
 
     def delete_policy_by_url(self, policy_url):
         return self.execute_delete(policy_url)
+
+    ##
+    #
+    # Vulnerabilities
+    #
+    ##
+    def _get_vulnerabilities_url(self):
+        return self.config['baseurl'] + '/api/vulnerabilities'
+
+    def get_vulnerabilities(self, vulnerability, parameters={}):
+        url = self._get_vulnerabilities_url() + "/{}".format(vulnerability) + self._get_parameter_string(parameters)
+        response = self.execute_get(url)
+        return response.json()
+
+    def get_vulnerability_affected_projects(self, vulnerability):
+        url = self.config['baseurl'] + "/api/v1/composite/vulnerability"+ "/{}".format(vulnerability) 
+        response = self.execute_get(url)
+        return response.json()
 
     def find_component_info_for_protex_component(self, protex_component_id, protex_component_release_id):
         '''Will return the Hub component corresponding to the protex_component_id, and if a release (version) id
@@ -425,8 +448,9 @@ class HubInstance(object):
             json_data = data_to_validate
         return json_data
 
-    def execute_get(self, url):
+    def execute_get(self, url, custom_headers={}):
         headers = self.get_headers()
+        headers.update(custom_headers)
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         return response
         

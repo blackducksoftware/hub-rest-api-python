@@ -75,6 +75,11 @@ def a_test_policy_for_create_or_update(requests_mock):
             ['name', 'description', 'enabled', 'overridable', 'expression', 'severity'] if attr in test_policy)
         yield a_policy_for_creating_or_updating
 
+@pytest.fixture()
+def test_vulnerability_info(requests_mock):
+    with open("sample_vulnerability.json") as sample_vulnerability_file:
+        yield json.loads(sample_vulnerability_file.read())
+
 def test_get_policy_url(mock_hub_instance):
     assert mock_hub_instance._get_policy_url() == fake_hub_host + "/api/policy-rules"
 
@@ -172,8 +177,34 @@ def test_delete_policy_by_id(requests_mock, mock_hub_instance, a_test_policy):
 def test_delete_policy_by_url(requests_mock, mock_hub_instance, a_test_policy):
     policy_url = mock_hub_instance._get_policy_url() + "/" + a_test_policy['_meta']['href'].split("/")[-1]
 
-    requests_mock.delete(fake_hub_host + "/api/policy-rules/" + a_test_policy['_meta']['href'].split("/")[-1], status_code=204)
+    requests_mock.delete(policy_url, status_code=204)
     response = mock_hub_instance.delete_policy_by_url(policy_url)
     assert response.status_code == 204
+
+def test_get_vulnerability(requests_mock, mock_hub_instance, test_vulnerability_info):
+    vulnerability_url = mock_hub_instance._get_vulnerabilities_url() + "/{}".format(test_vulnerability_info['vulnerabilityName'])
+
+    requests_mock.get(vulnerability_url, json=test_vulnerability_info)
+    response_json = mock_hub_instance.get_vulnerabilities(test_vulnerability_info['vulnerabilityName'])
+
+    assert response_json == test_vulnerability_info
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
