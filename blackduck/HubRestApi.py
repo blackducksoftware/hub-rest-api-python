@@ -236,10 +236,12 @@ class HubInstance(object):
     def get_apibase(self):
         return self.config['baseurl'] + "/api"
     
-    def get_projects(self, limit=100):
+    def get_projects(self, limit=100, parameters={}):
         headers = self.get_headers()
-        paramstring = self.get_limit_paramstring(limit)
-        url = self.config['baseurl'] + "/api/projects" + paramstring
+        # paramstring = self.get_limit_paramstring(limit)
+        if limit:
+            parameters.update({'limit': limit})
+        url = self.config['baseurl'] + "/api/projects" + self._get_parameter_string(parameters)
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -252,9 +254,10 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
-    def get_project_versions(self, project, limit=100):
-        paramstring = self.get_limit_paramstring(limit)
-        url = project['_meta']['href'] + "/versions" + paramstring
+    def get_project_versions(self, project, limit=100, parameters={}):
+        # paramstring = self.get_limit_paramstring(limit)
+        parameters.update({'limit': limit})
+        url = project['_meta']['href'] + "/versions" + self._get_parameter_string(parameters)
         headers = self.get_headers()
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
@@ -356,7 +359,7 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
-        
+
     def get_codelocations(self, limit=100):
         paramstring = "?limit={}&offset=0".format(limit)
         headers = self.get_headers()

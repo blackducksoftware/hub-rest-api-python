@@ -3,6 +3,8 @@
 import json
 import os
 import pytest
+import re
+
 from blackduck.HubRestApi import HubInstance
 from unittest.mock import patch, MagicMock, mock_open
 
@@ -77,7 +79,7 @@ def a_test_policy_for_create_or_update(requests_mock):
 
 @pytest.fixture()
 def test_vulnerability_info(requests_mock):
-    with open("sample_vulnerability.json") as sample_vulnerability_file:
+    with open("sample-vulnerability.json") as sample_vulnerability_file:
         yield json.loads(sample_vulnerability_file.read())
 
 def test_get_policy_url(mock_hub_instance):
@@ -189,7 +191,51 @@ def test_get_vulnerability(requests_mock, mock_hub_instance, test_vulnerability_
 
     assert response_json == test_vulnerability_info
 
+def test_get_projects_with_limit(requests_mock, mock_hub_instance):
+    url = mock_hub_instance.get_urlbase() + "/api/projects?limit=20"
+    json_data = json.load(open('sample-projects.json'))
+    requests_mock.get(url, json=json_data)
+    projects = mock_hub_instance.get_projects(limit=20)
 
+    assert json_data == projects
+    assert 'totalCount' in projects
+    assert projects['totalCount'] == 18
+
+def test_get_projects_with_name_query(requests_mock, mock_hub_instance):
+    url = mock_hub_instance.get_urlbase() + "/api/projects?q=name:accelerator-initializer-ui&limit=100"
+    json_data = json.load(open('sample-projects-using-name-query.json'))
+    requests_mock.get(url, json=json_data)
+    projects = mock_hub_instance.get_projects(parameters={'q':"name:accelerator-initializer-ui"})
+
+    assert json_data == projects
+    assert 'totalCount' in projects
+    assert projects['totalCount'] == 1
+
+def test_get_project_versions(requests_mock, mock_hub_instance):
+    baseurl = mock_hub_instance.get_urlbase()
+    url = baseurl + "/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions?limit=100"
+    json_data = json.load(open('sample-project-versions.json'))
+    project_json_data = json.load(open('sample-project.json'))
+    # replace project URL with the right one to agree with our mocked URL above
+    project_json_data['_meta']['href'] = re.sub("https://.*/api", "{}/api".format(baseurl), project_json_data['_meta']['href'])
+    requests_mock.get(url, json=json_data)
+    versions = mock_hub_instance.get_project_versions(project_json_data)
+
+    assert 'totalCount' in versions
+    assert versions['totalCount'] == 1
+
+def test_get_project_versions_with_parameters(requests_mock, mock_hub_instance):
+    baseurl = mock_hub_instance.get_urlbase()
+    url = baseurl + "/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions?limit=100&q=versionName:1.0"
+    json_data = json.load(open('sample-project-versions.json'))
+    project_json_data = json.load(open('sample-project.json'))
+    # replace project URL with the right one to agree with our mocked URL above
+    project_json_data['_meta']['href'] = re.sub("https://.*/api", "{}/api".format(baseurl), project_json_data['_meta']['href'])
+    requests_mock.get(url, json=json_data)
+    versions = mock_hub_instance.get_project_versions(project_json_data, parameters={'q':'versionName:1.0'})
+
+    assert 'totalCount' in versions
+    assert versions['totalCount'] == 1
 
 
 
