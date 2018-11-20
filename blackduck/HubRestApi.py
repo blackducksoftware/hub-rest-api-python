@@ -360,6 +360,41 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
+    def delete_project_version_by_name(self, project_name, version_name, save_scans=False):
+        projects = self.get_projects(parameters={'q':"name:{}".format(project_name)})
+        if 'totalCount' in projects and projects['totalCount'] > 0:
+            project = projects['items'][0]
+            logging.debug("found project {}".format(project))
+            project_versions = self.get_project_versions(
+                project, 
+                parameters={'q':"versionName:{}".format(version_name)}
+            )
+
+            project_version_codelocations = None
+            if 'totalCount' in project_versions and project_versions['totalCount'] == 1:
+                project_version = project_versions['items'][0]
+                logging.debug("found the project version: {}".format(project_version))
+                project_version_codelocations = self.get_version_codelocations(project_version)
+
+                delete_scans = not save_scans
+                logging.debug("delete_scans was {}".format(delete_scans))
+
+                if delete_scans and 'totalCount' in project_version_codelocations and project_version_codelocations['totalCount'] > 0:
+                    code_location_urls = [c['_meta']['href'] for c in project_version_codelocations['items']]
+                    for code_location_url in code_location_urls:
+                        logging.info("Deleting code location at: {}".format(code_location_url))
+                        self.execute_delete(code_location_url)
+                else:
+                    logging.debug("Delete scans was false, or we did not find any codelocations (scans) in version {} of project {}".format(version_name, project_name))
+                # TODO: Check if the project will be "empty" once we delete this version and
+                # delete the project accordingly?
+                logging.info("Deleting project-version at: {}".format(project_version['_meta']['href']))
+                self.execute_delete(project_version['_meta']['href'])
+            else:
+                logging.debug("Did not find version with name {} in project {}".format(version_name, project_name))
+        else:
+            logging.debug("Did not find project with name {}".format(project_name))
+
     def get_codelocations(self, limit=100):
         paramstring = "?limit={}&offset=0".format(limit)
         headers = self.get_headers()
