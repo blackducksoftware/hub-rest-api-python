@@ -237,8 +237,9 @@ def test_get_project_versions_with_parameters(requests_mock, mock_hub_instance):
     assert 'totalCount' in versions
     assert versions['totalCount'] == 1
 
-
-
+def test_delete_project_version_by_name():
+    # TODO: Write this test
+    pass
 
 
 
