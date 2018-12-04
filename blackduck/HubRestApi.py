@@ -56,6 +56,9 @@ class CreateFailedAlreadyExists(Exception):
 class CreateFailedUnknown(Exception):
     pass
 
+class UnknownVersion(Exception):
+    pass
+
 class HubInstance(object):
     '''
     classdocs
@@ -89,7 +92,8 @@ class HubInstance(object):
         if self.config['debug']:
             print(self.configfile)
         
-        self.token, self.csrf_token = self.get_auth_token()
+        self.token, self.csrf_token, self.cookie = self.get_auth_token()
+        self.bd_major_version = self._get_major_version()
         
         
     def read_config(self):
@@ -114,7 +118,7 @@ class HubInstance(object):
             )
             csrf_token = response.headers['X-CSRF-TOKEN']
             bearer_token = json.loads(response.content.decode('utf-8'))['bearerToken']
-            return (bearer_token, csrf_token)
+            return (bearer_token, csrf_token, None)
         else:
             authendpoint="/j_spring_security_check"
             url = self.config['baseurl'] + authendpoint
@@ -125,8 +129,27 @@ class HubInstance(object):
             response = session.post(url, credentials, verify= not self.config['insecure'])
             cookie = response.headers['Set-Cookie']
             token = cookie[cookie.index('=')+1:cookie.index(';')]
-        return (token, None)
+        return (token, None, cookie)
     
+    def _get_major_version(self):
+        '''Get the version info from the server, if available, and
+        return the major version number as string
+        '''
+        session = requests.session()
+        url = self.config['baseurl'] + "/api/current-version"
+        response = session.get(url, verify = not self.config['insecure'])
+        version_info = response.json()
+
+        if response.status_code == 200:
+            if 'version' in version_info:
+                return version_info['version'].split(".")[0]
+            else:
+                raise UnknownVersion("Did not find the 'version' key in the response to a successful GET on /api/current-version")
+        else:
+            # the only version of Black Duck not having the /api/current-version
+            # endpoint are v3, so assume it's that
+            return "3"
+
     def get_urlbase(self):
         return self.config['baseurl']
 
@@ -137,7 +160,10 @@ class HubInstance(object):
                 'Authorization': 'Bearer {}'.format(self.token), 
                 'Content-Type': 'application/json'}
         else:
-            return {"Authorization":"Bearer " + self.token}
+            if self.bd_major_version == "3":
+                return {"Cookie": self.cookie}
+            else:
+                return {"Authorization":"Bearer " + self.token}
 
     def get_api_version(self):
         url = self.get_urlbase() + '/api/current-version'
