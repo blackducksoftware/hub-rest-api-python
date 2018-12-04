@@ -43,8 +43,20 @@ def teardown_function(function):
 @pytest.fixture()
 def mock_hub_instance(requests_mock):
     requests_mock.post(
-        "https://my-hub-host/j_spring_security_check", 
+        "{}/j_spring_security_check".format(fake_hub_host), 
         headers={"Set-Cookie": 'AUTHORIZATION_BEARER={}; Path=/; secure; Secure; HttpOnly'.format(invalid_bearer_token)}
+    )
+    requests_mock.get(
+        "{}/api/current-version".format(fake_hub_host),
+        json = {
+            "version": "2018.11.0",
+            "_meta": {
+                "allow": [
+                    "GET"
+                ],
+                "href": "{}/api/current-version".format(fake_hub_host)
+            }
+        }
     )
     yield HubInstance(fake_hub_host, "a_username", "a_password")
 
@@ -57,6 +69,18 @@ def mock_hub_instance_using_api_token(requests_mock):
                 'X-CSRF-TOKEN': invalid_csrf_token, 
                 'Content-Type': 'application/json'
             }
+    )
+    requests_mock.get(
+        "{}/api/current-version".format(fake_hub_host),
+        json = {
+            "version": "2018.11.0",
+            "_meta": {
+                "allow": [
+                    "GET"
+                ],
+                "href": "{}/api/current-version".format(fake_hub_host)
+            }
+        }
     )
 
     yield HubInstance(fake_hub_host, api_token=made_up_api_token)
@@ -81,6 +105,54 @@ def a_test_policy_for_create_or_update(requests_mock):
 def test_vulnerability_info(requests_mock):
     with open("sample-vulnerability.json") as sample_vulnerability_file:
         yield json.loads(sample_vulnerability_file.read())
+
+def test_get_major_version(requests_mock):
+    requests_mock.post(
+        "{}/j_spring_security_check".format(fake_hub_host), 
+        headers={"Set-Cookie": 'AUTHORIZATION_BEARER={}; Path=/; secure; Secure; HttpOnly'.format(invalid_bearer_token)}
+    )
+    for version in ["2018.11.0", "5.0.2", "4.8.3", "3.7.2"]:
+        expected = version.split(".")[0]
+        requests_mock.get(
+            "{}/api/current-version".format(fake_hub_host),
+            json = {
+                "version": "{}".format(version),
+                "_meta": {
+                    "allow": [
+                        "GET"
+                    ],
+                    "href": "{}/api/current-version".format(fake_hub_host)
+                }
+            }
+        )
+        hub = HubInstance(fake_hub_host, "a_username", "a_password")
+        assert hub.bd_major_version == expected
+
+def test_get_headers(mock_hub_instance):
+    # somewhat contrived, but it does execute all the paths
+    # TODO: better way to test this one?
+    #
+    the_api_token = "fake-api-token"
+    the_csrf_token = "fake-csrf-token"
+    the_token = "fake-bearer-token"
+    mock_hub_instance.config['api_token'] = the_api_token
+    mock_hub_instance.csrf_token = the_csrf_token
+    mock_hub_instance.token = the_token
+
+    assert mock_hub_instance.get_headers() == {
+                'X-CSRF-TOKEN': the_csrf_token, 
+                'Authorization': "Bearer {}".format(the_token),
+                'Content-Type': 'application/json'}
+
+    del mock_hub_instance.config['api_token']
+    for bd_major_version in ["2018", "5", "4", "3"]:
+        if bd_major_version == "3":
+            expected =  {"Cookie": mock_hub_instance.cookie}
+        else:
+            expected =  {"Authorization":"Bearer " + mock_hub_instance.token}
+
+        mock_hub_instance.bd_major_version = bd_major_version
+        assert mock_hub_instance.get_headers() == expected
 
 def test_get_policy_url(mock_hub_instance):
     assert mock_hub_instance._get_policy_url() == fake_hub_host + "/api/policy-rules"
@@ -114,6 +186,19 @@ def test_hub_instance_with_write_config(requests_mock):
         "https://my-hub-host/j_spring_security_check", 
         headers={"Set-Cookie": 'AUTHORIZATION_BEARER={}; Path=/; secure; Secure; HttpOnly'.format(invalid_bearer_token)}
     )
+    requests_mock.get(
+        "{}/api/current-version".format(fake_hub_host),
+        json = {
+            "version": "2018.11.0",
+            "_meta": {
+                "allow": [
+                    "GET"
+                ],
+                "href": "{}/api/current-version".format(fake_hub_host)
+            }
+        }
+    )
+    
     with patch("builtins.open", new_callable=mock_open()) as m:
         with patch('json.dump') as m_json:
             hub = HubInstance(fake_hub_host, "a_username", "a_password")
@@ -126,6 +211,19 @@ def test_hub_instance_with_write_config_false(requests_mock):
         "https://my-hub-host/j_spring_security_check", 
         headers={"Set-Cookie": 'AUTHORIZATION_BEARER={}; Path=/; secure; Secure; HttpOnly'.format(invalid_bearer_token)}
     )
+    requests_mock.get(
+        "{}/api/current-version".format(fake_hub_host),
+        json = {
+            "version": "2018.11.0",
+            "_meta": {
+                "allow": [
+                    "GET"
+                ],
+                "href": "{}/api/current-version".format(fake_hub_host)
+            }
+        }
+    )
+
     with patch.object(HubInstance, "write_config") as mock_write_config:
         hub = HubInstance(fake_hub_host, "a_username", "a_password", write_config_flag=False)
 
