@@ -96,10 +96,11 @@ def a_test_policy(requests_mock):
 
 @pytest.fixture()
 def a_test_policy_for_create_or_update(requests_mock):
-        a_policy_for_creating_or_updating = dict(
-            (attr, test_policy[attr]) for attr in 
-            ['name', 'description', 'enabled', 'overridable', 'expression', 'severity'] if attr in test_policy)
-        yield a_policy_for_creating_or_updating
+        # a_policy_for_creating_or_updating = dict(
+        #     (attr, test_policy[attr]) for attr in 
+        #     ['name', 'description', 'enabled', 'overridable', 'expression', 'severity'] if attr in test_policy)
+        # yield a_policy_for_creating_or_updating
+        yield test_policy
 
 @pytest.fixture()
 def test_vulnerability_info(requests_mock):
@@ -264,6 +265,7 @@ def test_update_policy_by_url(requests_mock, mock_hub_instance, a_test_policy, a
 
 def test_create_policy(requests_mock, mock_hub_instance, a_test_policy, a_test_policy_for_create_or_update):
     requests_mock.post(fake_hub_host + "/api/policy-rules", headers={"location": a_test_policy['_meta']['href']}, status_code=201)
+    # print(json.dumps(a_test_policy_for_create_or_update))
     new_policy_url = mock_hub_instance.create_policy(a_test_policy_for_create_or_update)
     assert new_policy_url == a_test_policy['_meta']['href']
 
@@ -340,6 +342,30 @@ def test_delete_project_version_by_name():
     pass
 
 
+def test_get_users(requests_mock, mock_hub_instance):
+    pass
+
+def test_create_user(requests_mock, mock_hub_instance):
+    pass
+
+def test_get_user_by_id(requests_mock, mock_hub_instance):
+    pass
+
+def test_get_user_by_url(requests_mock, mock_hub_instance):
+    pass
+
+def test_update_user_by_id(requests_mock, mock_hub_instance):
+    pass
+
+def test_update_user_by_url(requests_mock, mock_hub_instance):
+    pass
+
+def test_delete_user_by_id(requests_mock, mock_hub_instance):
+    pass
+
+def test_delete_user_by_url(requests_mock, mock_hub_instance):
+    pass
+    
 
 
 

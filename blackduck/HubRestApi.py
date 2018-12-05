@@ -177,6 +177,141 @@ class HubInstance(object):
 
     ###
     #
+    # Role stuff
+    #
+    ###
+    def _get_role_url(self):
+        return self.config['baseurl'] + "/api/roles"
+
+    def get_roles(self, parameters={}):
+        url = self._get_role_url() + self._get_parameter_string(parameters)
+        response = self.execute_get(url)
+        return response.json()
+
+    def get_roles_url_from_user_or_group(self, user_or_group):
+        roles_url = None
+        for endpoint in user_or_group['_meta']['links']:
+            if endpoint['rel'] == "roles":
+                roles_url = endpoint['href']
+        return roles_url
+
+    def get_roles_for_user_or_group(self, user_or_group):
+        roles_url = self.get_roles_url_from_user_or_group(user_or_group)
+        if roles_url:
+            return self.execute_get(roles_url)
+        else:
+            return None
+
+    def get_role_url_by_name(self, role_name):
+        # Return the role URL for this server corresponding to the role name
+        all_roles = self.get_roles()
+        for role in all_roles['items']:
+            if role['name'] == role_name:
+                return role['_meta']['href']
+        return None
+
+    def assign_role_to_user_or_group(self, role_name, user_or_group):
+        user_or_group_roles_url = self.get_roles_url_from_user_or_group(user_or_group)
+        return self.assign_role_given_role_url(role_name, user_or_group_roles_url)
+
+    def assign_role_given_role_url(self, role_name, user_or_group_role_assignment_url):
+        role_url = self.get_role_url_by_name(role_name)
+        if self.bd_major_version == "3":
+            # A hack to get the assignment to work on v3
+            role_url = role_url.replace("api", "api/internal")
+        data = {"name": role_name, "role": role_url}
+        logging.debug("executing POST to {} with {}".format(
+            user_or_group_role_assignment_url, data))
+        return self.execute_post(user_or_group_role_assignment_url, data = data)
+
+
+    ###
+    #
+    # User stuff
+    #
+    ###
+    def _get_user_url(self):
+        return self.config['baseurl'] + "/api/users"
+
+    def get_users(self, parameters={}):
+        url = self._get_user_url() + self._get_parameter_string(parameters)
+        response = self.execute_get(url)
+        return response.json()
+
+    def create_user(self, user_json):
+        url = self._get_user_url()
+        location = self._create(url, user_json)
+        return location
+
+    def get_user_by_id(self, user_id):
+        url = self._get_user_url() + "/{}".format(user_id)
+        return self.get_user_by_url(url)
+
+    def get_user_by_url(self, user_url):
+        response = self.execute_get(user_url)
+        jsondata = response.json()
+        return jsondata
+
+    def update_user_by_id(self, user_id, update_json):
+        url = self._get_user_url() + "/{}".format(user_id)
+        return self.update_user_by_url(url, update_json)
+
+    def update_user_by_url(self, user_url, update_json):
+        return self.execute_put(user_url, update_json)
+
+    def delete_user_by_id(self, user_id):
+        url = self._get_user_url() + "/{}".format(user_id)
+        return self.delete_user_by_url(url)
+
+    def delete_user_by_url(self, user_url):
+        return self.execute_delete(user_url)
+
+    ###
+    #
+    # User group stuff
+    #
+    ###
+    def _get_user_group_url(self):
+        return self.config['baseurl'] + "/api/usergroups"
+
+    def get_user_groups(self, parameters={}):
+        url = self._get_user_group_url() + self._get_parameter_string(parameters)
+        response = self.execute_get(url)
+        return response.json()
+
+    def create_user_group(self, user_group_json):
+        if self.bd_major_version == "3":
+            url = self.config['baseurl'] + '/api/v1/usergroups'
+        else:
+            url = self._get_user_group_url()
+        location = self._create(url, user_group_json)
+        return location
+
+    def get_user_group_by_id(self, user_group_id):
+        url = self._get_user_group_url() + "/{}".format(user_group_id)
+        return self.get_user_group_by_url(url)
+
+    def get_user_group_by_url(self, user_group_url):
+        response = self.execute_get(user_group_url)
+        jsondata = response.json()
+        return jsondata
+
+    def update_user_group_by_id(self, user_group_id, update_json):
+        url = self._get_user_group_url() + "/{}".format(user_group_id)
+        return self.update_user_group_by_url(url, update_json)
+
+    def update_user_group_by_url(self, user_group_url, update_json):
+        return self.execute_put(user_group_url, update_json)
+
+    def delete_user_group_by_id(self, user_group_id):
+        url = self._get_user_group_url() + "/{}".format(user_group_id)
+        return self.delete_user_group_by_url(url)
+
+    def delete_user_group_by_url(self, user_group_url):
+        return self.execute_delete(user_group_url)
+
+    ###
+    #
     # Policy stuff
     #
     ###
@@ -527,8 +662,19 @@ class HubInstance(object):
 
     def _create(self, url, json_body):
         response = self.execute_post(url, json_body)
-        if response.status_code == 201 and "location" in response.headers:
-            return (response.headers["location"])
+        response_json = response.json()
+        # v4+ returns the newly created location in the response headers
+        # and there is nothing in the response json
+        # whereas v3 returns the newly created object in the response json
+        if response.status_code == 201:
+            if "location" in response.headers:
+                return (response.headers["location"])
+            elif '_meta' in response_json and 'href' in response_json['_meta']:
+                return response_json['_meta']['href']
+            else:
+                # worst case, try returning the whole response json and let
+                # client figure it out
+                return response.json()
         elif response.status_code == 412:
             raise CreateFailedAlreadyExists("Failed to create the object because it already exists - url {}, body {}, response {}".format(url, json_body, response))
         else:
