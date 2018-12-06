@@ -7,6 +7,7 @@ Dump policies to a file
 
 '''
 import argparse
+import copy
 import json
 import logging
 from pprint import pprint
@@ -40,6 +41,20 @@ policy_keys_to_delete = [
 
 policies_to_copy = source_hub.get_policies()
 
+def fix_policy_expression(policy):
+	'''a GET on /api/policy-rules (or /api/policy-rules/{id}) returns a policy object that is valid for use in the GUI app,
+	but is not valid to use for creating a new policy directly on another server. We need to adjust the schema, content
+	to make it suitable for use in creating new policies (on another server).
+	'''
+	new_policy = copy.deepcopy(policy)
+
+	for expression in new_policy['expression']['expressions']:
+		values = [d["value"] for d in expression['values']]
+		parameters = {"values": values}
+		expression['parameters'] = parameters
+		del expression['values']
+	return new_policy
+
 if 'totalCount' in policies_to_copy and policies_to_copy['totalCount'] > 0:
 	logging.debug("Dumping {} policies from {}".format(policies_to_copy['totalCount'], source_hub.config['baseurl']))
 	assert 'items' in policies_to_copy, "Should always be a list of items in a non-zero list of policies"
@@ -48,7 +63,6 @@ if 'totalCount' in policies_to_copy and policies_to_copy['totalCount'] > 0:
 	policy_data_prepped_to_copy = []
 
 	for policy in policies_to_copy['items']:
-		import pdb; pdb.set_trace()
 		policy = source_hub.get_policy_by_url(policy['_meta']['href'])
 		policy_data_raw.append(policy)
 
@@ -58,7 +72,9 @@ if 'totalCount' in policies_to_copy and policies_to_copy['totalCount'] > 0:
 			if k in policy_copy_prepped_to_create:
 				del policy_copy_prepped_to_create[k]
 
-		policy_data_prepped_to_copy.append(policy_copy_prepped_to_create)
+		new_policy = fix_policy_expression(policy_copy_prepped_to_create)
+
+		policy_data_prepped_to_copy.append(new_policy)
 
 	raw_file = args.base_filename + ".raw"
 	prepped_file = args.base_filename + ".prepped"

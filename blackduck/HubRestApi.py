@@ -662,19 +662,22 @@ class HubInstance(object):
 
     def _create(self, url, json_body):
         response = self.execute_post(url, json_body)
-        response_json = response.json()
         # v4+ returns the newly created location in the response headers
         # and there is nothing in the response json
         # whereas v3 returns the newly created object in the response json
         if response.status_code == 201:
             if "location" in response.headers:
-                return (response.headers["location"])
-            elif '_meta' in response_json and 'href' in response_json['_meta']:
-                return response_json['_meta']['href']
+                return response.headers["location"]
             else:
-                # worst case, try returning the whole response json and let
-                # client figure it out
-                return response.json()
+                try:
+                    response_json = response.json()
+                except json.decoder.JSONDecodeError:
+                    logging.warning('did not receive any json data back')
+                else:
+                    if '_meta' in response_json and 'href' in response_json['_meta']:
+                        return response_json['_meta']['href']
+                    else:
+                        return response_json
         elif response.status_code == 412:
             raise CreateFailedAlreadyExists("Failed to create the object because it already exists - url {}, body {}, response {}".format(url, json_body, response))
         else:

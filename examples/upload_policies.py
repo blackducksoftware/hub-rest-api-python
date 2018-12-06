@@ -41,7 +41,6 @@ if not policies_to_copy:
 for policy_info in policies_to_copy:
 	new_policy_result = {}
 	try:
-		import pdb; pdb.set_trace()
 		new_policy_result = dest_hub.create_policy(policy_info)
 	except CreateFailedAlreadyExists:
 		logging.warning("policy with name {} already exists".format(policy_info['name']))
@@ -49,11 +48,7 @@ for policy_info in policies_to_copy:
 		logging.error("Unknown error occurred while attempting to add policy {}".format(
 			policy_info['name']), exc_info=True)
 	else:
-		if new_policy_result.status_code == 201:
-			logging.info("Created new policy, details {}".format(new_policy_result))
-		else:
-			logging.error("Failed to add policy {}, details {}".format(
-				policy_info['name'], new_policy_result.json()))
+		logging.info("Created new policy, details {}".format(new_policy_result))
 
 
 
