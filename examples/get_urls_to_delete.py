@@ -8,7 +8,7 @@ Produces URL lists for batch processing
 import os
 import errno
 from sys import argv,exit
-from bds.HubRestApi import HubInstance
+from blackduck.HubRestApi import HubInstance
 
 def print_usage():
     print("\n\n\t python3 {} projectlist [output dir]".format(argv[0]))

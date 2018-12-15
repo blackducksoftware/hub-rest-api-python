@@ -1,5 +1,15 @@
-certifi==2018.10.15
-chardet==3.0.4
-idna==2.7
-requests==2.19.1
-urllib3==1.23
+# For the library itself
+requests==2.20.0
+
+# for examples printing tables to the terminal
+terminaltables
+
+# for unit testing
+pytest
+requests-mock
+
+# For package building and distribution (e.g. to PyPi)
+setuptools
+wheel
+twine
+

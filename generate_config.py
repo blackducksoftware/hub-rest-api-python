@@ -3,6 +3,6 @@ Created on Jul 18, 2018
 
 @author: kumykov
 '''
-from bds.HubRestApi import HubInstance
+from blackduck.HubRestApi import HubInstance
 
-hub = HubInstance("https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com","sysadmin","blackduck", insecure=True, debug=True)
+hub = HubInstance("https://your-hub-host","the-user","the-password", insecure=True, debug=True)

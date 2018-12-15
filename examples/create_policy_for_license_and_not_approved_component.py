@@ -8,7 +8,7 @@ Created on Oct 14, 2018
 Create a policy that prevents use of any rejected component
 
 '''
-from bds.HubRestApi import HubInstance
+from blackduck.HubRestApi import HubInstance
 import json
 from pprint import pprint
 from sys import argv
