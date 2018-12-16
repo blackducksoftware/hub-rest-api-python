@@ -266,7 +266,6 @@ def test_update_policy_by_url(requests_mock, mock_hub_instance, a_test_policy, a
 def test_create_policy(requests_mock, mock_hub_instance, a_test_policy, a_test_policy_for_create_or_update):
     requests_mock.post(fake_hub_host + "/api/policy-rules", headers={"location": a_test_policy['_meta']['href']}, status_code=201)
     # print(json.dumps(a_test_policy_for_create_or_update))
-    import pdb; pdb.set_trace()
     new_policy_url = mock_hub_instance.create_policy(a_test_policy_for_create_or_update)
     assert new_policy_url == a_test_policy['_meta']['href']
 

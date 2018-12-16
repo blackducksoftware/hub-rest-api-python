@@ -175,6 +175,14 @@ class HubInstance(object):
         parameter_string = "&".join(["{}={}".format(k,v) for k,v in parameters.items()])
         return "?" + parameter_string
 
+    def get_tags_url(self, component_or_project):
+        # Utility method to return the tags URL from either a component or project object
+        url = None
+        for link_d in component_or_project['_meta']['links']:
+            if link_d['rel'] == 'tags':
+                return link_d['href']
+        return url
+
     ###
     #
     # Role stuff
