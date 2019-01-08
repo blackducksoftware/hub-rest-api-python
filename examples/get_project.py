@@ -21,13 +21,6 @@ args = parser.parse_args()
 
 hub = HubInstance()
 
-parameters = {'q':"name:{}".format(args.project_name)}
-
-projects = hub.get_projects(parameters=parameters)
-
-if 'totalCount' in projects and projects['totalCount'] == 1:
-	project = projects['items'][0]
-else:
-	project = {'info': 'project {} not found'.format(args.project_name)}
+project = hub.get_project_by_name(args.project_name)
 
 print(json.dumps(project))

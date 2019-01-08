@@ -4,6 +4,7 @@ import json
 import os
 import pytest
 import re
+from urllib.parse import urlparse
 
 from blackduck.HubRestApi import HubInstance
 from unittest.mock import patch, MagicMock, mock_open
@@ -336,6 +337,7 @@ def test_get_project_versions_with_parameters(requests_mock, mock_hub_instance):
 
     assert 'totalCount' in versions
     assert versions['totalCount'] == 1
+    assert 'items' in versions
 
 def test_delete_project_version_by_name():
     # TODO: Write this test
@@ -343,7 +345,15 @@ def test_delete_project_version_by_name():
 
 
 def test_get_users(requests_mock, mock_hub_instance):
-    pass
+    baseurl = mock_hub_instance.get_urlbase()
+    url = baseurl + "/api/users"
+    user_json_data = json.load(open("users.json"))
+    requests_mock.get(url, json=user_json_data)
+    users = mock_hub_instance.get_users()
+
+    assert 'totalCount' in users
+    assert users['totalCount'] == 1 # cause there was one user in the sample data collected
+    assert 'items' in users
 
 def test_create_user(requests_mock, mock_hub_instance):
     pass
@@ -366,11 +376,46 @@ def test_delete_user_by_id(requests_mock, mock_hub_instance):
 def test_delete_user_by_url(requests_mock, mock_hub_instance):
     pass
     
+def test_get_project_by_name(requests_mock, mock_hub_instance):
+    url = mock_hub_instance.get_urlbase() + "/api/projects"
+    projects_json = json.load(open("sample-projects.json"))
+    project_name = "accelerator-initializer-ui"
+    requests_mock.get(url, json=projects_json)
 
+    project = mock_hub_instance.get_project_by_name(project_name)
 
+    assert project['name'] == project_name
 
+def test_get_version_by_name(requests_mock, mock_hub_instance):
+    mock_hub_instance.get_project_versions = MagicMock(return_value=json.load(open("sample-project-versions.json")))
 
+    mock_project_obj = MagicMock()
+    version_name = "1.0" # a version that exists in sample-project-versions.json
+    version = mock_hub_instance.get_version_by_name(mock_project_obj, version_name)
 
+    assert version['versionName'] == version_name
+
+def test_create_version_reports(requests_mock, mock_hub_instance):
+    pass
+
+def test_create_version_notices_report(requests_mock, mock_hub_instance):
+    pass
+
+def test_get_version_link(mock_hub_instance):
+    version_json = json.load(open("version.json"))
+
+    # replace the base URL with the mocked base url in all the links
+    baseurl = mock_hub_instance.get_urlbase()
+    for link_d in version_json['_meta']['links']:
+        link_d['href'] = re.sub("https://.*/api", "{}/api".format(baseurl), link_d['href'])
+
+    for link_name in ['versionReport', 'licenseReports', 'riskProfile', 'components', 'vulnerable-components', 'comparison', 'project', 'policy-status', 'codelocations']:
+        url = mock_hub_instance._get_version_link(version_json, link_name)
+        assert url # we got something
+
+        parsed_url = urlparse(url)
+        assert parsed_url.scheme == urlparse(fake_hub_host).scheme
+        assert parsed_url.netloc == urlparse(fake_hub_host).netloc
 
 
 

@@ -1,9 +1,9 @@
 '''
-Created on Nov 20, 2018
+Created on Dec 19, 2018
 
 @author: gsnyder
 
-Get the project versions for a given project
+Get the project versions for a given project with some filtering, sorting, and limit features
 '''
 
 import argparse
