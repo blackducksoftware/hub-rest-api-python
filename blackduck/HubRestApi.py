@@ -405,6 +405,63 @@ class HubInstance(object):
     def get_apibase(self):
         return self.config['baseurl'] + "/api"
     
+    def get_project_by_name(self, project_name):
+        project_list = self.get_projects(parameters={"q":"name:{}".format(project_name)})
+        for project in project_list['items']:
+            if project['name'] == project_name:
+                return project
+        return None
+
+    def get_version_by_name(self, project, version_name):
+        version_list = self.get_project_versions(project)
+        for version in version_list['items']:
+            if version['versionName'] == version_name:
+                return version
+        return None
+
+    def _get_version_link(self, version, link_type):
+        # if link_type == 'licenseReports':
+        #     version_id = version['_meta']['href'].split("/")[-1]
+        #     return self.get_urlbase() + "/api/v1/versions/{}/reports".format(version_id)
+        # else:
+        for link in version['_meta']['links']:
+            if link['rel'] == link_type:
+                return link['href']
+        return None
+
+    valid_categories = ['VERSION','CODE_LOCATIONS','COMPONENTS','SECURITY','FILES']
+    valid_report_formats = ["CSV"]
+    def create_version_reports(self, version, report_list, format="CSV"):
+        assert all(list(map(lambda k: k in HubInstance.valid_categories, report_list))), "One or more selected report categories in {} are not valid ({})".format(
+            report_list, HubInstance.valid_categories)
+        assert format in HubInstance.valid_report_formats, "Format must be one of {}".format(HubInstance.valid_report_formats)
+
+        post_data = {
+            'categories': report_list,
+            'versionId': version['_meta']['href'].split("/")[-1],
+            'reportType': 'VERSION',
+            'reportFormat': format
+        }
+        version_reports_url = self._get_version_link(version, 'versionReport')
+        return self.execute_post(version_reports_url, post_data)
+
+    valid_notices_formats = ["TEXT", "HTML"]
+    def create_version_notices_report(self, version, format="TEXT"):
+        assert format in HubInstance.valid_notices_formats, "Format must be one of {}".format(HubInstance.valid_notices_formats)
+
+        post_data = {
+            'categories': HubInstance.valid_categories,
+            'versionId': version['_meta']['href'].split("/")[-1],
+            'reportType': 'VERSION_LICENSE',
+            'reportFormat': format
+        }
+        notices_report_url = self._get_version_link(version, 'licenseReports')
+        return self.execute_post(notices_report_url, post_data)
+
+    def download_report(self, report_id):
+        url = self.get_urlbase() + "/api/reports/{}".format(report_id)
+        return self.execute_get(url, {'Content-Type': 'application/zip', 'Accept':'application/zip'})
+
     def get_projects(self, limit=100, parameters={}):
         headers = self.get_headers()
         # paramstring = self.get_limit_paramstring(limit)
