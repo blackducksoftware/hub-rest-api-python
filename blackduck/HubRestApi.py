@@ -59,6 +59,15 @@ class CreateFailedUnknown(Exception):
 class UnknownVersion(Exception):
     pass
 
+class UnsupportedBDVersion(Exception):
+    # Some operations require specific versions of BD
+    pass
+
+def object_id(object):
+    assert '_meta' in object, "REST API object must have _meta key"
+    assert 'href' in object['_meta'], "REST API object must have href key in it's _meta"
+    return object['_meta']['href'].split("/")[-1]
+
 class HubInstance(object):
     '''
     classdocs
@@ -93,8 +102,12 @@ class HubInstance(object):
             print(self.configfile)
         
         self.token, self.csrf_token, self.cookie = self.get_auth_token()
+        try:
+            self.version_info = self._get_hub_rest_api_version_info()
+        except UnknownVersion:
+            self.version_info = {'version': '3'} # assume it's v3 since all versions after 3 supported version info
+
         self.bd_major_version = self._get_major_version()
-        
         
     def read_config(self):
         with open('.restconfig.json','r') as f:
@@ -131,24 +144,24 @@ class HubInstance(object):
             token = cookie[cookie.index('=')+1:cookie.index(';')]
         return (token, None, cookie)
     
-    def _get_major_version(self):
-        '''Get the version info from the server, if available, and
-        return the major version number as string
+    def _get_hub_rest_api_version_info(self):
+        '''Get the version info from the server, if available
         '''
         session = requests.session()
         url = self.config['baseurl'] + "/api/current-version"
         response = session.get(url, verify = not self.config['insecure'])
-        version_info = response.json()
 
         if response.status_code == 200:
+            version_info = response.json()
             if 'version' in version_info:
-                return version_info['version'].split(".")[0]
+                return version_info
             else:
                 raise UnknownVersion("Did not find the 'version' key in the response to a successful GET on /api/current-version")
         else:
-            # the only version of Black Duck not having the /api/current-version
-            # endpoint are v3, so assume it's that
-            return "3"
+            raise UnknownVersion("Failed to retrieve the version info from {}, status code {}".format(url, response.status_code))
+
+    def _get_major_version(self):
+        return self.version_info['version'].split(".")[0]
 
     def get_urlbase(self):
         return self.config['baseurl']
@@ -505,19 +518,23 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
-    def get_file_matches_for_component_no_version(self, project_id, version_id, component_id, limit=1000):
-        headers = self.get_headers()
-        paramstring = self.get_limit_paramstring(limit)
-        url = self.get_apibase() + \
-            "/projects/{}/versions/{}/components/{}/matched-files".format(project_id, version_id, component_id)
-        print("GET ", url)
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        jsondata = response.json()
-        return jsondata
+    # TODO: Not sure this endpoint exists, but in any case not using it yet so I'm commenting it out
+    # def get_file_matches_for_component_no_version(self, project_id, version_id, component_id, limit=1000):
+    #     headers = self.get_headers()
+    #     paramstring = self.get_limit_paramstring(limit)
+    #     url = self.get_apibase() + \
+    #         "/projects/{}/versions/{}/components/{}/matched-files".format(project_id, version_id, component_id)
+    #     print("GET ", url)
+    #     response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+    #     jsondata = response.json()
+    #     return jsondata
 
     def get_file_bom_entries(self, hub_release_id, limit=100):
+        if int(self.bd_major_version) < 2018:
+            raise UnsupportedBDVersion("The BD major version {} is less than the minimum required major version {}".format(self.bd_major_version, 2018))
         headers = self.get_headers()
         paramstring = self.get_limit_paramstring(limit)
+        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
         url = self.get_apibase() + \
             "/v1/releases/{}/file-bom-entries".format(hub_release_id)
         print("GET ", url)
@@ -527,6 +544,8 @@ class HubInstance(object):
 
 
     def get_file_matches_for_component_with_version(self, project_id, version_id, component_id, component_version_id, limit=1000):
+        if int(self.bd_major_version) < 2018:
+            raise UnsupportedBDVersion("The BD major version {} is less than the minimum required major version {}".format(self.bd_major_version, 2018))
         headers = self.get_headers()
         paramstring = self.get_limit_paramstring(limit)
         url = self.get_apibase() + \
@@ -539,9 +558,12 @@ class HubInstance(object):
 
 
     def get_snippet_bom_entries(self, project_id, version_id, reviewed=False, included=False, limit=100, offset=0):
+        if int(self.bd_major_version) < 2018:
+            raise UnsupportedBDVersion("The BD major version {} is less than the minimum required major version {}".format(self.bd_major_version, 2018))
         headers = self.get_headers()
         paramstring = "?limit=" + str(limit) + "&offset=" + \
             str(offset) + "&filter=bomReviewStatus:" + str(reviewed).lower() + "&filter=bomInclusion:" + str(included).lower()
+        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
         path = self.get_apibase() + \
             "/internal/projects/{}/versions/{}/snippet-bom-entries".format(project_id, version_id)
         url = path + paramstring
@@ -550,19 +572,44 @@ class HubInstance(object):
         return jsondata
 
     def ignore_snippet_bom_entry(self, hub_version_id, snippet_bom_entry):
+        if int(self.bd_major_version) < 2018:
+            raise UnsupportedBDVersion("The BD major version {} is less than the minimum required major version {}".format(self.bd_major_version, 2018))
         headers = self.get_headers()
         headers['ContentType'] = "application/json"
+        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
         url = self.get_apibase() + \
             "/v1/releases/{}/snippet-bom-entries".format(hub_version_id)
         body = self.get_ignore_snippet_json(snippet_bom_entry)
         response = requests.put(url, json=body, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
-        return 0
 
     def get_ignore_snippet_json(self, snippet_bom_entry):
+        if int(self.bd_major_version) < 2018:
+            raise UnsupportedBDVersion("The BD major version {} is less than the minimum required major version {}".format(self.bd_major_version, 2018))
         for cur_fileSnippetBomComponents in snippet_bom_entry['fileSnippetBomComponents']:
             cur_fileSnippetBomComponents['ignored'] = True
+        return [snippet_bom_entry]
+    
+    def confirm_snippet_bom_entry(self, hub_version_id, snippet_bom_entry):
+        if int(self.bd_major_version) < 2018:
+            raise UnsupportedBDVersion("The BD major version {} is less than the minimum required major version {}".format(self.bd_major_version, 2018))
+        headers = self.get_headers()
+        headers['ContentType'] = "application/json"
+        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
+        url = self.get_apibase() + \
+            "/v1/releases/{}/snippet-bom-entries".format(hub_version_id)
+        body = self.get_confirm_snippet_json(snippet_bom_entry)
+        response = requests.put(url, json=body, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
+
+    def get_confirm_snippet_json(self, snippet_bom_entry):
+        if int(self.bd_major_version) < 2018:
+            raise UnsupportedBDVersion("The BD major version {} is less than the minimum required major version {}".format(self.bd_major_version, 2018))
+        for cur_fileSnippetBomComponents in snippet_bom_entry['fileSnippetBomComponents']:
+            cur_fileSnippetBomComponents['reviewStatus'] = 'REVIEWED'
+            cur_fileSnippetBomComponents['ignored'] = False
         return [snippet_bom_entry]
     
     def compare_project_versions(self, version, compareTo):

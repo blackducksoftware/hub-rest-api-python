@@ -87,16 +87,16 @@ def mock_hub_instance_using_api_token(requests_mock):
     yield HubInstance(fake_hub_host, api_token=made_up_api_token)
 
 @pytest.fixture()
-def policy_info_json(requests_mock):
+def policy_info_json():
     with open("policies.json") as policies_json_file:
         yield json.loads(policies_json_file.read())
 
 @pytest.fixture()
-def a_test_policy(requests_mock):
+def a_test_policy():
     yield test_policy
 
 @pytest.fixture()
-def a_test_policy_for_create_or_update(requests_mock):
+def a_test_policy_for_create_or_update():
         # a_policy_for_creating_or_updating = dict(
         #     (attr, test_policy[attr]) for attr in 
         #     ['name', 'description', 'enabled', 'overridable', 'expression', 'severity'] if attr in test_policy)
@@ -417,8 +417,38 @@ def test_get_version_link(mock_hub_instance):
         assert parsed_url.scheme == urlparse(fake_hub_host).scheme
         assert parsed_url.netloc == urlparse(fake_hub_host).netloc
 
+@pytest.fixture()
+def unreviewed_snippet_json():
+    with open("unreviewed_snippet.json") as f:
+        yield json.load(f)[0]
 
+def test_get_ignore_snippet_json(unreviewed_snippet_json, mock_hub_instance):
+    assert 'fileSnippetBomComponents' in unreviewed_snippet_json
+    assert unreviewed_snippet_json['fileSnippetBomComponents'][0]['ignored'] == False
 
+    result = mock_hub_instance.get_ignore_snippet_json(unreviewed_snippet_json)
+
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert 'fileSnippetBomComponents' in result[0]
+    assert 'ignored' in result[0]['fileSnippetBomComponents'][0]
+    assert 'reviewStatus' in result[0]['fileSnippetBomComponents'][0]
+    assert result[0]['fileSnippetBomComponents'][0]['ignored'] == True
+    assert result[0]['fileSnippetBomComponents'][0]['reviewStatus'] == 'NOT_REVIEWED'
+
+def test_get_confirm_snippet_json(unreviewed_snippet_json, mock_hub_instance):
+    assert 'fileSnippetBomComponents' in unreviewed_snippet_json
+    assert unreviewed_snippet_json['fileSnippetBomComponents'][0]['ignored'] == False
+    
+    result = mock_hub_instance.get_confirm_snippet_json(unreviewed_snippet_json)
+
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert 'fileSnippetBomComponents' in result[0]
+    assert 'ignored' in result[0]['fileSnippetBomComponents'][0]
+    assert 'reviewStatus' in result[0]['fileSnippetBomComponents'][0]
+    assert result[0]['fileSnippetBomComponents'][0]['ignored'] == False
+    assert result[0]['fileSnippetBomComponents'][0]['reviewStatus'] == 'REVIEWED'
 
 
 
