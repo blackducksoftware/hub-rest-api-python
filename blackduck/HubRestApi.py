@@ -196,6 +196,16 @@ class HubInstance(object):
                 return link_d['href']
         return url
 
+    def get_link(self, bd_rest_obj, link_name):
+        # returns the URL for the link_name OR None
+        if '_meta' in bd_rest_obj and 'links' in bd_rest_obj['_meta']:
+            for link_obj in bd_rest_obj['_meta']['links']:
+                if 'rel' in link_obj and link_obj['rel'] == link_name:
+                    return link_obj.get('href', None)
+        else:
+            logging.debug("This does not appear to be a BD REST object. It should have ['_meta']['links']")
+        return None
+
     ###
     #
     # Role stuff
@@ -210,6 +220,7 @@ class HubInstance(object):
         return response.json()
 
     def get_roles_url_from_user_or_group(self, user_or_group):
+        # Given a user or user group object, return the 'roles' url
         roles_url = None
         for endpoint in user_or_group['_meta']['links']:
             if endpoint['rel'] == "roles":
@@ -219,12 +230,13 @@ class HubInstance(object):
     def get_roles_for_user_or_group(self, user_or_group):
         roles_url = self.get_roles_url_from_user_or_group(user_or_group)
         if roles_url:
-            return self.execute_get(roles_url)
+            response = self.execute_get(roles_url)
+            return response.json()
         else:
-            return None
+            return []
 
     def get_role_url_by_name(self, role_name):
-        # Return the role URL for this server corresponding to the role name
+        # Return the global (as opposed to project-specific) role URL for this server corresponding to the role name
         all_roles = self.get_roles()
         for role in all_roles['items']:
             if role['name'] == role_name:
@@ -245,6 +257,26 @@ class HubInstance(object):
             user_or_group_role_assignment_url, data))
         return self.execute_post(user_or_group_role_assignment_url, data = data)
 
+    def delete_role_from_user_or_group(self, role_name, user_or_group):
+        roles = self.get_roles_for_user_or_group(user_or_group)
+        for role in roles['items']:
+            if role['name'] == role_name:
+                self.execute_delete(role['_meta']['href'])
+
+    # def get_current_user_roles(self):
+    #     url = self.config['baseurl'] + "/api/current-user"
+    #     response = self.execute_get(url)
+    #     response = self.get_roles_for_user_or_group(response.json())
+    #     roles_json = response.json()
+    #     return roles_json
+
+    # def current_user_has_role(self, role_name):
+    #     user_roles_obj = self.get_current_user_roles()
+    #     return role_name in [r['name'] for r in user_roles_obj['items']]
+
+    def user_has_role(self, user_or_group, role_name):
+        user_roles_obj = self.get_roles_for_user_or_group(user_or_group)
+        return role_name in [r['name'] for r in user_roles_obj['items']]
 
     ###
     #
@@ -256,6 +288,11 @@ class HubInstance(object):
 
     def get_users(self, parameters={}):
         url = self._get_user_url() + self._get_parameter_string(parameters)
+        response = self.execute_get(url)
+        return response.json()
+
+    def get_current_user(self):
+        url = self.config['baseurl'] + "/api/current-user"
         response = self.execute_get(url)
         return response.json()
 
@@ -300,6 +337,13 @@ class HubInstance(object):
         response = self.execute_get(url)
         return response.json()
 
+    def get_user_group_by_name(self, group_name):
+        groups = self.get_user_groups()
+        for group in groups['items']:
+            if group['name'] == group_name:
+                return group
+        return None
+
     def create_user_group(self, user_group_json):
         if self.bd_major_version == "3":
             url = self.config['baseurl'] + '/api/v1/usergroups'
@@ -308,14 +352,29 @@ class HubInstance(object):
         location = self._create(url, user_group_json)
         return location
 
-    def get_user_group_by_id(self, user_group_id):
-        url = self._get_user_group_url() + "/{}".format(user_group_id)
-        return self.get_user_group_by_url(url)
+    def create_user_group_by_name(self, group_name, active=True):
+        user_group_info = {
+            'name': group_name,
+            'createdFrom': 'INTERNAL',
+            'active': active
+        }
+        return self.create_user_group(user_group_info)
 
-    def get_user_group_by_url(self, user_group_url):
-        response = self.execute_get(user_group_url)
-        jsondata = response.json()
-        return jsondata
+    # def get_user_group_by_id(self, user_group_id):
+    #     url = self._get_user_group_url() + "/{}".format(user_group_id)
+    #     return self.get_user_group_by_url(url)
+
+    # def get_user_group_by_url(self, user_group_url):
+    #     response = self.execute_get(user_group_url)
+    #     jsondata = response.json()
+    #     return jsondata
+
+    # def get_user_group_by_name(self, user_group_name):
+    #     url = self._get_user_group_url() + "?q={}".format(user_group_name)
+    #     response = self.execute_get(url)
+    #     user_group_obj = response.json()
+    #     if user_group_obj['totalCount'] > 0:
+    #         return user_group_obj['items'][0]
 
     def update_user_group_by_id(self, user_group_id, update_json):
         url = self._get_user_group_url() + "/{}".format(user_group_id)
@@ -418,13 +477,6 @@ class HubInstance(object):
     def get_apibase(self):
         return self.config['baseurl'] + "/api"
     
-    def get_project_by_name(self, project_name):
-        project_list = self.get_projects(parameters={"q":"name:{}".format(project_name)})
-        for project in project_list['items']:
-            if project['name'] == project_name:
-                return project
-        return None
-
     def get_version_by_name(self, project, version_name):
         version_list = self.get_project_versions(project)
         for version in version_list['items']:
@@ -648,20 +700,53 @@ class HubInstance(object):
     #
     ##
 
+    def _get_projects_url(self):
+        return self.get_urlbase() + "/api/projects"
+
     def get_projects(self, limit=100, parameters={}):
         headers = self.get_headers()
         # paramstring = self.get_limit_paramstring(limit)
         if limit:
             parameters.update({'limit': limit})
-        url = self.config['baseurl'] + "/api/projects" + self._get_parameter_string(parameters)
+        url = self._get_projects_url() + self._get_parameter_string(parameters)
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
 
+    def create_project(self, project_name, version_name="Default Version", parameters={}):
+        url = self._get_projects_url()
+
+        post_data = {
+          "name": project_name,
+          "description": parameters.get("description", ""),
+          "projectTier": "",
+          "projectOwner": "",
+          "projectLevelAdjustments": True,
+          "cloneCategories": [
+            "COMPONENT_DATA",
+            "VULN_DATA"
+          ],
+          "versionRequest": {
+            "phase": "PLANNING",
+            "distribution": "EXTERNAL",
+            "projectLevelAdjustments": True,
+            "versionName": version_name
+          }
+        }
+        response = self.execute_post(url, data=post_data)
+        return response
+
+    def get_project_by_name(self, project_name):
+        project_list = self.get_projects(parameters={"q":"name:{}".format(project_name)})
+        for project in project_list['items']:
+            if project['name'] == project_name:
+                return project
+        return None
+
     def get_project_by_id(self, project_id, limit=100):
         headers = self.get_headers()
         paramstring = self.get_limit_paramstring(limit)
-        url = self.config['baseurl'] + "/api/projects/" + project_id + paramstring
+        url = self._get_projects_url() + project_id + paramstring
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -678,7 +763,7 @@ class HubInstance(object):
     def get_version_by_id(self, project_id, version_id, limit=100):
         headers = self.get_headers()
         paramstring = self.get_limit_paramstring(limit)
-        url = self.config['baseurl'] + "/api/projects/" + project_id + "/versions/" + version_id
+        url = self._get_projects_url() + project_id + "/versions/" + version_id
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -738,6 +823,166 @@ class HubInstance(object):
                 logging.debug("Did not find version with name {} in project {}".format(version_name, project_name))
         else:
             logging.debug("Did not find project with name {}".format(project_name))
+
+    def _find_user_group_url(self, assignable_user_groups, user_group_name):
+        for user_group in assignable_user_groups['items']:
+            if user_group['name'] == user_group_name:
+                return user_group['usergroup']
+
+    def _project_role_urls(self, project_role_names):
+        all_project_roles = self.get_project_roles()
+        project_role_urls = list()
+        for project_role_name in project_role_names:
+            for project_role in all_project_roles:
+                if project_role_name == project_role['name']:
+                    project_role_urls.append(project_role['_meta']['href'])
+        return project_role_urls
+
+    def assign_user_group_to_project(self, project_name, user_group_name, project_roles):
+        # Assign the user group to the project using the list of project-role names
+        project = self.get_project_by_name(project_name)
+        # user_group = self.get_user_group_by_name(user_group_name)
+
+        if project:
+            project_url = project['_meta']['href']
+            assignable_user_groups_link = self.get_link(project, 'assignable-usergroups')
+            if assignable_user_groups_link:
+                assignable_user_groups_response = self.execute_get(assignable_user_groups_link)
+                assignable_user_groups = assignable_user_groups_response.json()
+
+                # TODO: What to do if the user group is already assigned to the project, and therefore
+                # does not appear in the list of 'assignable' user groups? Should we search the (assigned) user
+                # groups and re-apply the project-roles to the assignment?
+
+                user_group_url = self._find_user_group_url(assignable_user_groups, user_group_name)
+                if user_group_url:
+                    headers = self.get_headers()
+
+                    # need project role urls to build the POST payload
+                    project_roles_urls = self._project_role_urls(project_roles)
+
+                    # The POST endpoint changes based on whether we found any project-roles to assign
+                    # Also, due to what appears to be a defect, the Content-Type changes
+                    if project_roles_urls:
+                        url = user_group_url + "/roles"
+                        # one dict per project role assignment
+                        post_data = [{'role': r, 'scope': project_url} for r in project_roles_urls]
+                        # I found I had to use this Content-Type (application/json resulted in 412)
+                        # ref: https://jira.dc1.lan/browse/HUB-18417
+                        headers['Content-Type'] = 'application/vnd.blackducksoftware.internal-1+json'
+                    else:
+                        url = project_url + "/usergroups"
+                        # Assigning a group with no project-roles
+                        post_data = {"group": user_group_url}
+                        headers['Content-Type'] = 'application/json'
+
+                    response = requests.post(
+                        url, 
+                        headers=headers, 
+                        data=json.dumps(post_data), 
+                        verify = not self.config['insecure'])
+                    return response
+                else:
+                    assignable_groups = [u['name'] for u in assignable_user_groups['items']]
+                    logging.warning("The user group {} was not found in the assignable user groups ({}) for this project {}. Is the group already assigned to this project?".format(
+                        user_group_name, assignable_groups, project_name))
+            else:
+                logging.warning("This project {} has no assignable user groups".format(project_name))
+        else:
+            logging.warning("Did not find a project by the name {}".format(project_name))
+
+    def assign_user_to_project(self, user_name, project_name, project_roles_l):
+        pass
+
+    def assign_project_application_id(self, project_name, application_id, overwrite=False):
+        logging.debug("Assigning application_id {} to project_name {}, overwrite={}".format(
+            application_id, project_name, overwrite))
+
+        existing_application_id, application_id_url = self.get_project_application_id(project_name)
+
+        if existing_application_id:
+            if overwrite:
+                logging.debug("Found an existing application id {} for project {} and overwrite was True. Updating it to {}".format(
+                    existing_application_id, project_name, application_id))
+                return self.update_project_application_id(project_name, application_id)
+            else:
+                logging.debug("Found an existing application id {} for project {} and overwrite was False so not updating it".format(
+                    existing_application_id, project_name))
+        else:
+            logging.debug("No application id exists for project {}, assigning {} to it".format(
+                project_name, application_id))
+            project = self.get_project_by_name(project_name)
+            if project:
+                project_mappings_url = self.get_link(project, "project-mappings")
+                if project_mappings_url:
+                    post_data = {"applicationId": application_id}
+                    response = self.execute_post(project_mappings_url, data=post_data)
+                    return response
+                else:
+                    logging.warning("Did not find project-mappings URL for project {}".format(project))
+            else:
+                logging.warning("Did not find project by name {}".format(project_name))
+
+    def update_project_application_id(self, project_name, new_application_id):
+        application_id, application_id_url = self.get_project_application_id(project_name)
+
+        if application_id and application_id_url:
+            put_data = {
+                "applicationId": new_application_id,
+                "_meta": {
+                    "allow": [
+                      "DELETE",
+                      "GET",
+                      "PUT"
+                    ],
+                    "href": application_id_url,
+                    "links": []
+                }
+            }
+            response = self.execute_put(application_id_url, data=put_data)
+            return response
+        else:
+            logging.debug("Did not find application id for project name {}".format(project_name))
+
+    def delete_application_id(self, project_name):
+        application_id, application_id_url = self.get_project_application_id(project_name)
+
+        if application_id_url:
+            self.execute_delete(application_id_url)
+
+    def get_project_application_id(self, project_name):
+        project_mapping_info = self.get_project_info(project_name, 'project-mappings')
+        if project_mapping_info and 'items' in project_mapping_info:
+            for project_mapping in project_mapping_info['items']:
+                if 'applicationId' in project_mapping:
+                    application_id = project_mapping['applicationId']
+                    application_id_url = project_mapping['_meta']['href']
+
+                    return (application_id, application_id_url)
+            logging.debug("Did not find any project-mappings with 'applicationId' in them")
+            return (None, None)
+        else:
+            logging.debug("did not find any project-mappings for project {}".format(project_name))
+            return (None, None)
+
+    def get_project_info(self, project_name, link_name):
+        project = self.get_project_by_name(project_name)
+        link = self.get_link(project, link_name)
+        if link:
+            response = self.execute_get(link)
+            return response.json()
+        else:
+            return {} # nada
+
+    def get_project_roles(self):
+        all_project_roles = self.get_roles(parameters={"filter":"scope:project"})
+        return all_project_roles['items']
+
+    ###
+    #
+    # Code locations or Scans Stuff
+    #
+    ###
 
     def get_codelocations(self, limit=100):
         paramstring = "?limit={}&offset=0".format(limit)
@@ -824,7 +1069,7 @@ class HubInstance(object):
         return jsondata
     
     def _validated_json_data(self, data_to_validate):
-        if isinstance(data_to_validate, dict):
+        if isinstance(data_to_validate, dict) or isinstance(data_to_validate, list):
             json_data = json.dumps(data_to_validate)
         else:
             json_data = data_to_validate

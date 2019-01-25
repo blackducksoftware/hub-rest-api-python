@@ -1,0 +1,114 @@
+{
+  "scanId": "47fa462a-77c6-4f2b-b891-238d9734c8bf",
+  "name": "CodeFormatter.java",
+  "compositeId": 2407,
+  "size": 2863,
+  "type": "FILE",
+  "compositePath": {
+    "path": "src_ourfaces/code/taglibrary/java/ourfaces/code/CodeFormatter.java",
+    "archiveContext": "",
+    "compositePathContext": "src_ourfaces/code/taglibrary/java/ourfaces/code/CodeFormatter.java#",
+    "fileName": "CodeFormatter.java"
+  },
+  "fileSignaturePair": {
+    "signatureType": "MATCH_CLEAN_SHA1",
+    "signatureValue": "0555414b74b2bf8d5db63479710e9c5ded253532"
+  },
+  "fileDependencyBomComponents": [],
+  "partialFileMatchBomComponents": [],
+  "fileSnippetBomComponents": [
+    {
+      "versionBomComponentId": 3636,
+      "versionBomFileId": 1786,
+      "versionBomEntryId": 9472,
+      "project": {
+        "id": "02341c77-976b-47fe-9674-1d474394beb7",
+        "name": "OurFaces",
+        "restructured": false,
+        "urlLinksUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/02341c77-976b-47fe-9674-1d474394beb7/urllinks",
+        "contactsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/02341c77-976b-47fe-9674-1d474394beb7/contacts",
+        "releasesUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/02341c77-976b-47fe-9674-1d474394beb7/releases",
+        "logosUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/02341c77-976b-47fe-9674-1d474394beb7/logos",
+        "projectMappingsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/internal/projects/02341c77-976b-47fe-9674-1d474394beb7/project-mappings",
+        "tagsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/02341c77-976b-47fe-9674-1d474394beb7/tags",
+        "watchitemsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/02341c77-976b-47fe-9674-1d474394beb7/watchitems",
+        "teammembersUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/02341c77-976b-47fe-9674-1d474394beb7/teammembers"
+      },
+      "release": {
+        "id": "e78b50a2-141e-4128-86bd-b9e5d3a84798",
+        "version": "20040830_2321",
+        "urlLinksUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/e78b50a2-141e-4128-86bd-b9e5d3a84798/urllinks",
+        "fileBomComponentsFilterUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/e78b50a2-141e-4128-86bd-b9e5d3a84798/bom-components",
+        "fileBomLicensesFilterUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/e78b50a2-141e-4128-86bd-b9e5d3a84798/bom-file-license-families",
+        "fileBomMatchTypesFilterUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/e78b50a2-141e-4128-86bd-b9e5d3a84798/bom-file-match-types",
+        "codeLocationsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/e78b50a2-141e-4128-86bd-b9e5d3a84798/codelocations",
+        "commitAnalysisUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/e78b50a2-141e-4128-86bd-b9e5d3a84798/commitanalysis",
+        "bomCountsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/e78b50a2-141e-4128-86bd-b9e5d3a84798/bom-counts",
+        "vulnerabilityCountsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/e78b50a2-141e-4128-86bd-b9e5d3a84798/vulnerability-counts",
+        "riskProfileUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/e78b50a2-141e-4128-86bd-b9e5d3a84798/bom-risk-profile"
+      },
+      "channelRelease": {
+        "id": "b0dbc231-0429-4989-b7e0-a6df6c6fb1b2",
+        "versionId": "e78b50a2-141e-4128-86bd-b9e5d3a84798",
+        "name": "20040830_2321",
+        "externalNamespace": "unknown",
+        "externalNamespaceDistribution": false
+      },
+      "versionBomMatchType": "SNIPPET",
+      "usage": "SOURCE_CODE",
+      "license": {
+        "licenseId": "46d731af-fe14-4911-b9f0-06304319b012",
+        "name": "Sun Public License v1.0",
+        "spdxId": "SPL-1.0",
+        "ownership": "OPEN_SOURCE",
+        "codeSharing": 3,
+        "licenses": [],
+        "licenseDisplay": "Sun Public License v1.0",
+        "licenseIds": [
+          "46d731af-fe14-4911-b9f0-06304319b012"
+        ]
+      },
+      "matchContent": "",
+      "adjusted": true,
+      "matchFileSha1": "47623fd932c4945dba7fcfaa34c847182961406b",
+      "matchFileBasename": "CodeFormatter",
+      "matchFileExtension": "java",
+      "matchFilePath": "/ourfaces/src/code/taglibrary/java/ourfaces/code/",
+      "matchComponentRank": 0.0,
+      "matchScore": 0.48,
+      "matchCoverage": 96,
+      "matchComponentVersionReleaseDate": "2004-08-30T04:00:00.000Z",
+      "matchComponentTotalReleases": 30,
+      "matchStartLine": 1,
+      "matchEndLine": 91,
+      "matchLicenseCodeSharingType": 3,
+      "alternateSnippetMatchesUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/internal/projects/2663ec45-c614-40e9-8c2e-f412f2323778/versions/4e5c346f-2c6e-46ec-b902-1cbca15582c0/alternate-snippet-matches/9472",
+      "matchedFileContentUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/file-source-contents/47623fd932c4945dba7fcfaa34c847182961406b",
+      "sourceStartLine": 1,
+      "sourceEndLine": 91,
+      "ignored": false,
+      "reviewStatus": "NOT_REVIEWED",
+      "matchFileoccurences": 9
+    }
+  ],
+  "policyApprovalStatus": "NOT_IN_VIOLATION",
+  "activePolicies": [],
+  "uri": "file:///Users/gsnyder/Projects/suite_migration_tools/sample-data/PMullin_tutorial/src_ourfaces/code/taglibrary/java/ourfaces/code/CodeFormatter.java",
+  "policyOverriddenBySet": [],
+  "activePolicyCount": 0,
+  "fileBomMatchType": "UNMATCHED",
+  "_meta": {
+    "links": [
+      {
+        "rel": "scan",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/scan-summaries/47fa462a-77c6-4f2b-b891-238d9734c8bf"
+      },
+      {
+        "rel": "node",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/internal/scans/47fa462a-77c6-4f2b-b891-238d9734c8bf/nodes/2407/file-trees"
+      }
+    ]
+  },
+  "fileMatchPresent": false,
+  "anyMatchPresent": true
+}

@@ -504,11 +504,55 @@ def test_get_edit_snippet_json(sample_snippet_match_json, sample_bom_component_j
     assert new_component_id == new_snippet_bom_entry['fileSnippetBomComponents'][0]['project']['id']
     assert new_component_version_id == new_snippet_bom_entry['fileSnippetBomComponents'][0]['release']['id']
 
+@pytest.fixture()
+def no_roles_user():
+    with open('no-roles-user.json') as f:
+        yield json.load(f)
 
+@pytest.fixture()
+def no_roles_roles():
+    with open('no-roles-roles.json') as f:
+        yield json.load(f)
 
+@pytest.fixture()
+def sysadmin_user():
+    with open('sysadmin-user.json') as f:
+        yield json.load(f)
 
+@pytest.fixture()
+def sysadmin_roles():
+    with open('sysadmin-roles.json') as f:
+        yield json.load(f)
 
+def test_user_has_role(no_roles_user, no_roles_roles, sysadmin_user, sysadmin_roles, mock_hub_instance):
+    test_roles = [
+        'License Manager', 
+        'System Administrator', 
+        'Policy Manager', 
+        'Project Viewer', 
+        'Global Code Scanner', 
+        'Project Manager']
+    
+    mock_hub_instance.get_roles_for_user_or_group = MagicMock()
+    mock_hub_instance.get_roles_for_user_or_group.return_value = no_roles_roles
 
+    for test_role in test_roles:
+        assert mock_hub_instance.user_has_role(no_roles_user, test_role) == False
 
+    mock_hub_instance.get_roles_for_user_or_group.return_value = sysadmin_roles
 
+    for test_role in test_roles:
+        assert mock_hub_instance.user_has_role(sysadmin_user, test_role) == True
+
+def test_get_link(mock_hub_instance):
+    a_url = 'http://a-url'
+    link_name = 'a_link_name'
+    bd_rest_obj = {'_meta':{'links': [{'rel': link_name, 'href': a_url}]}}
+
+    assert mock_hub_instance.get_link(bd_rest_obj, link_name) == a_url
+
+def test_get_link_returns_None_for_invalid_bd_rest_object(mock_hub_instance):
+    bd_rest_obj = {}
+
+    assert mock_hub_instance.get_link(bd_rest_obj, 'a_link_name') == None
 

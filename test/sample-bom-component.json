@@ -1,0 +1,192 @@
+{
+  "componentName": "GnuPG",
+  "componentVersionName": "1.2.4",
+  "component": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/components/7b301438-3aa2-4175-b155-b1e357237b54",
+  "componentVersion": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/components/7b301438-3aa2-4175-b155-b1e357237b54/versions/6c284ea1-645c-488d-80f9-f42d162b81d4",
+  "totalFileMatchCount": 6,
+  "licenses": [
+    {
+      "licenseDisplay": "(GNU Lesser General Public License v3.0 or later AND GNU General Public License v3.0 or later)",
+      "licenseType": "CONJUNCTIVE",
+      "licenses": [
+        {
+          "licenseDisplay": "GNU Lesser General Public License v3.0 or later",
+          "license": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2663ec45-c614-40e9-8c2e-f412f2323778/versions/e6e5bcea-3237-4fb9-8a10-c713f8e9d323/components/7b301438-3aa2-4175-b155-b1e357237b54/versions/6c284ea1-645c-488d-80f9-f42d162b81d4/licenses/bf913382-7596-42ad-8385-2f49fa655362",
+          "licenses": []
+        },
+        {
+          "licenseDisplay": "GNU General Public License v3.0 or later",
+          "license": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2663ec45-c614-40e9-8c2e-f412f2323778/versions/e6e5bcea-3237-4fb9-8a10-c713f8e9d323/components/7b301438-3aa2-4175-b155-b1e357237b54/versions/6c284ea1-645c-488d-80f9-f42d162b81d4/licenses/f80fb9a9-5329-47c2-864d-00ed5cf744bf",
+          "licenses": []
+        }
+      ]
+    }
+  ],
+  "origins": [],
+  "usages": [
+    "DYNAMICALLY_LINKED"
+  ],
+  "matchTypes": [
+    "FILE_EXACT"
+  ],
+  "releasedOn": "2019-01-08T19:56:43.409Z",
+  "licenseRiskProfile": {
+    "counts": [
+      {
+        "countType": "UNKNOWN",
+        "count": 0
+      },
+      {
+        "countType": "OK",
+        "count": 0
+      },
+      {
+        "countType": "LOW",
+        "count": 0
+      },
+      {
+        "countType": "MEDIUM",
+        "count": 0
+      },
+      {
+        "countType": "HIGH",
+        "count": 1
+      }
+    ]
+  },
+  "securityRiskProfile": {
+    "counts": [
+      {
+        "countType": "UNKNOWN",
+        "count": 0
+      },
+      {
+        "countType": "OK",
+        "count": 0
+      },
+      {
+        "countType": "LOW",
+        "count": 5
+      },
+      {
+        "countType": "MEDIUM",
+        "count": 6
+      },
+      {
+        "countType": "HIGH",
+        "count": 1
+      }
+    ]
+  },
+  "versionRiskProfile": {
+    "counts": [
+      {
+        "countType": "UNKNOWN",
+        "count": 0
+      },
+      {
+        "countType": "OK",
+        "count": 0
+      },
+      {
+        "countType": "LOW",
+        "count": 0
+      },
+      {
+        "countType": "MEDIUM",
+        "count": 1
+      },
+      {
+        "countType": "HIGH",
+        "count": 0
+      }
+    ]
+  },
+  "activityRiskProfile": {
+    "counts": [
+      {
+        "countType": "UNKNOWN",
+        "count": 0
+      },
+      {
+        "countType": "OK",
+        "count": 0
+      },
+      {
+        "countType": "LOW",
+        "count": 1
+      },
+      {
+        "countType": "MEDIUM",
+        "count": 0
+      },
+      {
+        "countType": "HIGH",
+        "count": 0
+      }
+    ]
+  },
+  "operationalRiskProfile": {
+    "counts": [
+      {
+        "countType": "UNKNOWN",
+        "count": 0
+      },
+      {
+        "countType": "OK",
+        "count": 0
+      },
+      {
+        "countType": "LOW",
+        "count": 0
+      },
+      {
+        "countType": "MEDIUM",
+        "count": 1
+      },
+      {
+        "countType": "HIGH",
+        "count": 0
+      }
+    ]
+  },
+  "activityData": {
+    "contributorCount12Month": 13,
+    "commitCount12Month": 364,
+    "lastCommitDate": "2015-07-31T13:43:02.884Z",
+    "trending": "DECREASING"
+  },
+  "reviewStatus": "NOT_REVIEWED",
+  "approvalStatus": "NOT_IN_VIOLATION",
+  "policyStatus": "NOT_IN_VIOLATION",
+  "componentModified": false,
+  "_meta": {
+    "allow": [
+      "GET",
+      "PUT"
+    ],
+    "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2663ec45-c614-40e9-8c2e-f412f2323778/versions/e6e5bcea-3237-4fb9-8a10-c713f8e9d323/components/7b301438-3aa2-4175-b155-b1e357237b54/versions/6c284ea1-645c-488d-80f9-f42d162b81d4",
+    "links": [
+      {
+        "rel": "comments",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2663ec45-c614-40e9-8c2e-f412f2323778/versions/e6e5bcea-3237-4fb9-8a10-c713f8e9d323/components/7b301438-3aa2-4175-b155-b1e357237b54/component-versions/6c284ea1-645c-488d-80f9-f42d162b81d4/comments"
+      },
+      {
+        "rel": "component-issues",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2663ec45-c614-40e9-8c2e-f412f2323778/versions/e6e5bcea-3237-4fb9-8a10-c713f8e9d323/components/7b301438-3aa2-4175-b155-b1e357237b54/component-versions/6c284ea1-645c-488d-80f9-f42d162b81d4/issues"
+      },
+      {
+        "rel": "policy-rules",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2663ec45-c614-40e9-8c2e-f412f2323778/versions/e6e5bcea-3237-4fb9-8a10-c713f8e9d323/components/7b301438-3aa2-4175-b155-b1e357237b54/versions/6c284ea1-645c-488d-80f9-f42d162b81d4/policy-rules"
+      },
+      {
+        "rel": "vulnerabilities",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/components/7b301438-3aa2-4175-b155-b1e357237b54/versions/6c284ea1-645c-488d-80f9-f42d162b81d4/vulnerabilities"
+      },
+      {
+        "rel": "matched-files",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2663ec45-c614-40e9-8c2e-f412f2323778/versions/e6e5bcea-3237-4fb9-8a10-c713f8e9d323/components/7b301438-3aa2-4175-b155-b1e357237b54/versions/6c284ea1-645c-488d-80f9-f42d162b81d4/matched-files"
+      }
+    ]
+  }
+}
