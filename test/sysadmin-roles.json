@@ -1,0 +1,218 @@
+{
+  "totalCount": 15,
+  "items": [
+    {
+      "role": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/roles/00000001-0001-0001-0001-000000000001",
+      "scope": "server",
+      "name": "System Administrator",
+      "description": "This role will have access to system settings like the registration key, jobs page, LDAP, SSO, etc. This is more for an IT person who installs and manages the hosting of the application",
+      "roleKey": "sysadmin",
+      "_meta": {
+        "allow": [
+          "GET"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/roles/00000000-0000-0000-0002-000000000001",
+        "links": [
+          {
+            "rel": "user",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001"
+          }
+        ]
+      }
+    },
+    {
+      "role": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/roles/00000001-0001-0001-0001-000000000009",
+      "scope": "server",
+      "name": "Global Code Scanner",
+      "description": "This user can run code scans and map them to projects. When assigned globally, they can scan and map to any project",
+      "roleKey": "codescanner",
+      "_meta": {
+        "allow": [
+          "GET"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/roles/00000000-0000-0000-0002-000000000111",
+        "links": [
+          {
+            "rel": "user",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001"
+          }
+        ]
+      }
+    },
+    {
+      "role": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/roles/00000001-0001-0001-0001-00000000000a",
+      "scope": "server",
+      "name": "Policy Manager",
+      "description": "Ability to create/modify/delete policies",
+      "roleKey": "policyman",
+      "_meta": {
+        "allow": [
+          "GET"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/roles/00000000-0000-0000-0002-000000001111",
+        "links": [
+          {
+            "rel": "user",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001"
+          }
+        ]
+      }
+    },
+    {
+      "role": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/roles/00000001-0001-0001-0001-00000000000c",
+      "scope": "server",
+      "name": "License Manager",
+      "description": "Ability to create/modify/delete licenses",
+      "roleKey": "licenseman",
+      "_meta": {
+        "allow": [
+          "GET"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/roles/00000000-0000-0000-0002-000000111111",
+        "links": [
+          {
+            "rel": "user",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001"
+          }
+        ]
+      }
+    },
+    {
+      "role": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/roles/00000001-0001-0001-0001-000000000012",
+      "scope": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/555dd009-6e03-485f-97d5-0ae962673796",
+      "name": "Project Manager",
+      "description": "This role has access to all information for a project. They can create/modify/delete versions. They can assign users to the project. Run reports. Modify BOM entries. Override policies. Update security information",
+      "roleKey": "projectmanager",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/roles/1497e25d-fb02-4dfd-adaf-3b8d69b2b638",
+        "links": [
+          {
+            "rel": "user",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001"
+          }
+        ]
+      }
+    },
+    {
+      "role": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/roles/00000001-0001-0001-0001-000000000012",
+      "scope": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/3775ec84-d89d-4158-b827-6fad40c362ee",
+      "name": "Project Manager",
+      "description": "This role has access to all information for a project. They can create/modify/delete versions. They can assign users to the project. Run reports. Modify BOM entries. Override policies. Update security information",
+      "roleKey": "projectmanager",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/roles/20003171-1c3c-4e71-b349-553786bbea88",
+        "links": [
+          {
+            "rel": "user",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001"
+          }
+        ]
+      }
+    },
+    {
+      "role": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/roles/00000001-0001-0001-0001-000000000011",
+      "scope": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/3775ec84-d89d-4158-b827-6fad40c362ee",
+      "name": "Project Viewer",
+      "description": "Read only access to a project. This user can view the BOM, security, license, operational risk, run reports, etc. They can not modify components or update remediation statuses but they can add comments",
+      "roleKey": "projectviewer",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/roles/6e58273b-0a78-41a3-9e75-1fd3617c9aa5",
+        "links": [
+          {
+            "rel": "user",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001"
+          }
+        ]
+      }
+    },
+    {
+      "role": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/roles/00000001-0001-0001-0001-000000000012",
+      "scope": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2b7703fa-152a-4985-9d9f-345c6c16fc7c",
+      "name": "Project Manager",
+      "description": "This role has access to all information for a project. They can create/modify/delete versions. They can assign users to the project. Run reports. Modify BOM entries. Override policies. Update security information",
+      "roleKey": "projectmanager",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/roles/8197187b-d2cb-49d9-80f1-afb2d0380a4c",
+        "links": [
+          {
+            "rel": "user",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001"
+          }
+        ]
+      }
+    },
+    {
+      "role": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/roles/00000001-0001-0001-0001-000000000011",
+      "scope": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2b7703fa-152a-4985-9d9f-345c6c16fc7c",
+      "name": "Project Viewer",
+      "description": "Read only access to a project. This user can view the BOM, security, license, operational risk, run reports, etc. They can not modify components or update remediation statuses but they can add comments",
+      "roleKey": "projectviewer",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/roles/8cfdd70a-2fec-4165-b007-72a9419f7ba6",
+        "links": [
+          {
+            "rel": "user",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001"
+          }
+        ]
+      }
+    },
+    {
+      "role": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/roles/00000001-0001-0001-0001-000000000012",
+      "scope": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/d5dc86be-4201-463c-bf54-464aca3c2de1",
+      "name": "Project Manager",
+      "description": "This role has access to all information for a project. They can create/modify/delete versions. They can assign users to the project. Run reports. Modify BOM entries. Override policies. Update security information",
+      "roleKey": "projectmanager",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/roles/98c25bdf-e42e-40c6-ab85-a04fd3ebe73c",
+        "links": [
+          {
+            "rel": "user",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001"
+          }
+        ]
+      }
+    }
+  ],
+  "appliedFilters": [],
+  "_meta": {
+    "allow": [
+      "GET"
+    ],
+    "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/roles",
+    "links": [
+      {
+        "rel": "roles",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/internal/roles"
+      },
+      {
+        "rel": "user",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/users/00000000-0000-0000-0001-000000000001"
+      }
+    ]
+  }
+}
