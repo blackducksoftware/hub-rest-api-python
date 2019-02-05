@@ -204,7 +204,6 @@ class HubInstance(object):
                     return link_obj.get('href', None)
         else:
             logging.debug("This does not appear to be a BD REST object. It should have ['_meta']['links']")
-        return None
 
     ###
     #
@@ -241,7 +240,6 @@ class HubInstance(object):
         for role in all_roles['items']:
             if role['name'] == role_name:
                 return role['_meta']['href']
-        return None
 
     def assign_role_to_user_or_group(self, role_name, user_or_group):
         user_or_group_roles_url = self.get_roles_url_from_user_or_group(user_or_group)
@@ -342,7 +340,6 @@ class HubInstance(object):
         for group in groups['items']:
             if group['name'] == group_name:
                 return group
-        return None
 
     def create_user_group(self, user_group_json):
         if self.bd_major_version == "3":
@@ -482,7 +479,6 @@ class HubInstance(object):
         for version in version_list['items']:
             if version['versionName'] == version_name:
                 return version
-        return None
 
     def _get_version_link(self, version, link_type):
         # if link_type == 'licenseReports':
@@ -492,7 +488,6 @@ class HubInstance(object):
         for link in version['_meta']['links']:
             if link['rel'] == link_type:
                 return link['href']
-        return None
 
     ##
     #
@@ -670,7 +665,6 @@ class HubInstance(object):
             alternative_match_component_version_id = alternative_match['release']['id']
             if kb_component_id == alternative_match_component_id and kb_component_version_id == alternative_match_component_version_id:
                 return alternative_match
-        return None
 
     def _generate_new_match_selection(self, original_snippet_match, new_component_match):
         # Merge the values from new_component_match into the origingal_snippet_match
@@ -696,7 +690,7 @@ class HubInstance(object):
 
     ##
     #
-    # Projects and versions
+    # Projects and versions Stuff
     #
     ##
 
@@ -741,7 +735,24 @@ class HubInstance(object):
         for project in project_list['items']:
             if project['name'] == project_name:
                 return project
-        return None
+
+    def get_project_version_by_name(self, project_name, version_name):
+        project = self.get_project_by_name(project_name)
+        if project:
+            project_versions = self.get_project_versions(
+                project, 
+                parameters={'q':"versionName:{}".format(version_name)}
+            )
+            # A query by name can return more than one version if other versions
+            # have names that include the search term as part of their name
+            for project_version in project_versions['items']:
+                if project_version['versionName'] == version_name:
+                    logging.debug("Found matching version: {}".format(project_version))
+                    return project_version
+            logging.debug("Did not find any project version matching {}".format(version_name))
+        else:
+            logging.debug("Did not find a project with name {}".format(project_name))
+
 
     def get_project_by_id(self, project_id, limit=100):
         headers = self.get_headers()
@@ -759,6 +770,44 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
+
+    # https://jira.dc1.lan/browse/HUB-18578: How to use update nickname using the REST API
+    # I couldn't get this to work and am unsure if it's my code or the REST API but I submitted
+    # a ticket and once I get clear on how to make it work will complete the implementation
+    #           Glenn Snyder, Feb 1, 2019
+    #
+    # def update_project_version_settings(self, project_name, version_name, new_settings={}):
+    #     # Apply any new settings to the given project version
+    #     keys_to_copy = [
+    #         'versionName', 
+    #         'nickname', 
+    #         'releaseComments', 
+    #         'phase', 
+    #         'distribution', 
+    #         'source']
+    #     version = self.get_project_version_by_name(project_name, version_name)
+    #     version_id = version['_meta']['href'].split("/")[-1]
+    #     releases_url_for_version = "{}/api/v1/releases/{}".format(self.get_urlbase(), version_id)
+    #     url = releases_url_for_version
+    #     response = self.execute_get(releases_url_for_version)
+    #     if response.status_code == 200:
+    #         version_obj = response.json()
+    #     else:
+    #         version_obj = None
+    #     # import pdb; pdb.set_trace()
+    #     if version_obj:
+    #         put_data = version_obj
+    #         # put_data = dict((k,version[k]) for k in keys_to_copy if k in version_obj)
+    #         # url = version['_meta']['href']
+    #         # for k,v in new_settings.items():
+    #         #     put_data[k] = v
+    #         response = self.execute_put(url, put_data)
+
+    #         logging.debug("Result of updating version {} with new settings {} was {}".format(
+    #             version['versionName'], new_settings, response.status_code))
+    #     else:
+    #         logging.debug("Did not find a matching project-version in project {}, version name {}".format(
+    #             project_name, version_name))
 
     def get_version_by_id(self, project_id, version_id, limit=100):
         headers = self.get_headers()
@@ -790,9 +839,8 @@ class HubInstance(object):
         return jsondata
 
     def delete_project_version_by_name(self, project_name, version_name, save_scans=False):
-        projects = self.get_projects(parameters={'q':"name:{}".format(project_name)})
-        if 'totalCount' in projects and projects['totalCount'] > 0:
-            project = projects['items'][0]
+        project = self.get_project_by_name(project_name)
+        if project:
             logging.debug("found project {}".format(project))
             project_versions = self.get_project_versions(
                 project, 
@@ -1081,10 +1129,11 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         return response
         
-    def execute_put(self, url, data):
+    def execute_put(self, url, data, custom_headers={}):
         data = self._validated_json_data(data)
         headers = self.get_headers()
         headers["Content-Type"] = "application/json"
+        headers.update(custom_headers)
         response = requests.put(url, headers=headers, json=data, verify = not self.config['insecure'])
         return response
 
