@@ -556,3 +556,24 @@ def test_get_link_returns_None_for_invalid_bd_rest_object(mock_hub_instance):
 
     assert mock_hub_instance.get_link(bd_rest_obj, 'a_link_name') == None
 
+def test_validated_json_with_a_dictionary(mock_hub_instance):
+    validated_json = mock_hub_instance._validated_json_data({'key':'value'})
+    assert isinstance(validated_json, str)
+    assert validated_json == '{"key": "value"}'
+
+def test_validated_json_with_a_list(mock_hub_instance):
+    validated_json = mock_hub_instance._validated_json_data(['item1', 'item2'])
+    assert isinstance(validated_json, str)
+    assert validated_json == '["item1", "item2"]'
+
+def test_validated_json_with_a_json_str(mock_hub_instance):
+    validated_json = mock_hub_instance._validated_json_data('{"key": "value"}')
+
+    assert validated_json == '{"key": "value"}'
+
+def test_validated_json_fails_with_invalid_json_str(mock_hub_instance):
+    from json import JSONDecodeError
+
+    with pytest.raises(JSONDecodeError) as e_info:
+        validated_json = mock_hub_instance._validated_json_data('invalid json')
+
