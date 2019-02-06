@@ -50,10 +50,15 @@ import logging
 import requests
 import json
 
+# TODO: Create some kind of Black Duck exception grouping/hierarchy?
+
 class CreateFailedAlreadyExists(Exception):
     pass
 
 class CreateFailedUnknown(Exception):
+    pass
+
+class InvalidVersionPhase(Exception):
     pass
 
 class UnknownVersion(Exception):
@@ -72,6 +77,9 @@ class HubInstance(object):
     '''
     classdocs
     '''
+    VERSION_PHASES = ["PLANNING", "DEVELOPMENT", "PRERELEASE", "RELEASED", "DEPRECATED", "ARCHIVED"]
+    PROJECT_VERSION_SETTINGS = ['nickname', 'releaseComments', 'version', 'phase', 'distribution', 'releasedOn']
+
     # TODO: What to do about the config file for thread-safety, concurrency
     configfile = ".restconfig.json"
 
@@ -286,12 +294,14 @@ class HubInstance(object):
 
     def get_users(self, parameters={}):
         url = self._get_user_url() + self._get_parameter_string(parameters)
-        response = self.execute_get(url)
+        headers = {'Accept': 'application/vnd.blackducksoftware.user-4+json'}
+        response = self.execute_get(url, custom_headers=headers)
         return response.json()
 
     def get_current_user(self):
         url = self.config['baseurl'] + "/api/current-user"
-        response = self.execute_get(url)
+        headers = {'Accept': 'application/vnd.blackducksoftware.user-4+json'}
+        response = self.execute_get(url, custom_headers=headers)
         return response.json()
 
     def create_user(self, user_json):
@@ -301,10 +311,12 @@ class HubInstance(object):
 
     def get_user_by_id(self, user_id):
         url = self._get_user_url() + "/{}".format(user_id)
-        return self.get_user_by_url(url)
+        headers = {'Accept': 'application/vnd.blackducksoftware.user-4+json'}
+        return self.get_user_by_url(url, custom_headers=headers)
 
     def get_user_by_url(self, user_url):
-        response = self.execute_get(user_url)
+        headers = {'Accept': 'application/vnd.blackducksoftware.user-4+json'}
+        response = self.execute_get(user_url, custom_headers=headers)
         jsondata = response.json()
         return jsondata
 
@@ -332,7 +344,8 @@ class HubInstance(object):
 
     def get_user_groups(self, parameters={}):
         url = self._get_user_group_url() + self._get_parameter_string(parameters)
-        response = self.execute_get(url)
+        headers = {'Accept': 'application/vnd.blackducksoftware.user-4+json'}
+        response = self.execute_get(url, custom_headers=headers)
         return response.json()
 
     def get_user_group_by_name(self, group_name):
@@ -397,7 +410,8 @@ class HubInstance(object):
 
     def get_policies(self, parameters={}):
         url = self._get_policy_url() + self._get_parameter_string(parameters)
-        response = self.execute_get(url)
+        headers = {'Accept': 'application/vnd.blackducksoftware.policy-4+json'}
+        response = self.execute_get(url, custom_headers=headers)
         return response.json()
 
     def create_policy(self, policy_json):
@@ -410,7 +424,8 @@ class HubInstance(object):
         return self.get_policy_by_url(url)
 
     def get_policy_by_url(self, policy_url):
-        response = self.execute_get(policy_url)
+        headers = {'Accept': 'application/vnd.blackducksoftware.policy-4+json'}
+        response = self.execute_get(policy_url, custom_headers=headers)
         jsondata = response.json()
         return jsondata
 
@@ -438,7 +453,8 @@ class HubInstance(object):
 
     def get_vulnerabilities(self, vulnerability, parameters={}):
         url = self._get_vulnerabilities_url() + "/{}".format(vulnerability) + self._get_parameter_string(parameters)
-        response = self.execute_get(url)
+        headers = {'Accept': 'application/vnd.blackducksoftware.vulnerability-4+json'}
+        response = self.execute_get(url, custom_headers=headers)
         return response.json()
 
     def get_vulnerability_affected_projects(self, vulnerability):
@@ -527,25 +543,6 @@ class HubInstance(object):
     def download_report(self, report_id):
         url = self.get_urlbase() + "/api/reports/{}".format(report_id)
         return self.execute_get(url, {'Content-Type': 'application/zip', 'Accept':'application/zip'})
-
-    def get_version_components(self, projectversion, limit=1000):
-        paramstring = self.get_limit_paramstring(limit)
-        url = projectversion['_meta']['href'] + "/components" + paramstring
-        headers = self.get_headers()
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        jsondata = response.json()
-        return jsondata
-
-    # TODO: Not sure this endpoint exists, but in any case not using it yet so I'm commenting it out
-    # def get_file_matches_for_component_no_version(self, project_id, version_id, component_id, limit=1000):
-    #     headers = self.get_headers()
-    #     paramstring = self.get_limit_paramstring(limit)
-    #     url = self.get_apibase() + \
-    #         "/projects/{}/versions/{}/components/{}/matched-files".format(project_id, version_id, component_id)
-    #     print("GET ", url)
-    #     response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-    #     jsondata = response.json()
-    #     return jsondata
 
     ##
     #
@@ -699,10 +696,10 @@ class HubInstance(object):
 
     def get_projects(self, limit=100, parameters={}):
         headers = self.get_headers()
-        # paramstring = self.get_limit_paramstring(limit)
         if limit:
             parameters.update({'limit': limit})
         url = self._get_projects_url() + self._get_parameter_string(parameters)
+        headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -713,19 +710,40 @@ class HubInstance(object):
         post_data = {
           "name": project_name,
           "description": parameters.get("description", ""),
-          "projectTier": "",
-          "projectOwner": "",
-          "projectLevelAdjustments": True,
+          "projectTier": parameters.get("project_tier", ""),
+          "projectOwner": parameters.get("project_owner", ""),
+          "projectLevelAdjustments": parameters.get("project_level_adjustments", True),
           "cloneCategories": [
             "COMPONENT_DATA",
             "VULN_DATA"
           ],
           "versionRequest": {
-            "phase": "PLANNING",
-            "distribution": "EXTERNAL",
-            "projectLevelAdjustments": True,
+            "phase": parameters.get("version_phase", "PLANNING"),
+            "distribution": parameters.get("version_distribution", "EXTERNAL"),
+            "projectLevelAdjustments": parameters.get("project_level_adjustments", True),
             "versionName": version_name
           }
+        }
+        response = self.execute_post(url, data=post_data)
+        return response
+
+    def create_project_version(self, project_obj, new_version_name, parameters={}):
+        url = self.get_link(project_obj, "versions")
+
+        version_phase = parameters.get("phase", "PLANNING")
+        if version_phase not in HubInstance.VERSION_PHASES:
+            raise InvalidVersionPhase("The phase given {} is not in the list of valid phases ({})".format(
+                version_phase, HubInstance.VERSION_PHASES))
+
+        post_data = {
+            "versionUrl": url,
+            "cloneCategories": [
+                "VULN_DATA",
+                "COMPONENT_DATA"
+            ],
+            "versionName": new_version_name,
+            "phase": parameters.get("phase", "PLANNING"),
+            "distribution": parameters.get("distribution", "EXTERNAL")
         }
         response = self.execute_post(url, data=post_data)
         return response
@@ -753,11 +771,11 @@ class HubInstance(object):
         else:
             logging.debug("Did not find a project with name {}".format(project_name))
 
-
     def get_project_by_id(self, project_id, limit=100):
         headers = self.get_headers()
         paramstring = self.get_limit_paramstring(limit)
         url = self._get_projects_url() + project_id + paramstring
+        headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -767,52 +785,53 @@ class HubInstance(object):
         parameters.update({'limit': limit})
         url = project['_meta']['href'] + "/versions" + self._get_parameter_string(parameters)
         headers = self.get_headers()
+        headers['Accept']: 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
 
-    # https://jira.dc1.lan/browse/HUB-18578: How to use update nickname using the REST API
-    # I couldn't get this to work and am unsure if it's my code or the REST API but I submitted
-    # a ticket and once I get clear on how to make it work will complete the implementation
-    #           Glenn Snyder, Feb 1, 2019
-    #
-    # def update_project_version_settings(self, project_name, version_name, new_settings={}):
-    #     # Apply any new settings to the given project version
-    #     keys_to_copy = [
-    #         'versionName', 
-    #         'nickname', 
-    #         'releaseComments', 
-    #         'phase', 
-    #         'distribution', 
-    #         'source']
-    #     version = self.get_project_version_by_name(project_name, version_name)
-    #     version_id = version['_meta']['href'].split("/")[-1]
-    #     releases_url_for_version = "{}/api/v1/releases/{}".format(self.get_urlbase(), version_id)
-    #     url = releases_url_for_version
-    #     response = self.execute_get(releases_url_for_version)
-    #     if response.status_code == 200:
-    #         version_obj = response.json()
-    #     else:
-    #         version_obj = None
-    #     # import pdb; pdb.set_trace()
-    #     if version_obj:
-    #         put_data = version_obj
-    #         # put_data = dict((k,version[k]) for k in keys_to_copy if k in version_obj)
-    #         # url = version['_meta']['href']
-    #         # for k,v in new_settings.items():
-    #         #     put_data[k] = v
-    #         response = self.execute_put(url, put_data)
+    def get_version_components(self, projectversion, limit=1000):
+        paramstring = self.get_limit_paramstring(limit)
+        url = projectversion['_meta']['href'] + "/components" + paramstring
+        headers = self.get_headers()
+        headers['Accept']: 'application/vnd.blackducksoftware.project-detail-4+json'
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
 
-    #         logging.debug("Result of updating version {} with new settings {} was {}".format(
-    #             version['versionName'], new_settings, response.status_code))
-    #     else:
-    #         logging.debug("Did not find a matching project-version in project {}, version name {}".format(
-    #             project_name, version_name))
+    def update_project_version_settings(self, project_name, version_name, new_settings={}):
+        # Apply any new settings to the given project version
+        version = self.get_project_version_by_name(project_name, version_name)
+
+        if version:
+            for k,v in new_settings.items():
+                if k in HubInstance.PROJECT_VERSION_SETTINGS:
+                    logging.debug("updating setting {} in version {} with value {}".format(
+                        k, version['versionName'], v))
+                    version[k] = v
+                else:
+                    logging.warn("Setting {} is not in the list of project version settings ({})".format(
+                        k, HubInstance.PROJECT_VERSION_SETTINGS))
+
+            url = version['_meta']['href']
+
+            response = self.execute_put(url, version)
+
+            if response.status_code == 200:
+                logging.info("Successfully updated version {} with new settings {}".format(
+                    version['versionName'], new_settings))
+            else:
+                logging.error("Failed to update version {} with new settings {}; status code: {}".format(
+                    version['versionName'], new_settings, response.status_code))
+        else:
+            logging.debug("Did not find a matching project-version in project {}, version name {}".format(
+                project_name, version_name))
 
     def get_version_by_id(self, project_id, version_id, limit=100):
         headers = self.get_headers()
         paramstring = self.get_limit_paramstring(limit)
         url = self._get_projects_url() + project_id + "/versions/" + version_id
+        headers['Accept']: 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -834,6 +853,7 @@ class HubInstance(object):
         projectversion = version['_meta']['href']
         url = projectversion + "/codelocations" + paramstring
         headers = self.get_headers()
+        headers['Accept']: 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -1032,12 +1052,17 @@ class HubInstance(object):
     #
     ###
 
-    def get_codelocations(self, limit=100):
-        paramstring = "?limit={}&offset=0".format(limit)
+    def get_codelocations(self, limit=100, unmapped=False, parameters={}):
+        parameters['limit'] = limit
+        paramstring = self._get_parameter_string(parameters)
         headers = self.get_headers()
         url = self.get_apibase() + "/codelocations" + paramstring
+        headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
+        if unmapped:
+            jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
+            jsondata['totalCount'] = len(jsondata['items'])
         return jsondata
 
     def get_codelocation_scan_summaries(self, code_location_id, limit=100):
@@ -1054,14 +1079,8 @@ class HubInstance(object):
         return self.get_component_by_url(url)
 
     def get_component_by_url(self, component_url):
-        response = self.execute_get(component_url)
-        jsondata = response.json()
-        return jsondata
-
-    def get_scanlocations(self):
-        url = self.config['baseurl'] + "/api/v1/scanlocations"
-        headers = self.get_headers()
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
+        response = self.execute_get(component_url, custom_headers=headers)
         jsondata = response.json()
         return jsondata
 
@@ -1121,6 +1140,7 @@ class HubInstance(object):
             json_data = json.dumps(data_to_validate)
         else:
             json_data = data_to_validate
+        json.loads(json_data) # will fail with JSONDecodeError if invalid
         return json_data
 
     def execute_get(self, url, custom_headers={}):
@@ -1130,11 +1150,11 @@ class HubInstance(object):
         return response
         
     def execute_put(self, url, data, custom_headers={}):
-        data = self._validated_json_data(data)
+        json_data = self._validated_json_data(data)
         headers = self.get_headers()
         headers["Content-Type"] = "application/json"
         headers.update(custom_headers)
-        response = requests.put(url, headers=headers, json=data, verify = not self.config['insecure'])
+        response = requests.put(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
 
     def _create(self, url, json_body):
@@ -1160,11 +1180,12 @@ class HubInstance(object):
         else:
             raise CreateFailedUnknown("Failed to create the object for an unknown reason - url {}, body {}, response {}".format(url, json_body, response))
 
-    def execute_post(self, url, data):
-        data = self._validated_json_data(data)
+    def execute_post(self, url, data, custom_headers={}):
+        json_data = self._validated_json_data(data)
         headers = self.get_headers()
         headers["Content-Type"] = "application/json"
-        response = requests.post(url, headers=headers, data=data, verify = not self.config['insecure'])
+        headers.update(custom_headers)
+        response = requests.post(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
 
 
