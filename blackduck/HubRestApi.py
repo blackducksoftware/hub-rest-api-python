@@ -1079,8 +1079,8 @@ class HubInstance(object):
         return self.get_component_by_url(url)
 
     def get_component_by_url(self, component_url):
-        headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
-        response = self.execute_get(component_url, custom_headers=headers)
+        headers = self.get_headers()
+        response = self.execute_get(component_url)
         jsondata = response.json()
         return jsondata
 

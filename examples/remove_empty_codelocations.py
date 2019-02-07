@@ -12,6 +12,9 @@ from sys import argv
 # main
 # 
 
+# TODO: Delete older scans? X oldest?
+
+
 cleanup = len(argv) > 1
 hub = HubInstance()
 
