@@ -37,9 +37,6 @@ version = hub.get_version_by_name(project, args.version)
 
 bom_components = hub.get_version_components(version)
 
-project_id = project['_meta']['href'].split("/")[-1]
-version_id = version['_meta']['href'].split("/")[-1]
-
 logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', stream=sys.stdout, level=logging.DEBUG)
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
