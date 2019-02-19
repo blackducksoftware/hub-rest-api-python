@@ -8,6 +8,7 @@ Get the project versions for a given project with some filtering, sorting, and l
 
 import argparse
 import csv
+from dateutil import parser as dt_parser
 import json
 
 from blackduck.HubRestApi import HubInstance
@@ -60,7 +61,8 @@ if 'totalCount' in project_list and project_list['totalCount'] > 0:
 		versions = hub.get_project_versions(project, limit=args.maxversions)
 		if 'totalCount' in versions and versions['totalCount'] > 0:
 			version_list = versions['items']
-			sorted_version_list = sorted(version_list, key=lambda k: k['createdAt'], reverse=(args.sort_order == "reverse"))
+			sorted_version_list = sorted(version_list, key=lambda k: dt_parser.parse(k['createdAt']), reverse=(args.sort_order == "reverse"))
+
 			if args.phase:
 				new_list = list()
 				for version in sorted_version_list:
