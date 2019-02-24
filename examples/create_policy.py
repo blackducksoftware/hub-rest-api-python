@@ -16,7 +16,6 @@ policy_data = {"name":"new-rule",
 			"operation":"EQ",
 			"parameters":{"values":["0"]}}]},"wait":True}
 
-import pdb; pdb.set_trace()
 result = hub.create_policy(policy_data)
 
 print(result)
