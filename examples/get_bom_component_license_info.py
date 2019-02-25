@@ -32,7 +32,6 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 for bom_component in bom_components['items']:
-	import pdb; pdb.set_trace()
 	# Retrieve the licenses and license text for this bom component and insert the license info along with the bom component info
 	# into the all_licenses dictionary
 	component_licenses = hub.get_license_info_for_bom_component(bom_component)
