@@ -490,6 +490,19 @@ class HubInstance(object):
         else:
             return component_list_d['items']
 
+    def get_vulnerable_bom_components(self, version_obj, limit=9999):
+        url = "{}/vulnerable-bom-components".format(version_obj['_meta']['href'])
+        custom_headers = {'Content-Type': 'application/vnd.blackducksoftware.bill-of-materials-4+json'}
+        param_string = self._get_parameter_string({'limit': limit})
+        url = "{}{}".format(url, param_string)
+        response = self.execute_get(url, custom_headers=custom_headers)
+        if response.status_code == 200:
+            vulnerable_bom_components = response.json()
+            return vulnerable_bom_components
+        else:
+            logging.warning("Failed to retrieve vulnerable bom components for project {}, status code {}".format(
+                version_obj, response.status_code))
+
     ##
     #
     # CSV and Notices reporting
