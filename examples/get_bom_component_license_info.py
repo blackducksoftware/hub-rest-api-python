@@ -22,9 +22,6 @@ version = hub.get_version_by_name(project, args.version)
 
 bom_components = hub.get_version_components(version)
 
-project_id = project['_meta']['href'].split("/")[-1]
-version_id = version['_meta']['href'].split("/")[-1]
-
 all_licenses = dict()
 
 logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', stream=sys.stderr, level=logging.DEBUG)
