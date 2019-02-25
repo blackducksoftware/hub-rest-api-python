@@ -402,22 +402,6 @@ def test_create_version_reports(requests_mock, mock_hub_instance):
 def test_create_version_notices_report(requests_mock, mock_hub_instance):
     pass
 
-def test_get_version_link(mock_hub_instance):
-    version_json = json.load(open("version.json"))
-
-    # replace the base URL with the mocked base url in all the links
-    baseurl = mock_hub_instance.get_urlbase()
-    for link_d in version_json['_meta']['links']:
-        link_d['href'] = re.sub("https://.*/api", "{}/api".format(baseurl), link_d['href'])
-
-    for link_name in ['versionReport', 'licenseReports', 'riskProfile', 'components', 'vulnerable-components', 'comparison', 'project', 'policy-status', 'codelocations']:
-        url = mock_hub_instance._get_version_link(version_json, link_name)
-        assert url # we got something
-
-        parsed_url = urlparse(url)
-        assert parsed_url.scheme == urlparse(fake_hub_host).scheme
-        assert parsed_url.netloc == urlparse(fake_hub_host).netloc
-
 @pytest.fixture()
 def unreviewed_snippet_json():
     with open("unreviewed_snippet.json") as f:

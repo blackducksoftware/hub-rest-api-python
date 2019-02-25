@@ -213,6 +213,12 @@ class HubInstance(object):
         else:
             logging.debug("This does not appear to be a BD REST object. It should have ['_meta']['links']")
 
+    def get_limit_paramstring(self, limit):
+        return "?limit={}".format(limit)
+
+    def get_apibase(self):
+        return self.config['baseurl'] + "/api"
+    
     ###
     #
     # Role stuff
@@ -484,26 +490,18 @@ class HubInstance(object):
         else:
             return component_list_d['items']
 
-    def get_limit_paramstring(self, limit):
-        return "?limit={}".format(limit)
-
-    def get_apibase(self):
-        return self.config['baseurl'] + "/api"
-    
-    def get_version_by_name(self, project, version_name):
-        version_list = self.get_project_versions(project)
-        for version in version_list['items']:
-            if version['versionName'] == version_name:
-                return version
-
-    def _get_version_link(self, version, link_type):
-        # if link_type == 'licenseReports':
-        #     version_id = version['_meta']['href'].split("/")[-1]
-        #     return self.get_urlbase() + "/api/v1/versions/{}/reports".format(version_id)
-        # else:
-        for link in version['_meta']['links']:
-            if link['rel'] == link_type:
-                return link['href']
+    def get_vulnerable_bom_components(self, version_obj, limit=9999):
+        url = "{}/vulnerable-bom-components".format(version_obj['_meta']['href'])
+        custom_headers = {'Content-Type': 'application/vnd.blackducksoftware.bill-of-materials-4+json'}
+        param_string = self._get_parameter_string({'limit': limit})
+        url = "{}{}".format(url, param_string)
+        response = self.execute_get(url, custom_headers=custom_headers)
+        if response.status_code == 200:
+            vulnerable_bom_components = response.json()
+            return vulnerable_bom_components
+        else:
+            logging.warning("Failed to retrieve vulnerable bom components for project {}, status code {}".format(
+                version_obj, response.status_code))
 
     ##
     #
@@ -524,7 +522,7 @@ class HubInstance(object):
             'reportType': 'VERSION',
             'reportFormat': format
         }
-        version_reports_url = self._get_version_link(version, 'versionReport')
+        version_reports_url = self.get_link(version, 'versionReport')
         return self.execute_post(version_reports_url, post_data)
 
     valid_notices_formats = ["TEXT", "HTML"]
@@ -537,7 +535,7 @@ class HubInstance(object):
             'reportType': 'VERSION_LICENSE',
             'reportFormat': format
         }
-        notices_report_url = self._get_version_link(version, 'licenseReports')
+        notices_report_url = self.get_link(version, 'licenseReports')
         return self.execute_post(notices_report_url, post_data)
 
     def download_report(self, report_id):
@@ -788,20 +786,22 @@ class HubInstance(object):
             if project['name'] == project_name:
                 return project
 
+    def get_version_by_name(self, project, version_name):
+        version_list = self.get_project_versions(project, parameters={'q':"versionName:{}".format(version_name)})
+        # A query by name can return more than one version if other versions
+        # have names that include the search term as part of their name
+        for version in version_list['items']:
+            if version['versionName'] == version_name:
+                return version
+
     def get_project_version_by_name(self, project_name, version_name):
         project = self.get_project_by_name(project_name)
         if project:
-            project_versions = self.get_project_versions(
-                project, 
-                parameters={'q':"versionName:{}".format(version_name)}
-            )
-            # A query by name can return more than one version if other versions
-            # have names that include the search term as part of their name
-            for project_version in project_versions['items']:
-                if project_version['versionName'] == version_name:
-                    logging.debug("Found matching version: {}".format(project_version))
-                    return project_version
-            logging.debug("Did not find any project version matching {}".format(version_name))
+            version = self.get_version_by_name(project, version_name)
+            if version == None:
+                logging.debug("Did not find any project version matching {}".format(version_name))
+            else:
+                return version
         else:
             logging.debug("Did not find a project with name {}".format(project_name))
 
