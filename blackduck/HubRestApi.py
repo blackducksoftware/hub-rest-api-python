@@ -889,8 +889,12 @@ class HubInstance(object):
         headers = self.get_headers()
         headers['Accept']: 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        jsondata = response.json()
-        return jsondata
+        if response.status_code == 200:
+            jsondata = response.json()
+            return jsondata
+        else:
+            # TODO: Should raise exception here? Return empty dict for now
+            return {}
 
     def delete_project_version_by_name(self, project_name, version_name, save_scans=False):
         project = self.get_project_by_name(project_name)
@@ -1093,11 +1097,18 @@ class HubInstance(object):
         url = self.get_apibase() + "/codelocations" + paramstring
         headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        jsondata = response.json()
-        if unmapped:
-            jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
-            jsondata['totalCount'] = len(jsondata['items'])
-        return jsondata
+        if response.status_code == 200:
+            jsondata = response.json()
+            if unmapped:
+                jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
+                jsondata['totalCount'] = len(jsondata['items'])
+            return jsondata
+        elif response.status_code == 403:
+            logging.warning("Failed to retrieve code locations (aka scans) probably due to lack of permissions, status code {}".format(
+                response.status_code))
+        else:
+            logging.error("Failed to retrieve code locations (aka scans), status code {}".format(
+                response.status_code))
 
     def get_codelocation_scan_summaries(self, code_location_id, limit=100):
         paramstring = "?limit={}&offset=0".format(limit)
