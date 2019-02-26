@@ -1093,11 +1093,18 @@ class HubInstance(object):
         url = self.get_apibase() + "/codelocations" + paramstring
         headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        jsondata = response.json()
-        if unmapped:
-            jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
-            jsondata['totalCount'] = len(jsondata['items'])
-        return jsondata
+        if response.status_code == 200:
+            jsondata = response.json()
+            if unmapped:
+                jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
+                jsondata['totalCount'] = len(jsondata['items'])
+            return jsondata
+        elif response.status_code == 403:
+            logging.warning("Failed to retrieve code locations (aka scans) probably due to lack of permissions, status code {}".format(
+                response.status_code))
+        else:
+            logging.error("Failed to retrieve code locations (aka scans), status code {}".format(
+                response.status_code))
 
     def get_codelocation_scan_summaries(self, code_location_id, limit=100):
         paramstring = "?limit={}&offset=0".format(limit)
