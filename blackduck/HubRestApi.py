@@ -889,8 +889,12 @@ class HubInstance(object):
         headers = self.get_headers()
         headers['Accept']: 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        jsondata = response.json()
-        return jsondata
+        if response.status_code == 200:
+            jsondata = response.json()
+            return jsondata
+        else:
+            # TODO: Should raise exception here? Return empty dict for now
+            return {}
 
     def delete_project_version_by_name(self, project_name, version_name, save_scans=False):
         project = self.get_project_by_name(project_name)
