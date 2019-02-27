@@ -213,6 +213,12 @@ class HubInstance(object):
         else:
             logging.debug("This does not appear to be a BD REST object. It should have ['_meta']['links']")
 
+    def get_limit_paramstring(self, limit):
+        return "?limit={}".format(limit)
+
+    def get_apibase(self):
+        return self.config['baseurl'] + "/api"
+    
     ###
     #
     # Role stuff
@@ -303,7 +309,7 @@ class HubInstance(object):
         headers = {'Accept': 'application/vnd.blackducksoftware.user-4+json'}
         response = self.execute_get(url, custom_headers=headers)
         return response.json()
-        
+
     def create_user(self, user_json):
         url = self._get_user_url()
         location = self._create(url, user_json)
@@ -490,26 +496,18 @@ class HubInstance(object):
         else:
             return component_list_d['items']
 
-    def get_limit_paramstring(self, limit):
-        return "?limit={}".format(limit)
-
-    def get_apibase(self):
-        return self.config['baseurl'] + "/api"
-    
-    def get_version_by_name(self, project, version_name):
-        version_list = self.get_project_versions(project)
-        for version in version_list['items']:
-            if version['versionName'] == version_name:
-                return version
-
-    def _get_version_link(self, version, link_type):
-        # if link_type == 'licenseReports':
-        #     version_id = version['_meta']['href'].split("/")[-1]
-        #     return self.get_urlbase() + "/api/v1/versions/{}/reports".format(version_id)
-        # else:
-        for link in version['_meta']['links']:
-            if link['rel'] == link_type:
-                return link['href']
+    def get_vulnerable_bom_components(self, version_obj, limit=9999):
+        url = "{}/vulnerable-bom-components".format(version_obj['_meta']['href'])
+        custom_headers = {'Content-Type': 'application/vnd.blackducksoftware.bill-of-materials-4+json'}
+        param_string = self._get_parameter_string({'limit': limit})
+        url = "{}{}".format(url, param_string)
+        response = self.execute_get(url, custom_headers=custom_headers)
+        if response.status_code == 200:
+            vulnerable_bom_components = response.json()
+            return vulnerable_bom_components
+        else:
+            logging.warning("Failed to retrieve vulnerable bom components for project {}, status code {}".format(
+                version_obj, response.status_code))
 
     ##
     #
@@ -530,7 +528,7 @@ class HubInstance(object):
             'reportType': 'VERSION',
             'reportFormat': format
         }
-        version_reports_url = self._get_version_link(version, 'versionReport')
+        version_reports_url = self.get_link(version, 'versionReport')
         return self.execute_post(version_reports_url, post_data)
 
     valid_notices_formats = ["TEXT", "HTML"]
@@ -543,12 +541,47 @@ class HubInstance(object):
             'reportType': 'VERSION_LICENSE',
             'reportFormat': format
         }
-        notices_report_url = self._get_version_link(version, 'licenseReports')
+        notices_report_url = self.get_link(version, 'licenseReports')
         return self.execute_post(notices_report_url, post_data)
 
     def download_report(self, report_id):
         url = self.get_urlbase() + "/api/reports/{}".format(report_id)
         return self.execute_get(url, {'Content-Type': 'application/zip', 'Accept':'application/zip'})
+
+    ##
+    #
+    # License stuff
+    #
+    ##
+    def _get_license_info(self, license_obj):
+        if 'license' in license_obj:
+            license_info = {}
+            text_json = {}
+            logging.debug("license: {}".format(license_obj))
+            response = self.execute_get(license_obj['license'])
+            if response.status_code == 200:
+                license_info = response.json()
+                text_url = self.get_link(license_info, 'text')
+                response = self.execute_get(text_url)
+                if response.status_code == 200:
+                    text_json = response.text
+            yield {"license_info": license_info,
+                    "license_text_info": text_json}
+        elif 'licenses' in license_obj and isinstance(license_obj['licenses'], list):
+            for license in license_obj['licenses']:
+                self._get_license_info(license)
+
+    def get_license_info_for_bom_component(self, bom_component, limit=1000):
+        self._check_version_compatibility()
+        all_licenses = {}
+        logging.debug("gathering license info for bom component {}, version {}".format(
+            bom_component['componentName'], bom_component['componentVersionName']))
+        for license in bom_component.get('licenses', []):
+            for license_info_obj in self._get_license_info(license):
+                all_licenses.update({
+                        license['licenseDisplay']: license_info_obj
+                    })
+        return all_licenses
 
     ##
     #
@@ -570,11 +603,10 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
-    def get_file_matches_for_component_with_version(self, project_id, version_id, component_id, component_version_id, limit=1000):
+    def get_file_matches_for_bom_component(self, bom_component, limit=1000):
         self._check_version_compatibility()
+        url = self.get_link(bom_component, "matched-files")
         paramstring = self.get_limit_paramstring(limit)
-        url =  "{}/projects/{}/versions/{}/components/{}/versions/{}/matched-files".format(
-            self.get_apibase(), project_id, version_id, component_id, component_version_id)
         logging.debug("GET {}".format(url))
         response = self.execute_get(url)
         jsondata = response.json()
@@ -760,20 +792,22 @@ class HubInstance(object):
             if project['name'] == project_name:
                 return project
 
+    def get_version_by_name(self, project, version_name):
+        version_list = self.get_project_versions(project, parameters={'q':"versionName:{}".format(version_name)})
+        # A query by name can return more than one version if other versions
+        # have names that include the search term as part of their name
+        for version in version_list['items']:
+            if version['versionName'] == version_name:
+                return version
+
     def get_project_version_by_name(self, project_name, version_name):
         project = self.get_project_by_name(project_name)
         if project:
-            project_versions = self.get_project_versions(
-                project, 
-                parameters={'q':"versionName:{}".format(version_name)}
-            )
-            # A query by name can return more than one version if other versions
-            # have names that include the search term as part of their name
-            for project_version in project_versions['items']:
-                if project_version['versionName'] == version_name:
-                    logging.debug("Found matching version: {}".format(project_version))
-                    return project_version
-            logging.debug("Did not find any project version matching {}".format(version_name))
+            version = self.get_version_by_name(project, version_name)
+            if version == None:
+                logging.debug("Did not find any project version matching {}".format(version_name))
+            else:
+                return version
         else:
             logging.debug("Did not find a project with name {}".format(project_name))
 
@@ -861,8 +895,12 @@ class HubInstance(object):
         headers = self.get_headers()
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        jsondata = response.json()
-        return jsondata
+        if response.status_code == 200:
+            jsondata = response.json()
+            return jsondata
+        else:
+            # TODO: Should raise exception here? Return empty dict for now
+            return {}
 
     def delete_project_version_by_name(self, project_name, version_name, save_scans=False):
         project = self.get_project_by_name(project_name)
@@ -1065,11 +1103,18 @@ class HubInstance(object):
         url = self.get_apibase() + "/codelocations" + paramstring
         headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        jsondata = response.json()
-        if unmapped:
-            jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
-            jsondata['totalCount'] = len(jsondata['items'])
-        return jsondata
+        if response.status_code == 200:
+            jsondata = response.json()
+            if unmapped:
+                jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
+                jsondata['totalCount'] = len(jsondata['items'])
+            return jsondata
+        elif response.status_code == 403:
+            logging.warning("Failed to retrieve code locations (aka scans) probably due to lack of permissions, status code {}".format(
+                response.status_code))
+        else:
+            logging.error("Failed to retrieve code locations (aka scans), status code {}".format(
+                response.status_code))
 
     def get_codelocation_scan_summaries(self, code_location_id, limit=100):
         paramstring = "?limit={}&offset=0".format(limit)
@@ -1102,6 +1147,14 @@ class HubInstance(object):
         headers = self.get_headers()
         response = requests.delete(url, headers=headers, verify = not self.config['insecure'])
         return response
+        
+    def scan_locations(self, code_location_id):
+        headers = self.get_headers()
+        url = self.get_apibase() + \
+            "/v1/scanlocations/{}".format(code_location_id)
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
 
     def execute_delete(self, url):
         headers = self.get_headers()
@@ -1193,13 +1246,5 @@ class HubInstance(object):
         headers.update(custom_headers)
         response = requests.post(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
-        
-    def scan_locations(self, code_location_id):
-        headers = self.get_headers()
-        url = self.get_apibase() + \
-            "/v1/scanlocations/{}".format(code_location_id)
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        jsondata = response.json()
-        return jsondata
 
 
