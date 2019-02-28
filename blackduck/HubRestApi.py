@@ -834,9 +834,7 @@ class HubInstance(object):
         paramstring = self.get_limit_paramstring(limit)
         url = projectversion['_meta']['href'] + "/components" + paramstring
         headers = self.get_headers()
-        #headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
-        #headers['Accept'] = 'application/vnd.blackducksoftware.bill-of-materials-6+json'
-        headers['Accept'] = 'application/json'
+        headers['Accept'] = 'application/vnd.blackducksoftware.bill-of-materials-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -935,6 +933,30 @@ class HubInstance(object):
                 self.execute_delete(project_version['_meta']['href'])
             else:
                 logging.debug("Did not find version with name {} in project {}".format(version_name, project_name))
+        else:
+            logging.debug("Did not find project with name {}".format(project_name))
+    
+    def delete_project_by_name(self, project_name):
+        project = self.get_project_by_name(project_name)
+        if project:
+            # get project versions
+            project_versions = self.get_project_versions(project)
+            versions = (project_versions['items'])
+            
+            # delete all code locations associated with each version
+            for version in versions:
+                version_name = version['versionName']
+                project_version_codelocations = self.get_version_codelocations(version)
+                if 'totalCount' in project_version_codelocations and project_version_codelocations['totalCount'] > 0:
+                    code_location_urls = [c['_meta']['href'] for c in project_version_codelocations['items']]
+                    for code_location_url in code_location_urls:
+                        logging.info("Deleting code location at: {}".format(code_location_url))
+                        self.execute_delete(code_location_url)
+                        
+            # delete the project itself
+            project_url = project['_meta']['href']
+            self.execute_delete(project_url)
+				
         else:
             logging.debug("Did not find project with name {}".format(project_name))
 
