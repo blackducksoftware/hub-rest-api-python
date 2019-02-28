@@ -1180,6 +1180,16 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
     
+    ##
+    #
+    # Job Statistics
+    #
+    ##
+    def get_job_statistics(self):
+        url = self.get_urlbase() + "/api/job-statistics"
+        response = self.execute_get(url)
+        return response.json()
+        
     def _validated_json_data(self, data_to_validate):
         if isinstance(data_to_validate, dict) or isinstance(data_to_validate, list):
             json_data = json.dumps(data_to_validate)
