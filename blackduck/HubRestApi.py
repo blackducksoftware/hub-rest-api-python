@@ -1276,4 +1276,3 @@ class HubInstance(object):
         response = requests.post(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
 
-
