@@ -915,16 +915,12 @@ class HubInstance(object):
             if 'totalCount' in project_versions and project_versions['totalCount'] == 1:
                 project_version = project_versions['items'][0]
                 logging.debug("found the project version: {}".format(project_version))
-                project_version_codelocations = self.get_version_codelocations(project_version)
 
                 delete_scans = not save_scans
                 logging.debug("delete_scans was {}".format(delete_scans))
 
-                if delete_scans and 'totalCount' in project_version_codelocations and project_version_codelocations['totalCount'] > 0:
-                    code_location_urls = [c['_meta']['href'] for c in project_version_codelocations['items']]
-                    for code_location_url in code_location_urls:
-                        logging.info("Deleting code location at: {}".format(code_location_url))
-                        self.execute_delete(code_location_url)
+                if delete_scans:
+                    self.delete_project_version_codelocations(project_version)
                 else:
                     logging.debug("Delete scans was false, or we did not find any codelocations (scans) in version {} of project {}".format(version_name, project_name))
                 # TODO: Check if the project will be "empty" once we delete this version and
@@ -936,22 +932,20 @@ class HubInstance(object):
         else:
             logging.debug("Did not find project with name {}".format(project_name))
     
-    def delete_project_by_name(self, project_name):
+    def delete_project_by_name(self, project_name, save_scans=False):
         project = self.get_project_by_name(project_name)
         if project:
             # get project versions
             project_versions = self.get_project_versions(project)
             versions = (project_versions['items'])
             
-            # delete all code locations associated with each version
-            for version in versions:
-                version_name = version['versionName']
-                project_version_codelocations = self.get_version_codelocations(version)
-                if 'totalCount' in project_version_codelocations and project_version_codelocations['totalCount'] > 0:
-                    code_location_urls = [c['_meta']['href'] for c in project_version_codelocations['items']]
-                    for code_location_url in code_location_urls:
-                        logging.info("Deleting code location at: {}".format(code_location_url))
-                        self.execute_delete(code_location_url)
+            delete_scans = not save_scans
+            logging.debug("delete_scans was {}".format(delete_scans))
+                
+            if delete_scans:
+                # delete all code locations associated with each version
+                for version in versions:
+                    self.delete_project_version_codelocations(version)
                         
             # delete the project itself
             project_url = project['_meta']['href']
@@ -959,6 +953,17 @@ class HubInstance(object):
 				
         else:
             logging.debug("Did not find project with name {}".format(project_name))
+            
+    def delete_project_version_codelocations(self, version):
+        project_version_codelocations = self.get_version_codelocations(version)
+        if 'totalCount' in project_version_codelocations and project_version_codelocations['totalCount'] > 0:
+            code_location_urls = [c['_meta']['href'] for c in project_version_codelocations['items']]
+            for code_location_url in code_location_urls:
+                logging.info("Deleting code location at: {}".format(code_location_url))
+                self.execute_delete(code_location_url)
+        else:
+            version_name = version['versionName']
+            logging.debug("We did not find any codelocations (scans) in version {}".format(version_name))
 
     def _find_user_group_url(self, assignable_user_groups, user_group_name):
         for user_group in assignable_user_groups['items']:
@@ -1172,7 +1177,7 @@ class HubInstance(object):
         response = requests.delete(url, headers=headers, verify = not self.config['insecure'])
         return response
         
-    def scan_locations(self, code_location_id):
+    def get_scan_locations(self, code_location_id):
         headers = self.get_headers()
         url = self.get_apibase() + \
             "/v1/scanlocations/{}".format(code_location_id)
