@@ -39,11 +39,7 @@ if 'totalCount' in user_groups_to_copy and user_groups_to_copy['totalCount'] > 0
 	user_group_data_prepped_to_copy = []
 
 	for user_group in user_groups_to_copy['items']:
-		user_group_roles_response = source_hub.get_roles_for_user_or_group(user_group)
-		if user_group_roles_response:
-			user_group_roles = user_group_roles_response.json()
-		else:
-			user_group_roles = []
+		user_group_roles = source_hub.get_roles_for_user_or_group(user_group)
 
 		user_group_data_raw.append({
 			'user_group': user_group, 'roles': user_group_roles

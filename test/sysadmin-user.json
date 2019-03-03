@@ -1,0 +1,64 @@
+{
+  "userName": "sysadmin",
+  "firstName": "System",
+  "lastName": "Administrator",
+  "email": "noreply@blackducksoftware.com",
+  "type": "INTERNAL",
+  "active": true,
+  "_meta": {
+    "allow": [
+      "GET"
+    ],
+    "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+    "links": [
+      {
+        "rel": "change-password",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/changepassword"
+      },
+      {
+        "rel": "reset-password",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/resetpassword"
+      },
+      {
+        "rel": "roles",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/roles"
+      },
+      {
+        "rel": "usergroups",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/usergroups"
+      },
+      {
+        "rel": "inherited-roles",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/inherited-roles"
+      },
+      {
+        "rel": "notifications",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/notifications"
+      },
+      {
+        "rel": "notification-counts",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/notification-counts"
+      },
+      {
+        "rel": "notification-states",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/notification-states"
+      },
+      {
+        "rel": "notification-subscriptions",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/notification-subscriptions"
+      },
+      {
+        "rel": "projects",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/projects"
+      },
+      {
+        "rel": "assignable-projects",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001/assignable-projects"
+      },
+      {
+        "rel": "api-tokens",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/current-user/tokens"
+      }
+    ]
+  }
+}

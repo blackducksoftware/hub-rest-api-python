@@ -1,0 +1,118 @@
+[
+  {
+    "scanId": "47fa462a-77c6-4f2b-b891-238d9734c8bf",
+    "name": "arrayutils.c",
+    "compositeId": 2433,
+    "size": 2936,
+    "type": "FILE",
+    "compositePath": {
+      "path": "src_pgsl/arrayutils.c",
+      "archiveContext": "",
+      "compositePathContext": "src_pgsl/arrayutils.c#",
+      "fileName": "arrayutils.c"
+    },
+    "fileSignaturePair": {
+      "signatureType": "MATCH_CLEAN_SHA1",
+      "signatureValue": "6b85d7f66857b789d4b0ede20b70a36adacaafed"
+    },
+    "fileDependencyBomComponents": [],
+    "partialFileMatchBomComponents": [],
+    "fileSnippetBomComponents": [
+      {
+        "versionBomComponentId": 3649,
+        "versionBomFileId": 1796,
+        "versionBomEntryId": 9463,
+        "project": {
+          "id": "7a9c748d-1d64-423d-8317-f6d90c0e3ae6",
+          "name": "PostgreSQL Database Server",
+          "restructured": false,
+          "urlLinksUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/7a9c748d-1d64-423d-8317-f6d90c0e3ae6/urllinks",
+          "contactsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/7a9c748d-1d64-423d-8317-f6d90c0e3ae6/contacts",
+          "releasesUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/7a9c748d-1d64-423d-8317-f6d90c0e3ae6/releases",
+          "logosUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/7a9c748d-1d64-423d-8317-f6d90c0e3ae6/logos",
+          "projectMappingsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/internal/projects/7a9c748d-1d64-423d-8317-f6d90c0e3ae6/project-mappings",
+          "tagsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/7a9c748d-1d64-423d-8317-f6d90c0e3ae6/tags",
+          "watchitemsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/7a9c748d-1d64-423d-8317-f6d90c0e3ae6/watchitems",
+          "teammembersUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/projects/7a9c748d-1d64-423d-8317-f6d90c0e3ae6/teammembers"
+        },
+        "release": {
+          "id": "64d097c1-4380-489e-9c38-e4a08df1bb48",
+          "version": "7.1",
+          "urlLinksUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/64d097c1-4380-489e-9c38-e4a08df1bb48/urllinks",
+          "fileBomComponentsFilterUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/64d097c1-4380-489e-9c38-e4a08df1bb48/bom-components",
+          "fileBomLicensesFilterUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/64d097c1-4380-489e-9c38-e4a08df1bb48/bom-file-license-families",
+          "fileBomMatchTypesFilterUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/64d097c1-4380-489e-9c38-e4a08df1bb48/bom-file-match-types",
+          "codeLocationsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/64d097c1-4380-489e-9c38-e4a08df1bb48/codelocations",
+          "commitAnalysisUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/64d097c1-4380-489e-9c38-e4a08df1bb48/commitanalysis",
+          "bomCountsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/64d097c1-4380-489e-9c38-e4a08df1bb48/bom-counts",
+          "vulnerabilityCountsUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/64d097c1-4380-489e-9c38-e4a08df1bb48/vulnerability-counts",
+          "riskProfileUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/releases/64d097c1-4380-489e-9c38-e4a08df1bb48/bom-risk-profile"
+        },
+        "channelRelease": {
+          "id": "9b124a60-bd64-4fe3-8955-759db97036d4",
+          "versionId": "64d097c1-4380-489e-9c38-e4a08df1bb48",
+          "name": "REL7_1",
+          "externalNamespace": "github",
+          "externalId": "postgres/postgres:REL7_1",
+          "externalNamespaceDistribution": false
+        },
+        "versionBomMatchType": "SNIPPET",
+        "usage": "SOURCE_CODE",
+        "license": {
+          "licenseId": "c3f00f80-af75-4f69-95c8-3bee1df4d472",
+          "name": "PostgreSQL License",
+          "spdxId": "PostgreSQL",
+          "ownership": "OPEN_SOURCE",
+          "codeSharing": 1,
+          "licenses": [],
+          "licenseIds": [
+            "c3f00f80-af75-4f69-95c8-3bee1df4d472"
+          ],
+          "licenseDisplay": "PostgreSQL License"
+        },
+        "matchContent": "",
+        "adjusted": false,
+        "matchFileSha1": "92cd15d0f8680b6c048c597e9807e109c0aa84a1",
+        "matchFileBasename": "arrayutils",
+        "matchFileExtension": "c",
+        "matchFilePath": "/postgres-REL7_1/src/backend/utils/adt/",
+        "matchComponentRank": 0.779687,
+        "matchScore": 0.79,
+        "matchCoverage": 97,
+        "matchComponentVersionReleaseDate": "2001-04-13T04:00:00.000Z",
+        "matchComponentTotalReleases": 520,
+        "matchStartLine": 1,
+        "matchEndLine": 126,
+        "matchLicenseCodeSharingType": 1,
+        "alternateSnippetMatchesUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/internal/projects/2663ec45-c614-40e9-8c2e-f412f2323778/versions/4e5c346f-2c6e-46ec-b902-1cbca15582c0/alternate-snippet-matches/9463",
+        "matchedFileContentUrl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/file-source-contents/92cd15d0f8680b6c048c597e9807e109c0aa84a1",
+        "sourceStartLine": 1,
+        "sourceEndLine": 126,
+        "ignored": false,
+        "reviewStatus": "NOT_REVIEWED",
+        "matchFileoccurences": 20,
+        "selected": true
+      }
+    ],
+    "policyApprovalStatus": "NOT_IN_VIOLATION",
+    "activePolicies": [],
+    "uri": "file:///Users/gsnyder/Projects/suite_migration_tools/sample-data/PMullin_tutorial/src_pgsl/arrayutils.c",
+    "policyOverriddenBySet": [],
+    "activePolicyCount": 0,
+    "fileBomMatchType": "UNMATCHED",
+    "_meta": {
+      "links": [
+        {
+          "rel": "scan",
+          "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/scan-summaries/47fa462a-77c6-4f2b-b891-238d9734c8bf"
+        },
+        {
+          "rel": "node",
+          "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/internal/scans/47fa462a-77c6-4f2b-b891-238d9734c8bf/nodes/2433/file-trees"
+        }
+      ]
+    },
+    "fileMatchPresent": false,
+    "anyMatchPresent": true
+  }
+]

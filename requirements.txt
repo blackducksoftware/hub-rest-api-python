@@ -1,8 +1,10 @@
 # For the library itself
 requests==2.20.0
+python-dateutil>=2.8.0
 
 # for examples printing tables to the terminal
 terminaltables
+timestring
 
 # for unit testing
 pytest

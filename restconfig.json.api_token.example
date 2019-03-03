@@ -1,0 +1,6 @@
+{
+   "baseurl": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com",
+   "api_token": "insert-token-here",
+   "insecure": true,
+   "debug": false
+}

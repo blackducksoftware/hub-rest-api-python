@@ -42,11 +42,7 @@ if 'totalCount' in users_to_copy and users_to_copy['totalCount'] > 0:
 		if user['userName'] == 'sysadmin':
 			continue
 		# pprint(user)
-		user_roles_response = source_hub.get_roles_for_user_or_group(user)
-		if user_roles_response:
-			user_roles = user_roles_response.json()
-		else:
-			user_roles = []
+		user_roles = source_hub.get_roles_for_user_or_group(user)
 
 		user_data_raw.append({
 			'user': user, 'roles': user_roles

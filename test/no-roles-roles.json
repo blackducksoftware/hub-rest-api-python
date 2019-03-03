@@ -1,0 +1,19 @@
+{
+  "totalCount": 0,
+  "items": [],
+  "appliedFilters": [],
+  "_meta": {
+    "allow": [],
+    "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/4d8b2df5-1442-4718-8c07-1ebd78e9ec31/roles",
+    "links": [
+      {
+        "rel": "roles",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/internal/roles"
+      },
+      {
+        "rel": "user",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/v1/users/4d8b2df5-1442-4718-8c07-1ebd78e9ec31"
+      }
+    ]
+  }
+}
