@@ -891,7 +891,7 @@ class HubInstance(object):
         url = self.get_link(version, "codelocations") + self._get_parameter_string({
             'limit': limit,
             'offset': offset})
-        custom_headers = {'Content-Type': 'application/vnd.blackducksoftware.project-detail-5+json'}
+        custom_headers = {'Content-Type': 'application/vnd.blackducksoftware.scan-4+json'}
         response = self.execute_get(url, custom_headers=custom_headers)
         jsondata = response.json()
         return jsondata
