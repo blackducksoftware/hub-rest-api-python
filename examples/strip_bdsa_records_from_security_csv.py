@@ -20,7 +20,6 @@ args = parser.parse_args()
 
 with open(args.security_csv_path) as security_csv_file:
 	reader = csv.DictReader(security_csv_file)
-	import pdb; pdb.set_trace()
 	with open(args.output_path, "w") as output_csv_file:
 		writer = csv.DictWriter(output_csv_file, fieldnames=reader.fieldnames)
 		writer.writeheader()
