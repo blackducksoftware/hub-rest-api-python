@@ -503,6 +503,12 @@ class HubInstance(object):
             logging.warning("Failed to retrieve vulnerable bom components for project {}, status code {}".format(
                 version_obj, response.status_code))
 
+    def get_Component_Remediation(self, bom_component):
+        url = "{}/remediating".format(bom_component['componentVersion'])
+        print(url)
+        response = hub.execute_get(url)
+        return response.json()
+
     ##
     #
     # CSV and Notices reporting
