@@ -339,6 +339,12 @@ class HubInstance(object):
 
     def delete_user_by_url(self, user_url):
         return self.execute_delete(user_url)
+		
+    def reset_user_password(self, user_id, new_password):
+        url = self.config['baseurl'] + "/api/users/" + user_id + "/resetpassword"
+        headers = {'Content-Type':'application/vnd.blackducksoftware.user-1+json', 'Accept': 'application/json'}
+        data = {'password': new_password}
+        return self.execute_put(url, data, headers)
 
     ###
     #
@@ -825,7 +831,7 @@ class HubInstance(object):
         parameters.update({'limit': limit})
         url = project['_meta']['href'] + "/versions" + self._get_parameter_string(parameters)
         headers = self.get_headers()
-        headers['Accept']: 'application/vnd.blackducksoftware.project-detail-4+json'
+        headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -834,7 +840,7 @@ class HubInstance(object):
         paramstring = self.get_limit_paramstring(limit)
         url = projectversion['_meta']['href'] + "/components" + paramstring
         headers = self.get_headers()
-        headers['Accept']: 'application/vnd.blackducksoftware.project-detail-4+json'
+        headers['Accept'] = 'application/vnd.blackducksoftware.bill-of-materials-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -871,7 +877,7 @@ class HubInstance(object):
         headers = self.get_headers()
         paramstring = self.get_limit_paramstring(limit)
         url = self._get_projects_url() + project_id + "/versions/" + version_id
-        headers['Accept']: 'application/vnd.blackducksoftware.project-detail-4+json'
+        headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -887,20 +893,14 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
     
-    def get_version_codelocations(self, version, limit=100):
-        apibase = self.config['baseurl'] + "/api"
-        paramstring = "?limit=100&offset=0"
-        projectversion = version['_meta']['href']
-        url = projectversion + "/codelocations" + paramstring
-        headers = self.get_headers()
-        headers['Accept']: 'application/vnd.blackducksoftware.project-detail-4+json'
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        if response.status_code == 200:
-            jsondata = response.json()
-            return jsondata
-        else:
-            # TODO: Should raise exception here? Return empty dict for now
-            return {}
+    def get_version_codelocations(self, version, limit=100, offset=0):
+        url = self.get_link(version, "codelocations") + self._get_parameter_string({
+            'limit': limit,
+            'offset': offset})
+        custom_headers = {'Content-Type': 'application/vnd.blackducksoftware.scan-4+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        jsondata = response.json()
+        return jsondata
 
     def delete_project_version_by_name(self, project_name, version_name, save_scans=False):
         project = self.get_project_by_name(project_name)
@@ -915,16 +915,12 @@ class HubInstance(object):
             if 'totalCount' in project_versions and project_versions['totalCount'] == 1:
                 project_version = project_versions['items'][0]
                 logging.debug("found the project version: {}".format(project_version))
-                project_version_codelocations = self.get_version_codelocations(project_version)
 
                 delete_scans = not save_scans
                 logging.debug("delete_scans was {}".format(delete_scans))
 
-                if delete_scans and 'totalCount' in project_version_codelocations and project_version_codelocations['totalCount'] > 0:
-                    code_location_urls = [c['_meta']['href'] for c in project_version_codelocations['items']]
-                    for code_location_url in code_location_urls:
-                        logging.info("Deleting code location at: {}".format(code_location_url))
-                        self.execute_delete(code_location_url)
+                if delete_scans:
+                    self.delete_project_version_codelocations(project_version)
                 else:
                     logging.debug("Delete scans was false, or we did not find any codelocations (scans) in version {} of project {}".format(version_name, project_name))
                 # TODO: Check if the project will be "empty" once we delete this version and
@@ -935,6 +931,46 @@ class HubInstance(object):
                 logging.debug("Did not find version with name {} in project {}".format(version_name, project_name))
         else:
             logging.debug("Did not find project with name {}".format(project_name))
+    
+    def delete_project_by_name(self, project_name, save_scans=False):
+        project = self.get_project_by_name(project_name)
+        if project:
+            # get project versions
+            project_versions = self.get_project_versions(project)
+            versions = project_versions.get('items', [])
+            logging.debug("Retrieved {} versions for project {}".format(len(versions), project_name))
+            
+            delete_scans = not save_scans
+            logging.debug("delete_scans was {}".format(delete_scans))
+                
+            if delete_scans:
+                # delete all code locations associated with each version
+                for version in versions:
+                    logging.debug("Deleting code locations (aka scans) for version {}".format(version['versionName']))
+                    self.delete_project_version_codelocations(version)
+                        
+            # delete the project itself
+            project_url = project['_meta']['href']
+            logging.info("Deleting project {}".format(project_name))
+            self.execute_delete(project_url)
+        else:
+            logging.debug("Did not find project with name {}".format(project_name))
+            
+    def delete_project_version_codelocations(self, version):
+        version_name = version['versionName']
+        try:
+            logging.debug("Retrieving code locations (aka scans) for version {}".format(version_name))
+            version_code_locations = self.get_version_codelocations(version)
+        except:
+            logging.error("Failed to get codelocations (aka scans) for version {}".format(version_name), exc_info=True)
+            version_code_locations = []
+        else:
+            version_code_locations = version_code_locations.get('items', []) if version_code_locations else []
+        logging.debug("Found {} code locations (aka scans) for version {}".format(len(version_code_locations), version_name))
+        code_location_urls = [c['_meta']['href'] for c in version_code_locations]
+        for code_location_url in code_location_urls:
+            logging.info("Deleting code location at: {}".format(code_location_url))
+            self.execute_delete(code_location_url)
 
     def _find_user_group_url(self, assignable_user_groups, user_group_name):
         for user_group in assignable_user_groups['items']:
@@ -1147,6 +1183,14 @@ class HubInstance(object):
         headers = self.get_headers()
         response = requests.delete(url, headers=headers, verify = not self.config['insecure'])
         return response
+        
+    def get_scan_locations(self, code_location_id):
+        headers = self.get_headers()
+        url = self.get_apibase() + \
+            "/v1/scanlocations/{}".format(code_location_id)
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
 
     def execute_delete(self, url):
         headers = self.get_headers()
@@ -1186,6 +1230,16 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
     
+    ##
+    #
+    # Job Statistics
+    #
+    ##
+    def get_job_statistics(self):
+        url = self.get_urlbase() + "/api/job-statistics"
+        response = self.execute_get(url)
+        return response.json()
+        
     def _validated_json_data(self, data_to_validate):
         if isinstance(data_to_validate, dict) or isinstance(data_to_validate, list):
             json_data = json.dumps(data_to_validate)
