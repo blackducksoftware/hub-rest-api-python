@@ -887,20 +887,14 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
     
-    def get_version_codelocations(self, version, limit=100):
-        apibase = self.config['baseurl'] + "/api"
-        paramstring = "?limit=100&offset=0"
-        projectversion = version['_meta']['href']
-        url = projectversion + "/codelocations" + paramstring
-        headers = self.get_headers()
-        headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        if response.status_code == 200:
-            jsondata = response.json()
-            return jsondata
-        else:
-            # TODO: Should raise exception here? Return empty dict for now
-            return {}
+    def get_version_codelocations(self, version, limit=100, offset=0):
+        url = self.get_link(version, "codelocations") + self._get_parameter_string({
+            'limit': limit,
+            'offset': offset})
+        custom_headers = {'Content-Type': 'application/vnd.blackducksoftware.scan-4+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        jsondata = response.json()
+        return jsondata
 
     def delete_project_version_by_name(self, project_name, version_name, save_scans=False):
         project = self.get_project_by_name(project_name)
@@ -937,7 +931,8 @@ class HubInstance(object):
         if project:
             # get project versions
             project_versions = self.get_project_versions(project)
-            versions = (project_versions['items'])
+            versions = project_versions.get('items', [])
+            logging.debug("Retrieved {} versions for project {}".format(len(versions), project_name))
             
             delete_scans = not save_scans
             logging.debug("delete_scans was {}".format(delete_scans))
@@ -945,26 +940,48 @@ class HubInstance(object):
             if delete_scans:
                 # delete all code locations associated with each version
                 for version in versions:
+                    logging.debug("Deleting code locations (aka scans) for version {}".format(version['versionName']))
                     self.delete_project_version_codelocations(version)
                         
             # delete the project itself
             project_url = project['_meta']['href']
+            logging.info("Deleting project {}".format(project_name))
             self.execute_delete(project_url)
-				
         else:
             logging.debug("Did not find project with name {}".format(project_name))
             
     def delete_project_version_codelocations(self, version):
-        project_version_codelocations = self.get_version_codelocations(version)
-        if 'totalCount' in project_version_codelocations and project_version_codelocations['totalCount'] > 0:
-            code_location_urls = [c['_meta']['href'] for c in project_version_codelocations['items']]
-            for code_location_url in code_location_urls:
-                logging.info("Deleting code location at: {}".format(code_location_url))
-                self.execute_delete(code_location_url)
+        version_name = version['versionName']
+        try:
+            logging.debug("Retrieving code locations (aka scans) for version {}".format(version_name))
+            version_code_locations = self.get_version_codelocations(version)
+        except:
+            logging.error("Failed to get codelocations (aka scans) for version {}".format(version_name), exc_info=True)
+            version_code_locations = []
         else:
-            version_name = version['versionName']
-            logging.debug("We did not find any codelocations (scans) in version {}".format(version_name))
+            version_code_locations = version_code_locations.get('items', []) if version_code_locations else []
+        logging.debug("Found {} code locations (aka scans) for version {}".format(len(version_code_locations), version_name))
+        code_location_urls = [c['_meta']['href'] for c in version_code_locations]
+        for code_location_url in code_location_urls:
+            logging.info("Deleting code location at: {}".format(code_location_url))
+            self.execute_delete(code_location_url)
 
+    def delete_empty_projects(self):
+        #get all projects with no mapped code locations and delete them all
+        projects_response = self.get_projects()
+        if projects_response['totalCount'] > 0:
+            projects = projects_response['items']
+        for p in projects:
+            p_empty = True
+            versions = self.get_project_versions(p)
+            #if versions['totalCount'] == 1:
+            for v in versions:
+                codelocations = self.get_version_codelocations(versions['items'][0])
+                if codelocations['totalCount'] != 0:
+                    p_empty = False
+            if p_empty:
+                self.execute_delete(p['_meta']['href'])
+    
     def _find_user_group_url(self, assignable_user_groups, user_group_name):
         for user_group in assignable_user_groups['items']:
             if user_group['name'] == user_group_name:
@@ -1222,7 +1239,27 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
+
+    def delete_unmapped_codelocations(self, limit=1000):
+        jsondata = self.get_codelocations(limit, True)
+        codelocations = jsondata['items']
+        for c in codelocations:
+            if 'mappedProjectVersion' not in c:
+                response = self.execute_delete(c['_meta']['href'])
+            else:
+                logging.debug("Code location lists a mapped project version")
+
     
+    ##
+    #
+    # Job Statistics
+    #
+    ##
+    def get_job_statistics(self):
+        url = self.get_urlbase() + "/api/job-statistics"
+        response = self.execute_get(url)
+        return response.json()
+        
     def _validated_json_data(self, data_to_validate):
         if isinstance(data_to_validate, dict) or isinstance(data_to_validate, list):
             json_data = json.dumps(data_to_validate)
@@ -1275,4 +1312,5 @@ class HubInstance(object):
         headers.update(custom_headers)
         response = requests.post(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
+
 
