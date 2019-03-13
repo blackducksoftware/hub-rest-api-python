@@ -969,16 +969,15 @@ class HubInstance(object):
     def delete_empty_projects(self):
         #get all projects with no mapped code locations and delete them all
         projects_response = self.get_projects()
-        if projects_response['totalCount'] > 0:
-            projects = projects_response['items']
+        projects = projects_response.get('items',[])
         for p in projects:
             p_empty = True
             versions = self.get_project_versions(p)
-            #if versions['totalCount'] == 1:
             for v in versions:
                 codelocations = self.get_version_codelocations(versions['items'][0])
                 if codelocations['totalCount'] != 0:
                     p_empty = False
+                    break
             if p_empty:
                 self.execute_delete(p['_meta']['href'])
     
@@ -1244,10 +1243,7 @@ class HubInstance(object):
         jsondata = self.get_codelocations(limit, True)
         codelocations = jsondata['items']
         for c in codelocations:
-            if 'mappedProjectVersion' not in c:
-                response = self.execute_delete(c['_meta']['href'])
-            else:
-                logging.debug("Code location lists a mapped project version")
+            response = self.execute_delete(c['_meta']['href'])
 
     
     ##
