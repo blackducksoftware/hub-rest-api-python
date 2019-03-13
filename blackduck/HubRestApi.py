@@ -968,8 +968,7 @@ class HubInstance(object):
 
     def delete_empty_projects(self):
         #get all projects with no mapped code locations and delete them all
-        projects_response = self.get_projects()
-        projects = projects_response.get('items',[])
+        projects = self.get_projects().get('items',[])
         for p in projects:
             p_empty = True
             versions = self.get_project_versions(p)
