@@ -966,6 +966,20 @@ class HubInstance(object):
             logging.info("Deleting code location at: {}".format(code_location_url))
             self.execute_delete(code_location_url)
 
+    def delete_empty_projects(self):
+        #get all projects with no mapped code locations and delete them all
+        projects = self.get_projects().get('items',[])
+        for p in projects:
+            p_empty = True
+            versions = self.get_project_versions(p)
+            for v in versions:
+                codelocations = self.get_version_codelocations(versions['items'][0])
+                if codelocations['totalCount'] != 0:
+                    p_empty = False
+                    break
+            if p_empty:
+                self.execute_delete(p['_meta']['href'])
+    
     def _find_user_group_url(self, assignable_user_groups, user_group_name):
         for user_group in assignable_user_groups['items']:
             if user_group['name'] == user_group_name:
@@ -1223,6 +1237,13 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
+
+    def delete_unmapped_codelocations(self, limit=1000):
+        jsondata = self.get_codelocations(limit, True)
+        codelocations = jsondata['items']
+        for c in codelocations:
+            response = self.execute_delete(c['_meta']['href'])
+
     
     ##
     #
