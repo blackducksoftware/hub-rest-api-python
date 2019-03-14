@@ -28,7 +28,7 @@ Ref: [Packaging Python Projects Tutorial](https://packaging.python.org/tutorials
 To build both the source distribution package and the wheel package,
 
 ```
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 python3 setup.py sdist bdist_wheel
 ```
 
@@ -73,8 +73,8 @@ Do this when testing a new version.
 ```
 git clone https://github.com/blackducksoftware/hub-rest-api-python.git
 cd hub-rest-api-python
-pip install -r requirements.txt
-pip install .
+pip3 install -r requirements.txt
+pip3 install .
 ```
 
 ## Test ##
@@ -86,8 +86,8 @@ cd hub-rest-api-python
 # optional but advisable: create/use virtualenv
 # you should have 3.x+, e.g. Python 3.7.0
 
-pip install -r requirements.txt
-pip install .
+pip3 install -r requirements.txt
+pip3 install .
 cd test
 pytest
 ```
@@ -95,7 +95,7 @@ pytest
 ## Where can I get the latest release? ##
 This package is available on PyPi,
 
-pip install blackduck
+`pip3 install blackduck`
 
 ## Documentation ##
 Documentation for hub-rest-api-python can be found on the base project:  [Hub REST API Python Wiki](https://github.com/blackducksoftware/hub-rest-api-python/wiki)
