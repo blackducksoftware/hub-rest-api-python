@@ -1244,6 +1244,14 @@ class HubInstance(object):
         for c in codelocations:
             response = self.execute_delete(c['_meta']['href'])
 
+    ##
+    #
+    # Health Stuff
+    #
+    ##
+    def get_health_checks(self):
+        url = self.get_urlbase() + "/api/health-checks/liveness"
+        return self.execute_get(url)
     
     ##
     #
