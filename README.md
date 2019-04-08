@@ -9,6 +9,7 @@ pip install blackduck
 
 ```python
 from blackduck.HubRestApi import HubInstance
+import json
 
 username = "sysadmin"
 password = "your-password"
@@ -17,6 +18,8 @@ urlbase = "https://ec2-34-201-23-208.compute-1.amazonaws.com"
 hub = HubInstance(urlbase, username, password, insecure=True)
 
 projects = hub.get_projects()
+
+print(json.dumps(projects.get('items', [])))
 ```
 
 ## Build ##
