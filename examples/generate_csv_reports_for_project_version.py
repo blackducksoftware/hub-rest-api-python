@@ -15,8 +15,8 @@ import time
 parser = argparse.ArgumentParser("A program to create reports for a given project-version")
 parser.add_argument("project_name")
 parser.add_argument("version_name")
-parser.add_argument("--zip_file_name", default="reports.zip")
-parser.add_argument("--reports",
+parser.add_argument("-z", "--zip_file_name", default="reports.zip")
+parser.add_argument("-r", "--reports",
 	default="version,scans,components,vulnerabilities,source", 
 	help="Comma separated list (no spaces) of the reports to generate - version, scans, components, vulnerabilities, source, and cryptography reports (default: all, except cryptography")
 parser.add_argument('--format', default='CSV', choices=["CSV"], help="Report format - only CSV available for now")
