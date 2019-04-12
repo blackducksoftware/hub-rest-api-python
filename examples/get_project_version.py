@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("project_name")
 parser.add_argument("version_name")
 parser.add_argument("--attribute", 
-	choices=['createdAt', 'createdBy', 'lastScanDate'],
+	choices=['createdAt', 'createdBy'],
 	help="Select an attribute you want to print instead of the whole JSON payload")
 args = parser.parse_args()
 
