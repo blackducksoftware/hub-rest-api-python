@@ -24,7 +24,7 @@ if project:
             codelocation_info = response.json().get('items', [])
             if codelocation_info:
                 most_recent_scan = max([cl['updatedAt'] for cl in codelocation_info])
-                oldest_scan = min([cl['updatedAt'] for cl in codelocation_info])
+                oldest_scan = min([cl['createdAt'] for cl in codelocation_info])
                 number_scans = len(codelocation_info)
             else:
                 number_scans = 0
