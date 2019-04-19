@@ -817,6 +817,19 @@ class HubInstance(object):
         else:
             logging.debug("Did not find a project with name {}".format(project_name))
 
+    def get_or_create_project_version(self, project_name, version_name, parameters = {}):
+        project = self.get_project_by_name(project_name)
+        if project:
+            version = self.get_version_by_name(project, version_name)
+            if not version:
+                self.create_project_version(project, version_name, parameters)
+                version = self.get_version_by_name(project, version_name)
+        else:
+            self.create_project(project_name, version_name, parameters)
+            project = self.get_project_by_name(project_name)
+            version = self.get_version_by_name(project, version_name)
+        return version
+
     def get_project_by_id(self, project_id, limit=100):
         headers = self.get_headers()
         paramstring = self.get_limit_paramstring(limit)
@@ -1139,6 +1152,45 @@ class HubInstance(object):
     def get_project_roles(self):
         all_project_roles = self.get_roles(parameters={"filter":"scope:project"})
         return all_project_roles['items']
+
+    ###
+    #
+    # Add project version as a component to another project
+    # 
+    # WARNING: Uses internal API
+    ###
+    
+    def add_version_as_component(self, main_project_release, sub_project_release):
+        headers = self.get_headers()
+        main_data = main_project_release['_meta']['href'].split('/')
+        sub_data = sub_project_release['_meta']['href'].split('/')
+        url = self.get_apibase() + "/v1/releases/" + main_data[7] + "/component-bom-entries"
+        print (url)
+        payload = {}
+        payload['producerProject'] = {}
+        payload['producerProject']['id'] = sub_data[5]
+        payload['producerRelease'] = {} 
+        payload['producerRelease']['id'] = sub_data[7]
+        print (json.dumps(payload))
+        response = requests.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
+        jsondata = response.json()
+        return jsondata
+
+    def remove_version_as_component(self, main_project_release, sub_project_release):
+        headers = self.get_headers()
+        main_data = main_project_release['_meta']['href'].split('/')
+        sub_data = sub_project_release['_meta']['href'].split('/')
+        url = self.get_apibase() + "/v1/releases/" + main_data[7] + "/component-bom-entries"
+        print (url)
+        payload = []
+        entity = {}
+        entity['entityKey'] = {}
+        entity['entityKey']['entityId'] = sub_data[7]
+        entity['entityKey']['entityType'] = 'RL'
+        payload.append(entity)
+        print (json.dumps(payload))
+        response = requests.delete(url, headers=headers, verify = not self.config['insecure'], json=payload)
+        return response
 
     ###
     #
