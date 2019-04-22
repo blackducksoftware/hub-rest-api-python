@@ -2,7 +2,38 @@
 Created on Apr 11, 2019
 
 @author: kumykov
+
+Docker image layer by layer scan.
+
+This program will download docker image and scan it into Blackduck server layer by layer
+Each layer will be scanned as a separate project
+Then all layers will be added to an umbrella project as components
+This will allow the layers to be reported as part of the whole container or alone.
+
+For a standard container image specification as in
+
+      repository/image-name:version
+
+Main project will be named "repository/image-name" and will have "version" as a version
+
+Sub-projects for layers will be named as
+      repository/image-name_layer_1
+      repository/image-name_layer_2
+      .........
+
+Usage:
+
+scan_docker_image.py [-h] [--cleanup CLEANUP] imagespec
+
+positional arguments:
+  imagespec          Container image tag, e.g. repository/imagename:version
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --cleanup CLEANUP  Delete project hierarchy only. Do not scan
+
 '''
+
 from blackduck.HubRestApi import HubInstance
 from pprint import pprint
 from sys import argv
