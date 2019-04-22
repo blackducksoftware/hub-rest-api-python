@@ -203,7 +203,7 @@ def main(argv=None):
         argv.extend(sys.argv)
         
     parser = ArgumentParser()
-    parser.add_argument('imagespec')
+    parser.add_argument('imagespec', help="Container image tag, e.g.  repository/imagename:version")
     parser.add_argument('--cleanup',default=False, help="Delete project hierarchy only. Do not scan")
     args = parser.parse_args()
     
