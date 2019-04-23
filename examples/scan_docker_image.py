@@ -50,7 +50,7 @@ from argparse import ArgumentParser
 '''
 quick and dirty wrapper to process some docker functionality
 '''
-class docker_wrapper():
+class DockerWrapper():
    
     def __init__(self, workdir, scratch = True):
         self.workdir = workdir
@@ -118,7 +118,7 @@ class docker_wrapper():
             data = json.load(fp)
         return data
  
-class detector():
+class Detector():
     def __init__(self, hub):
         self.detecturl = 'https://blackducksoftware.github.io/hub-detect/hub-detect.sh'
         self.baseurl = hub.config['baseurl']
@@ -141,12 +141,12 @@ class detector():
         cmd.extend(options)
         subprocess.run(cmd)
 
-class container_image_scanner():
+class ContainerImageScanner():
     
     def __init__(self, hub, container_image_name, workdir='/tmp/workdir'):
         self.hub = hub
-        self.hub_detect = detector(hub)
-        self.docker = docker_wrapper(workdir)
+        self.hub_detect = Detector(hub)
+        self.docker = DockerWrapper(workdir)
         self.container_image_name = container_image_name
         self.project_spec = self.container_image_name.split(':')
         
@@ -213,7 +213,7 @@ class container_image_scanner():
 def scan_container_image(imagespec):
     
     hub = HubInstance()
-    scanner = container_image_scanner(hub, imagespec)
+    scanner = ContainerImageScanner(hub, imagespec)
     scanner.prepare_container_image()
     scanner.process_container_image()
     scanner.generate_project_structures()
@@ -222,7 +222,7 @@ def scan_container_image(imagespec):
 
 def clean_container_project(imagespec):
     hub = HubInstance()
-    scanner = container_image_scanner(hub, imagespec)
+    scanner = ContainerImageScanner(hub, imagespec)
     scanner.cleanup_project_structure()
 
 
