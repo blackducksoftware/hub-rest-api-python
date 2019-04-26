@@ -1218,7 +1218,6 @@ class HubInstance(object):
                     pathname = os.path.join(output_folder, filename)
                 else:
                     pathname = filename
-                import requests
                 responce = requests.get(url, headers=self.get_headers(), stream=True, verify=False)
                 with open(pathname, "wb") as f:
                     for data in responce.iter_content():
