@@ -12,6 +12,9 @@ from blackduck.HubRestApi import HubInstance
 parser = argparse.ArgumentParser("Retreive BOM component info for the given project and version")
 parser.add_argument("project_name")
 parser.add_argument("version")
+group = parser.add_mutually_exclusive_group()
+group.add_argument("-u", "--unreviewed", action='store_true')
+group.add_argument("-r", "--reviewed", action='store_true')
 
 args = parser.parse_args()
 
@@ -31,4 +34,10 @@ response = hub.execute_get(components_url)
 if response.status_code == 200:
     components = response.json()
     components = components.get('items', [])
+
+    if args.reviewed or args.unreviewed:
+        filter_to = 'REVIEWED' if args.reviewed else 'NOT_REVIEWED'
+
+        components = list(filter(lambda c: c['reviewStatus'] == filter_to, components))
+
     print(json.dumps(components))
