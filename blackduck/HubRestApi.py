@@ -1197,6 +1197,35 @@ class HubInstance(object):
     # Code locations or Scans Stuff
     #
     ###
+    
+    def download_project_scans(self, project_name,version_name, output_folder=None):
+        version = self.get_project_version_by_name(project_name,version_name)
+        codelocations = self.get_version_codelocations(version)
+        import os
+        if output_folder:
+            if not os.path.exists(output_folder):
+                os.makedirs(output_folder, 0o755, True)
+        
+        result = []
+        
+        for item in codelocations['items']:
+            links = item['_meta']['links']
+            matches = [x for x in links if x['rel'] == 'enclosure']
+            for m in matches:
+                url = m['href']
+                filename = url.split('/')[6]
+                if output_folder:
+                    pathname = os.path.join(output_folder, filename)
+                else:
+                    pathname = filename
+                responce = requests.get(url, headers=self.get_headers(), stream=True, verify=False)
+                with open(pathname, "wb") as f:
+                    for data in responce.iter_content():
+                        f.write(data)
+                result.append({filename, pathname})
+        return result
+                            
+
 
     def get_codelocations(self, limit=100, unmapped=False, parameters={}):
         parameters['limit'] = limit
