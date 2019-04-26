@@ -15,6 +15,7 @@ parser.add_argument("version")
 group = parser.add_mutually_exclusive_group()
 group.add_argument("-u", "--unreviewed", action='store_true')
 group.add_argument("-r", "--reviewed", action='store_true')
+parser.add_argument("-v", "--vulnerabilities", action='store_true', help="Get the vulnerability info for each of the components")
 
 args = parser.parse_args()
 
@@ -40,4 +41,12 @@ if response.status_code == 200:
 
         components = list(filter(lambda c: c['reviewStatus'] == filter_to, components))
 
+    if args.vulnerabilities:
+        for component in components:
+            vulnerabilities_url = hub.get_link(component, "vulnerabilities")
+            response = hub.execute_get(vulnerabilities_url)
+            vulnerabilities = []
+            if response.status_code == 200:
+                vulnerabilities = response.json().get('items', [])
+            component['vulnerabilities'] = vulnerabilities
     print(json.dumps(components))
