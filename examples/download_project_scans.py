@@ -82,12 +82,18 @@ USAGE
         outdir=None
         if args.outputdir:
             outdir = args.outputdir
-
+        #
+        # THE MEAT IS HERE EVERYTHING ELSE IS SALAD
+        #
+        #
         from blackduck.HubRestApi import HubInstance
         hub = HubInstance()
         loot = hub.download_project_scans(project, version, outdir)
         print (loot)
-        
+        #
+        #
+        # MEAT ENDS HERE
+        #
         
 
     except KeyboardInterrupt:
