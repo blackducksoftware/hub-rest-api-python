@@ -1,4 +1,4 @@
-#!/usr/local/bin/python2.7
+#!/usr/local/bin/python3
 # encoding: utf-8
 '''
 examples.download_project_scans -- downloads all scans that belong to a project
