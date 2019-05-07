@@ -742,27 +742,25 @@ class HubInstance(object):
     def _get_projects_url(self):
         return self.get_urlbase() + "/api/projects"
 
-    def get_projects(self, limit=100, parameters={}):
+    def get_projects(self, limit=100, parameters=None):
+        if parameters is None:
+            parameters = {}
+
         headers = self.get_headers()
+
         if limit:
             parameters.update({'limit': limit})
+
         url = self._get_projects_url() + self._get_parameter_string(parameters)
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
         response = self.execute_get(url, headers)
         jsondata = response.json()
         return jsondata
 
-    def get_project_names(self, limit: int=None, kwargs: dict=None) -> list:
+    def get_project_names(self, limit: int=None, parameters: dict=None) -> list:
         ''' Obtain a list of project entities and extract the "name" element
         '''
-        if kwargs is None:
-            kwargs = {}
-
-        if limit is None:
-            projects = self.get_projects(**kwargs)
-
-        else:
-            projects = self.get_projects(limit=limit, **kwargs)
+        projects = self.get_projects(limit=limit, parameters=parameters)
 
         if projects is None:
             return None
