@@ -23,7 +23,7 @@ print(json.dumps(projects.get('items', [])))
 ```
 
 ## Build ##
-You should be using [virtualenv](https://pypi.org/project/virtualenv/), [virtrualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to make things easy on yourself.
+You should be using [virtualenv](https://pypi.org/project/virtualenv/), [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to make things easy on yourself.
 
 Ref: [Packaging Python Projects Tutorial](https://packaging.python.org/tutorials/packaging-projects/)
 
