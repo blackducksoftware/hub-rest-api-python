@@ -11,9 +11,22 @@ from blackduck.HubRestApi import HubInstance
 from unittest.mock import patch, MagicMock, mock_open
 
 
+def my_open(file_):
+    """ Allows the use of pytest on both an installed version of this module
+    and as src before installation. That is: allow the following:
+     - run `python -m pytest` outside `test/' which will find and run the
+       test_*.py file and test against the local `blackduck/` source
+     - run `pytest` in or outside `test/` which will load the test_*.py file
+       and test against the installed version of blackduck
+    """
+    try:
+        return open(os.path.join('test', file_))
+    except:
+        return open(file_)
+
 fake_hub_host = "https://my-hub-host"
 
-policies_json_file = open("policies.json")
+policies_json_file = my_open('policies.json')
 policies = json.loads(policies_json_file.read())
 assert 'items' in policies
 test_policy = policies['items'][0]
@@ -41,7 +54,7 @@ def teardown_function(function):
         os.remove(HubInstance.configfile)
     except OSError:
         pass
-        
+
 @pytest.fixture()
 def mock_hub_instance(requests_mock):
     requests_mock.post(
@@ -89,7 +102,7 @@ def mock_hub_instance_using_api_token(requests_mock):
 
 @pytest.fixture()
 def policy_info_json():
-    with open("policies.json") as policies_json_file:
+    with my_open('policies.json') as policies_json_file:
         yield json.loads(policies_json_file.read())
 
 @pytest.fixture()
@@ -106,7 +119,7 @@ def a_test_policy_for_create_or_update():
 
 @pytest.fixture()
 def test_vulnerability_info(requests_mock):
-    with open("sample-vulnerability.json") as sample_vulnerability_file:
+    with my_open('sample-vulnerability.json') as sample_vulnerability_file:
         yield json.loads(sample_vulnerability_file.read())
 
 def test_get_major_version(requests_mock):
@@ -204,7 +217,7 @@ def test_hub_instance_with_write_config(requests_mock):
     
     with patch("builtins.open", new_callable=mock_open()) as m:
         with patch('json.dump') as m_json:
-            hub = HubInstance(fake_hub_host, "a_username", "a_password")
+            hub = HubInstance(fake_hub_host, "a_username", "a_password", write_config_flag=True)
 
             m.assert_called_with('.restconfig.json', 'w')
             assert m_json.called
@@ -293,9 +306,28 @@ def test_get_vulnerability(requests_mock, mock_hub_instance, test_vulnerability_
 
     assert response_json == test_vulnerability_info
 
+def test_get_project_names(requests_mock, mock_hub_instance):
+    url = mock_hub_instance.get_urlbase() + "/api/projects?limit=20"
+    json_data = json.load(my_open('sample-projects.json'))
+    requests_mock.get(url, json=json_data)
+    project_names = mock_hub_instance.get_project_names(limit=20)
+
+    assert project_names == [
+        'accelerator-initializer-ui', 'app1', 'app2',
+        'business-credit-monitoring-DIV2', 'business-credit-scoring-DIV2',
+        'combined1', 'combined2', 'consumer-credit-monitoring-DIV1',
+        'consumer-credit-scoring-DIV1', 'lib',
+        'struts-showcase-no-options-thread0',
+        'struts-showcase-no-sig-scanner-thread0',
+        'struts-showcase-policy-and-risk-no-sig-scanner-thread0',
+        'struts-showcase-policy-and-risk-thread0',
+        'struts-showcase-policy-check-no-sig-scanner-thread0',
+        'struts-showcase-policy-check-thread0',
+        'struts-showcase-risk-report-thread0', 'struts2-showcase']
+
 def test_get_projects_with_limit(requests_mock, mock_hub_instance):
     url = mock_hub_instance.get_urlbase() + "/api/projects?limit=20"
-    json_data = json.load(open('sample-projects.json'))
+    json_data = json.load(my_open('sample-projects.json'))
     requests_mock.get(url, json=json_data)
     projects = mock_hub_instance.get_projects(limit=20)
 
@@ -305,7 +337,7 @@ def test_get_projects_with_limit(requests_mock, mock_hub_instance):
 
 def test_get_projects_with_name_query(requests_mock, mock_hub_instance):
     url = mock_hub_instance.get_urlbase() + "/api/projects?q=name:accelerator-initializer-ui&limit=100"
-    json_data = json.load(open('sample-projects-using-name-query.json'))
+    json_data = json.load(my_open('sample-projects-using-name-query.json'))
     requests_mock.get(url, json=json_data)
     projects = mock_hub_instance.get_projects(parameters={'q':"name:accelerator-initializer-ui"})
 
@@ -316,8 +348,8 @@ def test_get_projects_with_name_query(requests_mock, mock_hub_instance):
 def test_get_project_versions(requests_mock, mock_hub_instance):
     baseurl = mock_hub_instance.get_urlbase()
     url = baseurl + "/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions?limit=100"
-    json_data = json.load(open('sample-project-versions.json'))
-    project_json_data = json.load(open('sample-project.json'))
+    json_data = json.load(my_open('sample-project-versions.json'))
+    project_json_data = json.load(my_open('sample-project.json'))
     # replace project URL with the right one to agree with our mocked URL above
     project_json_data['_meta']['href'] = re.sub("https://.*/api", "{}/api".format(baseurl), project_json_data['_meta']['href'])
     requests_mock.get(url, json=json_data)
@@ -329,8 +361,8 @@ def test_get_project_versions(requests_mock, mock_hub_instance):
 def test_get_project_versions_with_parameters(requests_mock, mock_hub_instance):
     baseurl = mock_hub_instance.get_urlbase()
     url = baseurl + "/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions?limit=100&q=versionName:1.0"
-    json_data = json.load(open('sample-project-versions.json'))
-    project_json_data = json.load(open('sample-project.json'))
+    json_data = json.load(my_open('sample-project-versions.json'))
+    project_json_data = json.load(my_open('sample-project.json'))
     # replace project URL with the right one to agree with our mocked URL above
     project_json_data['_meta']['href'] = re.sub("https://.*/api", "{}/api".format(baseurl), project_json_data['_meta']['href'])
     requests_mock.get(url, json=json_data)
@@ -348,7 +380,7 @@ def test_delete_project_version_by_name():
 def test_get_users(requests_mock, mock_hub_instance):
     baseurl = mock_hub_instance.get_urlbase()
     url = baseurl + "/api/users"
-    user_json_data = json.load(open("users.json"))
+    user_json_data = json.load(my_open('users.json'))
     requests_mock.get(url, json=user_json_data)
     users = mock_hub_instance.get_users()
 
@@ -379,7 +411,7 @@ def test_delete_user_by_url(requests_mock, mock_hub_instance):
     
 def test_get_project_by_name(requests_mock, mock_hub_instance):
     url = mock_hub_instance.get_urlbase() + "/api/projects"
-    projects_json = json.load(open("sample-projects.json"))
+    projects_json = json.load(my_open('sample-projects.json'))
     project_name = "accelerator-initializer-ui"
     requests_mock.get(url, json=projects_json)
 
@@ -388,7 +420,7 @@ def test_get_project_by_name(requests_mock, mock_hub_instance):
     assert project['name'] == project_name
 
 def test_get_version_by_name(requests_mock, mock_hub_instance):
-    mock_hub_instance.get_project_versions = MagicMock(return_value=json.load(open("sample-project-versions.json")))
+    mock_hub_instance.get_project_versions = MagicMock(return_value=json.load(my_open('sample-project-versions.json')))
 
     mock_project_obj = MagicMock()
     version_name = "1.0" # a version that exists in sample-project-versions.json
@@ -404,7 +436,7 @@ def test_create_version_notices_report(requests_mock, mock_hub_instance):
 
 @pytest.fixture()
 def unreviewed_snippet_json():
-    with open("unreviewed_snippet.json") as f:
+    with my_open('unreviewed_snippet.json') as f:
         yield json.load(f)[0]
 
 def test_get_ignore_snippet_json(unreviewed_snippet_json, mock_hub_instance):
@@ -438,7 +470,7 @@ def test_get_confirm_snippet_json(unreviewed_snippet_json, mock_hub_instance):
 
 @pytest.fixture()
 def sample_snippet_match_json():
-    with open("sample-snippet-match.json") as f:
+    with my_open('sample-snippet-match.json') as f:
         yield json.load(f)
 
 
@@ -468,7 +500,7 @@ def test_generate_new_match_selection(sample_snippet_match_json, mock_hub_instan
 
 @pytest.fixture()
 def sample_bom_component_json():
-    with open("sample-bom-component.json") as f:
+    with my_open('sample-bom-component.json') as f:
         yield json.load(f)
 
 def test_get_edit_snippet_json(sample_snippet_match_json, sample_bom_component_json, mock_hub_instance):
@@ -490,22 +522,22 @@ def test_get_edit_snippet_json(sample_snippet_match_json, sample_bom_component_j
 
 @pytest.fixture()
 def no_roles_user():
-    with open('no-roles-user.json') as f:
+    with my_open('no-roles-user.json') as f:
         yield json.load(f)
 
 @pytest.fixture()
 def no_roles_roles():
-    with open('no-roles-roles.json') as f:
+    with my_open('no-roles-roles.json') as f:
         yield json.load(f)
 
 @pytest.fixture()
 def sysadmin_user():
-    with open('sysadmin-user.json') as f:
+    with my_open('sysadmin-user.json') as f:
         yield json.load(f)
 
 @pytest.fixture()
 def sysadmin_roles():
-    with open('sysadmin-roles.json') as f:
+    with my_open('sysadmin-roles.json') as f:
         yield json.load(f)
 
 def test_user_has_role(no_roles_user, no_roles_roles, sysadmin_user, sysadmin_roles, mock_hub_instance):
