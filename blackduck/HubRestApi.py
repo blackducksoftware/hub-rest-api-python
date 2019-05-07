@@ -46,6 +46,10 @@ It is possible to generate generate_config file by initalizing API as following:
     
     
 '''
+
+''' Modified by ZeroNorth @2019
+'''
+
 import logging
 import requests
 import json
@@ -98,7 +102,7 @@ class HubInstance(object):
             self.config['insecure'] = kwargs.get('insecure', False)
             self.config['debug'] = kwargs.get('debug', False)
 
-            if kwargs.get('write_config_flag', True):
+            if kwargs.get('write_config_flag', False):
                 self.write_config()
         except Exception:
             self.read_config()
@@ -748,6 +752,19 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
+    def project_names(self, kwargs: dict=None) -> list:
+        ''' Obtain a list of project entities and extract the "name" element
+        '''
+        if kwargs is None:
+            kwargs = {}
+
+        projects = self.get_projects(**kwargs)
+        if projects is None:
+            return None
+
+        project_names = [p['name'] for p in projects['items']]
+        return project_names
+
     def create_project(self, project_name, version_name="Default Version", parameters={}):
         url = self._get_projects_url()
 
@@ -1358,18 +1375,18 @@ class HubInstance(object):
         json.loads(json_data) # will fail with JSONDecodeError if invalid
         return json_data
 
-    def execute_get(self, url, custom_headers={}):
+    async def execute_get(self, url, custom_headers={}):
         headers = self.get_headers()
         headers.update(custom_headers)
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = await requests.get(url, headers=headers, verify = not self.config['insecure'])
         return response
         
-    def execute_put(self, url, data, custom_headers={}):
+    async def execute_put(self, url, data, custom_headers={}):
         json_data = self._validated_json_data(data)
         headers = self.get_headers()
         headers["Content-Type"] = "application/json"
         headers.update(custom_headers)
-        response = requests.put(url, headers=headers, data=json_data, verify = not self.config['insecure'])
+        response = await requests.put(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
 
     def _create(self, url, json_body):
@@ -1395,12 +1412,12 @@ class HubInstance(object):
         else:
             raise CreateFailedUnknown("Failed to create the object for an unknown reason - url {}, body {}, response {}".format(url, json_body, response))
 
-    def execute_post(self, url, data, custom_headers={}):
+    async def execute_post(self, url, data, custom_headers={}):
         json_data = self._validated_json_data(data)
         headers = self.get_headers()
         headers["Content-Type"] = "application/json"
         headers.update(custom_headers)
-        response = requests.post(url, headers=headers, data=json_data, verify = not self.config['insecure'])
+        response = await requests.post(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
 
 
