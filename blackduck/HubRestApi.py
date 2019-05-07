@@ -748,17 +748,22 @@ class HubInstance(object):
             parameters.update({'limit': limit})
         url = self._get_projects_url() + self._get_parameter_string(parameters)
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.execute_get(url, headers)
         jsondata = response.json()
         return jsondata
 
-    def project_names(self, kwargs: dict=None) -> list:
+    def get_project_names(self, limit: int=None, kwargs: dict=None) -> list:
         ''' Obtain a list of project entities and extract the "name" element
         '''
         if kwargs is None:
             kwargs = {}
 
-        projects = self.get_projects(**kwargs)
+        if limit is None:
+            projects = self.get_projects(**kwargs)
+
+        else:
+            projects = self.get_projects(limit=limit, **kwargs)
+
         if projects is None:
             return None
 
@@ -1375,18 +1380,18 @@ class HubInstance(object):
         json.loads(json_data) # will fail with JSONDecodeError if invalid
         return json_data
 
-    async def execute_get(self, url, custom_headers={}):
+    def execute_get(self, url, custom_headers={}):
         headers = self.get_headers()
         headers.update(custom_headers)
-        response = await requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         return response
         
-    async def execute_put(self, url, data, custom_headers={}):
+    def execute_put(self, url, data, custom_headers={}):
         json_data = self._validated_json_data(data)
         headers = self.get_headers()
         headers["Content-Type"] = "application/json"
         headers.update(custom_headers)
-        response = await requests.put(url, headers=headers, data=json_data, verify = not self.config['insecure'])
+        response = requests.put(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
 
     def _create(self, url, json_body):
@@ -1412,12 +1417,12 @@ class HubInstance(object):
         else:
             raise CreateFailedUnknown("Failed to create the object for an unknown reason - url {}, body {}, response {}".format(url, json_body, response))
 
-    async def execute_post(self, url, data, custom_headers={}):
+    def execute_post(self, url, data, custom_headers={}):
         json_data = self._validated_json_data(data)
         headers = self.get_headers()
         headers["Content-Type"] = "application/json"
         headers.update(custom_headers)
-        response = await requests.post(url, headers=headers, data=json_data, verify = not self.config['insecure'])
+        response = requests.post(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
 
 
