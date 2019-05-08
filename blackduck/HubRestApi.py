@@ -1004,6 +1004,11 @@ class HubInstance(object):
             if user_group['name'] == user_group_name:
                 return user_group['usergroup']
 
+    def _find_user_url(self, assignable_user, user_name):
+        for user in assignable_user['items']:
+            if user['name'] == user_name:
+                return user['user']
+
     def _project_role_urls(self, project_role_names):
         all_project_roles = self.get_project_roles()
         project_role_urls = list()
@@ -1066,8 +1071,61 @@ class HubInstance(object):
         else:
             logging.warning("Did not find a project by the name {}".format(project_name))
 
-    def assign_user_to_project(self, user_name, project_name, project_roles_l):
-        pass
+    def assign_user_to_project(self, user_name, project_name, project_roles, limit=1000):
+        # Assign users to projects
+        project = self.get_project_by_name(project_name)
+
+        if project:
+            project_url = project['_meta']['href']
+            assignable_users_link = self.get_link(project, 'assignable-users')
+            paramstring = self.get_limit_paramstring(limit)
+            url = assignable_users_link + paramstring
+            logging.debug("GET {}".format(url))
+            if assignable_users_link:
+                assignable_users_response = self.execute_get(url)
+                assignable_users = assignable_users_response.json()
+
+                # TODO: What to do if the user is already assigned to the project, and therefore
+                # does not appear in the list of 'assignable' user? Should we search the (assigned) user
+                # and re-apply the project-roles to the assignment?
+
+                user_url = self._find_user_url(assignable_users, user_name)
+                if user_url:
+                    headers = self.get_headers()
+
+                    # need project role urls to build the POST payload
+                    project_roles_urls = self._project_role_urls(project_roles)
+
+                    # The POST endpoint changes based on whether we found any project-roles to assign
+                    # Also, due to what appears to be a defect, the Content-Type changes
+                    if project_roles_urls:
+                        url = user_url + "/roles"
+                        # one dict per project role assignment
+                        post_data = [{'role': r, 'scope': project_url} for r in project_roles_urls]
+                        # I found I had to use this Content-Type (application/json resulted in 412)
+                        # ref: https://jira.dc1.lan/browse/HUB-18417
+                        headers['Content-Type'] = 'application/vnd.blackducksoftware.internal-1+json'
+                    else:
+                        url = project_url + "/users"
+                        # Assigning a user with no project-roles
+                        post_data = {"user": user_url}
+                        headers['Content-Type'] = 'application/json'
+
+                    response = requests.post(
+                        url,
+                        headers=headers,
+                        data=json.dumps(post_data),
+                        verify=not self.config['insecure'])
+                    return response
+                else:
+                    assignable_username = [u['name'] for u in assignable_users['items']]
+                    logging.warning(
+                        "The user {} was not found in the assignable user ({}) for this project {}. Is the user already assigned to this project?".format(
+                            user_name, assignable_username, project_name))
+            else:
+                logging.warning("This project {} has no assignable users".format(project_name))
+        else:
+            logging.warning("Did not find a project by the name {}".format(project_name))
 
     def assign_project_application_id(self, project_name, application_id, overwrite=False):
         logging.debug("Assigning application_id {} to project_name {}, overwrite={}".format(
