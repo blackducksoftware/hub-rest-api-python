@@ -148,7 +148,13 @@ class ContainerImageScanner():
         self.hub_detect = Detector(hub)
         self.docker = DockerWrapper(workdir)
         self.container_image_name = container_image_name
-        self.project_spec = self.container_image_name.split(':')
+        cindex = container_image_name.rfind(':')
+        if cindex == -1:
+            self.image_name = container_image_name
+            self.image_version = 'latest'
+        else:
+            self.image_name = container_image_name[:cindex]
+            self.image_version = container_image_name[cindex+1:]
         
     def prepare_container_image(self):
         self.docker.pull_container_image(self.container_image_name)
@@ -166,7 +172,7 @@ class ContainerImageScanner():
         offset = 0
         for i in self.manifest[0]['Layers']:
             layer = {}
-            layer['name'] = self.project_spec[0] + "_layer_" + str(num)
+            layer['name'] = self.image_name + "_layer_" + str(num)
             layer['path'] = i
             while self.config['history'][num + offset -1].get('empty_layer', False):
                 offset = offset + 1
@@ -176,26 +182,26 @@ class ContainerImageScanner():
         print (json.dumps(self.layers, indent=4))
 
     def generate_project_structures(self):
-        main_project_release = self.hub.get_or_create_project_version(self.project_spec[0], self.project_spec[1])
+        main_project_release = self.hub.get_or_create_project_version(self.image_name, self.image_version)
 
         for layer in self.layers:
             parameters = {}
             parameters['description'] = layer['command']['created_by']
-            sub_project_release = self.hub.get_or_create_project_version(layer['name'], self.project_spec[1], parameters=parameters)
+            sub_project_release = self.hub.get_or_create_project_version(layer['name'], self.image_version, parameters=parameters)
             self.hub.add_version_as_component(main_project_release, sub_project_release)
 
     def submit_layer_scans(self):
         for layer in self.layers:
             options = []
             options.append('--detect.project.name={}'.format(layer['name']))
-            options.append('--detect.project.version.name="{}"'.format(self.project_spec[1]))
+            options.append('--detect.project.version.name="{}"'.format(self.image_version))
             options.append('--detect.blackduck.signature.scanner.disabled=false')
-            options.append('--detect.code.location.name={}_{}_code_{}'.format(layer['name'],self.project_spec[1],layer['path']))
+            options.append('--detect.code.location.name={}_{}_code_{}'.format(layer['name'],self.image_version,layer['path']))
             options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path'].split('/')[0]))
             self.hub_detect.detect_run(options)
 
     def cleanup_project_structure(self):
-        release = self.hub.get_or_create_project_version(self.project_spec[0],self.project_spec[1])
+        release = self.hub.get_or_create_project_version(self.image_name,self.image_version)
             
         components = self.hub.get_version_components(release)
         
@@ -207,7 +213,7 @@ class ContainerImageScanner():
             sub_release = self.hub.get_or_create_project_version(sub_name, sub_version_name)
             print(self.hub.remove_version_as_component(release, sub_release))
             print(self.hub.delete_project_by_name(sub_name))
-        print(self.hub.delete_project_by_name(self.project_spec[0]))
+        print(self.hub.delete_project_by_name(self.image_name))
 
 
 def scan_container_image(imagespec):
