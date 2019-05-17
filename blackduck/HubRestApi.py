@@ -512,7 +512,7 @@ class HubInstance(object):
     def get_component_remediation(self, bom_component):
         url = "{}/remediating".format(bom_component['componentVersion'])
         logging.debug("Url for getting remediation info is : {}".format(url))
-        response = hub.execute_get(url)
+        response = self.execute_get(url)
         return response.json()
 
     ##
