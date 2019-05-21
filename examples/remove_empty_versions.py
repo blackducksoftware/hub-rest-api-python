@@ -21,7 +21,7 @@ def remove_empty_versions(project_id, cleanup=False):
     hub = HubInstance()
     project = hub.get_project_by_id(project_id, limit=100)
 
-    print (project['name'])
+    print (project)
     versions = hub.get_project_versions(project, limit=200)
     print ("\t versions found %s" % versions['totalCount'])
     versionlist = versions['items']
@@ -35,7 +35,7 @@ def remove_empty_versions(project_id, cleanup=False):
                 print ("Vesion {} has {} components".format(va['versionName'], totalCount))
                 if cleanup and totalCount == 0:
                     print ("removing {}".format(va['_meta']['href']))
-                    hub.execute_delete(va['_meta']['href'])
+                    print(hub.execute_delete(va['_meta']['href']))
                 break   
             except Exception:
                 count += 1
