@@ -5,7 +5,6 @@ from datetime import datetime
 import json
 import logging
 import sys
-import timestring
 
 from blackduck.HubRestApi import HubInstance
 

@@ -1353,6 +1353,34 @@ class HubInstance(object):
         response = self.execute_get(url)
         return response.json()
         
+    ##
+    #
+    # Notifications
+    #
+    ##
+    def get_notifications(self, parameters={}):
+        url = self.get_urlbase() + "/api/notifications" + self._get_parameter_string(parameters)
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.notification-4+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        json_data = response.json()
+        return json_data
+
+    ##
+    #
+    # Licenses
+    #
+    ##
+    def get_licenses(self, parameters={}):
+        url = self.get_urlbase() + "/api/licenses" + self._get_parameter_string(parameters)
+        response = self.execute_get(url, custom_headers={'Accept':'application/json'})
+        json_data = response.json()
+        return json_data
+
+    ##
+    #
+    # General methods including get, put, post, etc
+    #
+    ##
     def _validated_json_data(self, data_to_validate):
         if isinstance(data_to_validate, dict) or isinstance(data_to_validate, list):
             json_data = json.dumps(data_to_validate)
