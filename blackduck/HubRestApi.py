@@ -1160,6 +1160,9 @@ class HubInstance(object):
     # WARNING: Uses internal API
     ###
     
+    # TODO: Refactor this code to use the (newly released, v2019.4.0) public endpoint for adding sub-projects (POST /api/projects/{projectId}/versions/{projectVersionId}/components)
+    #       ref: https://jira.dc1.lan/browse/HUB-16972
+    
     def add_version_as_component(self, main_project_release, sub_project_release):
         headers = self.get_headers()
         main_data = main_project_release['_meta']['href'].split('/')
