@@ -180,7 +180,8 @@ if __name__ == "__main__":
     code_location_checks = {}
 
     ttable = [[
-        "location",
+        "scan location",
+        "scan types",
         "status",
         "details"
     ]]
@@ -191,6 +192,7 @@ if __name__ == "__main__":
         code_location_checks.update({code_location['name']: checker})
         status = "succeeded" if checker.succeeded() else "failed"
         related_job_types = [j['jobSpec']['jobType'] for j in checker.related_jobs]
+        scan_types = ",".join([s['scan_details']['scanType'] for s in checker.most_recent_scans])
 
         if checker.succeeded():
             details = "Jobs " + ",".join(related_job_types) + " all succeeded"
@@ -209,7 +211,7 @@ if __name__ == "__main__":
                 ]
                 details += "Failed jobs: " + ",".join(failed_jobs) + "\n"
         logging.debug("{} {}".format(code_location['name'], details))
-        ttable.append([code_location['name'], status, details])
+        ttable.append([code_location['name'], scan_types, status, details])
 
     print(AsciiTable(ttable).table)
 
