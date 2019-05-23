@@ -215,5 +215,10 @@ if __name__ == "__main__":
 
     print(AsciiTable(ttable).table)
 
+    if all([c.succeeded() for k,c in code_location_checks.items()]):
+        sys.exit(0)
+    else:
+        sys.exit(1)
+
 
 
