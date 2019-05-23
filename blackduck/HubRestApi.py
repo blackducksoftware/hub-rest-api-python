@@ -1228,8 +1228,6 @@ class HubInstance(object):
                 result.append({filename, pathname})
         return result
                             
-
-
     def get_codelocations(self, limit=100, unmapped=False, parameters={}):
         parameters['limit'] = limit
         paramstring = self._get_parameter_string(parameters)
@@ -1250,11 +1248,20 @@ class HubInstance(object):
             logging.error("Failed to retrieve code locations (aka scans), status code {}".format(
                 response.status_code))
 
-    def get_codelocation_scan_summaries(self, code_location_id, limit=100):
+    def get_codelocation_scan_summaries(self, code_location_id = None, code_location_obj = None, limit=100):
+        '''Retrieve the scans (aka scan summaries) for the given location. You can give either
+        code_location_id or code_location_obj. If both are supplied, precedence is to use code_location_obj
+        '''
+        assert code_location_id or code_location_obj, "You must supply at least one - code_location_id or code_location_obj"
+
         paramstring = "?limit={}&offset=0".format(limit)
         headers = self.get_headers()
-        url = self.get_apibase() + \
-            "/codelocations/{}/scan-summaries".format(code_location_id)
+        headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
+        if code_location_obj:
+            url = self.get_link(code_location_obj, "scans")
+        else:
+            url = self.get_apibase() + \
+                "/codelocations/{}/scan-summaries".format(code_location_id)
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -1284,8 +1291,8 @@ class HubInstance(object):
         
     def get_scan_locations(self, code_location_id):
         headers = self.get_headers()
-        url = self.get_apibase() + \
-            "/v1/scanlocations/{}".format(code_location_id)
+        headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
+        url = self.get_apibase() + "/codelocations/{}".format(code_location_id)
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
