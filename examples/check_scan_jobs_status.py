@@ -55,6 +55,7 @@ class CodeLocationStatusChecker(object):
         self.most_recent_scans = self._most_recent_scans(self.scan_history)
         self.project_name, self.version_name = self._get_project_and_version_name()
         self.related_jobs = self._get_related_jobs(self.most_recent_scans, self.project_name, self.version_name)
+        self.failed_scans = self.failed_jobs = self.inprogress_jobs = None
 
     def _get_project_and_version_name(self):
         # Get the project and version name and return them concatenated for use to lookup relevant jobs
@@ -145,7 +146,7 @@ class CodeLocationStatusChecker(object):
     def has_snippet_scan(self, scan_history):
         return any([s['scan_details']['scanType'].lower() == "snippet" for s in scan_history[:2]])
 
-    def succeeded(self):
+    def status(self):
         if self.has_snippet_scan(self.scan_history):
             scans_to_check = self.scan_history[:2]
         else:
@@ -154,13 +155,20 @@ class CodeLocationStatusChecker(object):
         assert len(scans_to_check) > 0, "Uh oh, no scans to check. That shouldn't happen."
         assert len(self.related_jobs) > 0, "Uh oh, no related jobs to check. That shouldn't happen."
 
-        checks = [s['status'].lower() == "complete" for s in scans_to_check] 
-        checks.extend([j['status'].lower() == "completed" for j in self.related_jobs])
+        self.completed_scans = [s['status'].lower() == "complete" for s in scans_to_check] 
+        self.completed_jobs = [j['status'].lower() == "completed" for j in self.related_jobs]
 
-        self.failed_jobs = [j for j in self.related_jobs if j['status'].lower() != "completed"]
-        self.failed_scans = [s for s in scans_to_check if s['status'].lower() != "complete"]
+        self.failed_jobs = [j for j in self.related_jobs if j['status'].lower() == "failed"]
+        self.failed_scans = [s for s in scans_to_check if 'fail' in s['status'].lower()]
+        self.incomplete_scans = [s for s in scans_to_check if s['status'].lower() != "complete"]
+        self.incomplete_jobs = [j for j in self.related_jobs if j['status'].lower() != "completed"]
 
-        return all(checks)
+        if any(self.failed_jobs + self.failed_scans):
+            return "failed"
+        elif any(self.incomplete_jobs + self.incomplete_scans):
+            return "in-progress"
+        elif all(self.completed_jobs + self.completed_scans):
+            return "succeeded"
 
 
 if __name__ == "__main__":
@@ -189,33 +197,42 @@ if __name__ == "__main__":
     for code_location in code_locations:
         logging.debug("Checking code location {}".format(code_location['name']))
         checker = CodeLocationStatusChecker(code_location)
-        code_location_checks.update({code_location['name']: checker})
-        status = "succeeded" if checker.succeeded() else "failed"
+        checker_status = checker.status()
+        code_location_checks.update({code_location['name']: checker_status})
+
         related_job_types = [j['jobSpec']['jobType'] for j in checker.related_jobs]
         scan_types = ",".join([s['scan_details']['scanType'] for s in checker.most_recent_scans])
 
-        if checker.succeeded():
+        if checker_status == "succeeded":
             details = "Jobs " + ",".join(related_job_types) + " all succeeded"
-        else:
-            details = ""
+        elif checker_status == "in-progress":
+            if checker.incomplete_jobs:
+                incomplete_jobs = [ipj['jobSpec']['jobType'] for ipj in checker.incomplete_jobs]
+                details = "Jobs " + ",".join(incomplete_jobs) + " are still in-progress"
+            if checker.incomplete_scans:
+                incomplete_scans = [
+                    "name '{}'; id {}: status {}".format(
+                        s['scan_details']['name'], s['scan_details']['scanSourceId'], s['status'])
+                        for s in checker.incomplete_scans
+                ]
+                details = "Scans not completed. " + ",".join(incomplete_scans)
+        elif checker_status == "failed":
             if checker.failed_scans:
                 failed_scans = [
-                    {
-                        'name': fs['scan_details']['name'],
-                        'id': fs['scan_details']['scanSourceId']
-                    } for fs in checker.failed_scans
+                    "name '{}'; id {}: status {}".format(
+                        s['scan_details']['name'], s['scan_details']['scanSourceId'], s['status'])
+                        for s in checker.failed_scans
                 ]
-                details += "Failed scans: " + ",".join(failed_scans) + "\n"
+                details = "Scans failed. " + ",".join(failed_scans)
             if checker.failed_jobs:
-                failed_jobs = [
-                ]
-                details += "Failed jobs: " + ",".join(failed_jobs) + "\n"
+                failed_jobs = [fj['jobSpec']['jobType'] for fj in checker.failed_jobs]
+                details += "Jobs " + ",".join(failed_jobs) + " failed"
         logging.debug("{} {}".format(code_location['name'], details))
-        ttable.append([code_location['name'], scan_types, status, details])
+        ttable.append([code_location['name'], scan_types, checker_status, details])
 
     print(AsciiTable(ttable).table)
 
-    if all([c.succeeded() for k,c in code_location_checks.items()]):
+    if all([status for k,status in code_location_checks.items()]):
         sys.exit(0)
     else:
         sys.exit(1)
