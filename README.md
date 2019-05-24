@@ -22,7 +22,12 @@ projects = hub.get_projects()
 print(json.dumps(projects.get('items', [])))
 ```
 
+### Examples
+
+Example code showing how to do various things can be found in the *examples* folder. 
+
 ## Build ##
+
 You should be using [virtualenv](https://pypi.org/project/virtualenv/), [virtrualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to make things easy on yourself.
 
 Ref: [Packaging Python Projects Tutorial](https://packaging.python.org/tutorials/packaging-projects/)

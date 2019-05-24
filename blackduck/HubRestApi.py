@@ -1160,6 +1160,9 @@ class HubInstance(object):
     # WARNING: Uses internal API
     ###
     
+    # TODO: Refactor this code to use the (newly released, v2019.4.0) public endpoint for adding sub-projects (POST /api/projects/{projectId}/versions/{projectVersionId}/components)
+    #       ref: https://jira.dc1.lan/browse/HUB-16972
+    
     def add_version_as_component(self, main_project_release, sub_project_release):
         headers = self.get_headers()
         main_data = main_project_release['_meta']['href'].split('/')
@@ -1225,8 +1228,6 @@ class HubInstance(object):
                 result.append({filename, pathname})
         return result
                             
-
-
     def get_codelocations(self, limit=100, unmapped=False, parameters={}):
         parameters['limit'] = limit
         paramstring = self._get_parameter_string(parameters)
@@ -1247,11 +1248,20 @@ class HubInstance(object):
             logging.error("Failed to retrieve code locations (aka scans), status code {}".format(
                 response.status_code))
 
-    def get_codelocation_scan_summaries(self, code_location_id, limit=100):
+    def get_codelocation_scan_summaries(self, code_location_id = None, code_location_obj = None, limit=100):
+        '''Retrieve the scans (aka scan summaries) for the given location. You can give either
+        code_location_id or code_location_obj. If both are supplied, precedence is to use code_location_obj
+        '''
+        assert code_location_id or code_location_obj, "You must supply at least one - code_location_id or code_location_obj"
+
         paramstring = "?limit={}&offset=0".format(limit)
         headers = self.get_headers()
-        url = self.get_apibase() + \
-            "/codelocations/{}/scan-summaries".format(code_location_id)
+        headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
+        if code_location_obj:
+            url = self.get_link(code_location_obj, "scans")
+        else:
+            url = self.get_apibase() + \
+                "/codelocations/{}/scan-summaries".format(code_location_id)
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -1281,8 +1291,8 @@ class HubInstance(object):
         
     def get_scan_locations(self, code_location_id):
         headers = self.get_headers()
-        url = self.get_apibase() + \
-            "/v1/scanlocations/{}".format(code_location_id)
+        headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
+        url = self.get_apibase() + "/codelocations/{}".format(code_location_id)
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -1350,6 +1360,34 @@ class HubInstance(object):
         response = self.execute_get(url)
         return response.json()
         
+    ##
+    #
+    # Notifications
+    #
+    ##
+    def get_notifications(self, parameters={}):
+        url = self.get_urlbase() + "/api/notifications" + self._get_parameter_string(parameters)
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.notification-4+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        json_data = response.json()
+        return json_data
+
+    ##
+    #
+    # Licenses
+    #
+    ##
+    def get_licenses(self, parameters={}):
+        url = self.get_urlbase() + "/api/licenses" + self._get_parameter_string(parameters)
+        response = self.execute_get(url, custom_headers={'Accept':'application/json'})
+        json_data = response.json()
+        return json_data
+
+    ##
+    #
+    # General methods including get, put, post, etc
+    #
+    ##
     def _validated_json_data(self, data_to_validate):
         if isinstance(data_to_validate, dict) or isinstance(data_to_validate, list):
             json_data = json.dumps(data_to_validate)
