@@ -11,12 +11,12 @@ from blackduck.HubRestApi import HubInstance
 # To clean up duplicates set cleanup = True
 
 cleanupEmpty = False
-cleanup = False
+cleanup = True
 
 
 hub = HubInstance()
 
-project = hub.get_project_by_id('d518e396-2bfc-4528-9ff9-fb2673b85bc3', limit=100)
+project = hub.get_project_by_id('3108a69a-71c3-4663-81bd-647844f24318', limit=100)
 
 
 print (project['name'])

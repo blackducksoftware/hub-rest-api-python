@@ -833,7 +833,7 @@ class HubInstance(object):
     def get_project_by_id(self, project_id, limit=100):
         headers = self.get_headers()
         paramstring = self.get_limit_paramstring(limit)
-        url = self._get_projects_url() + project_id + paramstring
+        url = self._get_projects_url() + "/" + project_id + paramstring
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
@@ -1200,6 +1200,14 @@ class HubInstance(object):
     # Code locations or Scans Stuff
     #
     ###
+    
+    def upload_scan(self, filename):
+        url = self.get_apibase() + "/scan/data"
+        files = {'file':open(filename,'rb')}
+        response = requests.post(url, headers=self.get_headers(), files=files, verify=False)
+        print (response)
+        
+        print (url)
     
     def download_project_scans(self, project_name,version_name, output_folder=None):
         version = self.get_project_version_by_name(project_name,version_name)
