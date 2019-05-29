@@ -1198,6 +1198,14 @@ class HubInstance(object):
     #
     ###
     
+    def upload_scan(self, filename):
+        url = self.get_apibase() + "/scan/data"
+        files = {'file':open(filename,'rb')}
+        response = requests.post(url, headers=self.get_headers(), files=files, verify=False)
+        print (response)
+        
+        print (url)
+    
     def download_project_scans(self, project_name,version_name, output_folder=None):
         version = self.get_project_version_by_name(project_name,version_name)
         codelocations = self.get_version_codelocations(version)
