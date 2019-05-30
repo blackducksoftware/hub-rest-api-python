@@ -988,17 +988,50 @@ class HubInstance(object):
     def delete_empty_projects(self):
         #get all projects with no mapped code locations and delete them all
         projects = self.get_projects().get('items',[])
+        deleted_projects = list()
         for p in projects:
             p_empty = True
-            versions = self.get_project_versions(p)
+            versions = self.get_project_versions(p).get('items', [])
             for v in versions:
-                codelocations = self.get_version_codelocations(versions['items'][0])
+                codelocations = self.get_version_codelocations(v)
                 if codelocations['totalCount'] != 0:
                     p_empty = False
+                    logging.debug("Found a non-empty version in project {}, skipping...".format(
+                        p['name']))
                     break
             if p_empty:
+                logging.info("Project {} is empty, deleting".format(p['name']))
                 self.execute_delete(p['_meta']['href'])
-    
+                deleted_projects.append(p['name'])
+        return deleted_projects
+
+    def delete_empty_versions(self, project):
+        # delete versions within a given project if there are no mapped code locations (scans)
+        versions = self.get_project_versions(project).get('items', [])
+        logging.debug("Deleting empty versions for project {}".format(project['name']))
+        deleted_versions = list()
+        for v in versions:
+            codelocations = self.get_version_codelocations(v).get('items', [])
+            if not codelocations:
+                logging.info("Deleting empty version {} from project {}".format(
+                    v['versionName'], project['name']))
+                self.execute_delete(v['_meta']['href'])
+                deleted_versions.append((project['name'], v['versionName']))
+            else:
+                logging.debug("Version {} within project {} has scans (i.e. not empty), skipping".format(
+                    v['versionName'], project['name']))
+        return deleted_versions
+
+    def delete_all_empty_versions(self):
+        # delete versions if there are no mapped code locations (scans) across all projects
+        projects = self.get_projects().get('items', [])
+        deleted_versions = list()
+        logging.info("Deleting empty versions for all {} projects on this server".format(
+            len(projects)))
+        for p in projects:
+            deleted_versions.extend(self.delete_empty_versions(p))
+        return deleted_versions
+
     def _find_user_group_url(self, assignable_user_groups, user_group_name):
         for user_group in assignable_user_groups['items']:
             if user_group['name'] == user_group_name:
