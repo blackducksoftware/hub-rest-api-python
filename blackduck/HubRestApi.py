@@ -1377,10 +1377,13 @@ class HubInstance(object):
         return jsondata
 
     def delete_unmapped_codelocations(self, limit=1000):
-        jsondata = self.get_codelocations(limit, True)
-        codelocations = jsondata['items']
-        for c in codelocations:
-            response = self.execute_delete(c['_meta']['href'])
+        code_locations = self.get_codelocations(limit, True).get('items', [])
+
+        for c in code_locations:
+            scan_summaries = self.get_codelocation_scan_summaries(code_location_obj = c).get('items', [])
+
+            if scan_summaries[0]['status'] == 'COMPLETE':
+                response = self.execute_delete(c['_meta']['href'])
 
     ##
     #
