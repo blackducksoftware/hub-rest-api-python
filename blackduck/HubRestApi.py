@@ -1307,6 +1307,33 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
     
+    def delete_unmapped_codelocations(self, limit=1000):
+        code_locations = self.get_codelocations(limit, True).get('items', [])
+
+        for c in code_locations:
+            scan_summaries = self.get_codelocation_scan_summaries(code_location_obj = c).get('items', [])
+
+            if scan_summaries[0]['status'] == 'COMPLETE':
+                response = self.execute_delete(c['_meta']['href'])
+
+    def delete_codelocation(self, locationid):
+        url = self.config['baseurl'] + "/api/codelocations/" + locationid
+        headers = self.get_headers()
+        response = requests.delete(url, headers=headers, verify = not self.config['insecure'])
+        return response
+        
+    def get_scan_locations(self, code_location_id):
+        headers = self.get_headers()
+        headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
+        url = self.get_apibase() + "/codelocations/{}".format(code_location_id)
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
+
+    #
+    #
+    #
+
     def get_component_by_id(self, component_id):
         url = self.config['baseurl'] + "/api/components/{}".format(component_id)
         return self.get_component_by_url(url)
@@ -1323,20 +1350,6 @@ class HubInstance(object):
 
     def update_component_by_url(self, component_url, update_json):
         return self.execute_put(component_url, update_json)
-
-    def delete_codelocation(self, locationid):
-        url = self.config['baseurl'] + "/api/codelocations/" + locationid
-        headers = self.get_headers()
-        response = requests.delete(url, headers=headers, verify = not self.config['insecure'])
-        return response
-        
-    def get_scan_locations(self, code_location_id):
-        headers = self.get_headers()
-        headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
-        url = self.get_apibase() + "/codelocations/{}".format(code_location_id)
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        jsondata = response.json()
-        return jsondata
 
     def execute_delete(self, url):
         headers = self.get_headers()
@@ -1375,12 +1388,6 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
-
-    def delete_unmapped_codelocations(self, limit=1000):
-        jsondata = self.get_codelocations(limit, True)
-        codelocations = jsondata['items']
-        for c in codelocations:
-            response = self.execute_delete(c['_meta']['href'])
 
     ##
     #
