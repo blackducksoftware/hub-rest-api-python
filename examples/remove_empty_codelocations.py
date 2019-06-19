@@ -15,7 +15,7 @@ optional arguments:
   --delete-complete-only DELETE_COMPLETE_ONLY
                         Delete completed scans only
   --delete-mapped DELETE_MAPPED
-                        Delete only unmapped scans
+                        Delete scans that are mapped to projects (use with extreme care)
 
 
 '''
@@ -89,7 +89,7 @@ def main(argv=None):
     parser = ArgumentParser()
     parser.add_argument('--before-date', default=None, help="Will affect scans created before YYYY-MM-DD[THH:MM:SS[.mmm]]")
     parser.add_argument('--delete-complete-only',default=True, help="Delete completed scans only")
-    parser.add_argument('--delete-mapped', default=False, help="Delete only unmapped scans")
+    parser.add_argument('--delete-mapped', default=False, help="Delete scans that are mapped to projects (use with extreme care)")
     args = parser.parse_args()
     
     delete_codelocations(args.delete_mapped, args.delete_complete_only, args.before_date)
