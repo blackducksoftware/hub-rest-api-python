@@ -26,6 +26,8 @@ parser.add_argument("--active", default=True)
 args = parser.parse_args()
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 hub = HubInstance()
 

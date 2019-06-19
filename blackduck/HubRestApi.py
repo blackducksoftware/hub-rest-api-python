@@ -512,7 +512,7 @@ class HubInstance(object):
     def get_component_remediation(self, bom_component):
         url = "{}/remediating".format(bom_component['componentVersion'])
         logging.debug("Url for getting remediation info is : {}".format(url))
-        response = hub.execute_get(url)
+        response = self.execute_get(url)
         return response.json()
 
     ##
@@ -988,21 +988,59 @@ class HubInstance(object):
     def delete_empty_projects(self):
         #get all projects with no mapped code locations and delete them all
         projects = self.get_projects().get('items',[])
+        deleted_projects = list()
         for p in projects:
             p_empty = True
-            versions = self.get_project_versions(p)
+            versions = self.get_project_versions(p).get('items', [])
             for v in versions:
-                codelocations = self.get_version_codelocations(versions['items'][0])
+                codelocations = self.get_version_codelocations(v)
                 if codelocations['totalCount'] != 0:
                     p_empty = False
+                    logging.debug("Found a non-empty version in project {}, skipping...".format(
+                        p['name']))
                     break
             if p_empty:
+                logging.info("Project {} is empty, deleting".format(p['name']))
                 self.execute_delete(p['_meta']['href'])
-    
+                deleted_projects.append(p['name'])
+        return deleted_projects
+
+    def delete_empty_versions(self, project):
+        # delete versions within a given project if there are no mapped code locations (scans)
+        versions = self.get_project_versions(project).get('items', [])
+        logging.debug("Deleting empty versions for project {}".format(project['name']))
+        deleted_versions = list()
+        for v in versions:
+            codelocations = self.get_version_codelocations(v).get('items', [])
+            if not codelocations:
+                logging.info("Deleting empty version {} from project {}".format(
+                    v['versionName'], project['name']))
+                self.execute_delete(v['_meta']['href'])
+                deleted_versions.append((project['name'], v['versionName']))
+            else:
+                logging.debug("Version {} within project {} has scans (i.e. not empty), skipping".format(
+                    v['versionName'], project['name']))
+        return deleted_versions
+
+    def delete_all_empty_versions(self):
+        # delete versions if there are no mapped code locations (scans) across all projects
+        projects = self.get_projects().get('items', [])
+        deleted_versions = list()
+        logging.info("Deleting empty versions for all {} projects on this server".format(
+            len(projects)))
+        for p in projects:
+            deleted_versions.extend(self.delete_empty_versions(p))
+        return deleted_versions
+
     def _find_user_group_url(self, assignable_user_groups, user_group_name):
         for user_group in assignable_user_groups['items']:
             if user_group['name'] == user_group_name:
                 return user_group['usergroup']
+
+    def _find_user_url(self, assignable_user, user_name):
+        for user in assignable_user['items']:
+            if user['name'] == user_name:
+                return user['user']
 
     def _project_role_urls(self, project_role_names):
         all_project_roles = self.get_project_roles()
@@ -1066,8 +1104,61 @@ class HubInstance(object):
         else:
             logging.warning("Did not find a project by the name {}".format(project_name))
 
-    def assign_user_to_project(self, user_name, project_name, project_roles_l):
-        pass
+    def assign_user_to_project(self, user_name, project_name, project_roles, limit=1000):
+        # Assign users to projects
+        project = self.get_project_by_name(project_name)
+
+        if project:
+            project_url = project['_meta']['href']
+            assignable_users_link = self.get_link(project, 'assignable-users')
+            paramstring = self.get_limit_paramstring(limit)
+            url = assignable_users_link + paramstring
+            logging.debug("GET {}".format(url))
+            if assignable_users_link:
+                assignable_users_response = self.execute_get(url)
+                assignable_users = assignable_users_response.json()
+
+                # TODO: What to do if the user is already assigned to the project, and therefore
+                # does not appear in the list of 'assignable' user? Should we search the (assigned) user
+                # and re-apply the project-roles to the assignment?
+
+                user_url = self._find_user_url(assignable_users, user_name)
+                if user_url:
+                    headers = self.get_headers()
+
+                    # need project role urls to build the POST payload
+                    project_roles_urls = self._project_role_urls(project_roles)
+
+                    # The POST endpoint changes based on whether we found any project-roles to assign
+                    # Also, due to what appears to be a defect, the Content-Type changes
+                    if project_roles_urls:
+                        url = user_url + "/roles"
+                        # one dict per project role assignment
+                        post_data = [{'role': r, 'scope': project_url} for r in project_roles_urls]
+                        # I found I had to use this Content-Type (application/json resulted in 412)
+                        # ref: https://jira.dc1.lan/browse/HUB-18417
+                        headers['Content-Type'] = 'application/vnd.blackducksoftware.internal-1+json'
+                    else:
+                        url = project_url + "/users"
+                        # Assigning a user with no project-roles
+                        post_data = {"user": user_url}
+                        headers['Content-Type'] = 'application/json'
+
+                    response = requests.post(
+                        url,
+                        headers=headers,
+                        data=json.dumps(post_data),
+                        verify=not self.config['insecure'])
+                    return response
+                else:
+                    assignable_username = [u['name'] for u in assignable_users['items']]
+                    logging.warning(
+                        "The user {} was not found in the assignable user ({}) for this project {}. Is the user already assigned to this project?".format(
+                            user_name, assignable_username, project_name))
+            else:
+                logging.warning("This project {} has no assignable users".format(project_name))
+        else:
+            logging.warning("Did not find a project by the name {}".format(project_name))
 
     def assign_project_application_id(self, project_name, application_id, overwrite=False):
         logging.debug("Assigning application_id {} to project_name {}, overwrite={}".format(
@@ -1160,6 +1251,9 @@ class HubInstance(object):
     # WARNING: Uses internal API
     ###
     
+    # TODO: Refactor this code to use the (newly released, v2019.4.0) public endpoint for adding sub-projects (POST /api/projects/{projectId}/versions/{projectVersionId}/components)
+    #       ref: https://jira.dc1.lan/browse/HUB-16972
+    
     def add_version_as_component(self, main_project_release, sub_project_release):
         headers = self.get_headers()
         main_data = main_project_release['_meta']['href'].split('/')
@@ -1236,8 +1330,6 @@ class HubInstance(object):
                 result.append({filename, pathname})
         return result
                             
-
-
     def get_codelocations(self, limit=100, unmapped=False, parameters={}):
         parameters['limit'] = limit
         paramstring = self._get_parameter_string(parameters)
@@ -1258,15 +1350,51 @@ class HubInstance(object):
             logging.error("Failed to retrieve code locations (aka scans), status code {}".format(
                 response.status_code))
 
-    def get_codelocation_scan_summaries(self, code_location_id, limit=100):
+    def get_codelocation_scan_summaries(self, code_location_id = None, code_location_obj = None, limit=100):
+        '''Retrieve the scans (aka scan summaries) for the given location. You can give either
+        code_location_id or code_location_obj. If both are supplied, precedence is to use code_location_obj
+        '''
+        assert code_location_id or code_location_obj, "You must supply at least one - code_location_id or code_location_obj"
+
         paramstring = "?limit={}&offset=0".format(limit)
         headers = self.get_headers()
-        url = self.get_apibase() + \
-            "/codelocations/{}/scan-summaries".format(code_location_id)
+        headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
+        if code_location_obj:
+            url = self.get_link(code_location_obj, "scans")
+        else:
+            url = self.get_apibase() + \
+                "/codelocations/{}/scan-summaries".format(code_location_id)
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
     
+    def delete_unmapped_codelocations(self, limit=1000):
+        code_locations = self.get_codelocations(limit, True).get('items', [])
+
+        for c in code_locations:
+            scan_summaries = self.get_codelocation_scan_summaries(code_location_obj = c).get('items', [])
+
+            if scan_summaries[0]['status'] == 'COMPLETE':
+                response = self.execute_delete(c['_meta']['href'])
+
+    def delete_codelocation(self, locationid):
+        url = self.config['baseurl'] + "/api/codelocations/" + locationid
+        headers = self.get_headers()
+        response = requests.delete(url, headers=headers, verify = not self.config['insecure'])
+        return response
+        
+    def get_scan_locations(self, code_location_id):
+        headers = self.get_headers()
+        headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
+        url = self.get_apibase() + "/codelocations/{}".format(code_location_id)
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
+
+    #
+    #
+    #
+
     def get_component_by_id(self, component_id):
         url = self.config['baseurl'] + "/api/components/{}".format(component_id)
         return self.get_component_by_url(url)
@@ -1283,20 +1411,6 @@ class HubInstance(object):
 
     def update_component_by_url(self, component_url, update_json):
         return self.execute_put(component_url, update_json)
-
-    def delete_codelocation(self, locationid):
-        url = self.config['baseurl'] + "/api/codelocations/" + locationid
-        headers = self.get_headers()
-        response = requests.delete(url, headers=headers, verify = not self.config['insecure'])
-        return response
-        
-    def get_scan_locations(self, code_location_id):
-        headers = self.get_headers()
-        url = self.get_apibase() + \
-            "/v1/scanlocations/{}".format(code_location_id)
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        jsondata = response.json()
-        return jsondata
 
     def execute_delete(self, url):
         headers = self.get_headers()
@@ -1336,12 +1450,6 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
-    def delete_unmapped_codelocations(self, limit=1000):
-        jsondata = self.get_codelocations(limit, True)
-        codelocations = jsondata['items']
-        for c in codelocations:
-            response = self.execute_delete(c['_meta']['href'])
-
     ##
     #
     # Health Stuff
@@ -1361,6 +1469,34 @@ class HubInstance(object):
         response = self.execute_get(url)
         return response.json()
         
+    ##
+    #
+    # Notifications
+    #
+    ##
+    def get_notifications(self, parameters={}):
+        url = self.get_urlbase() + "/api/notifications" + self._get_parameter_string(parameters)
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.notification-4+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        json_data = response.json()
+        return json_data
+
+    ##
+    #
+    # Licenses
+    #
+    ##
+    def get_licenses(self, parameters={}):
+        url = self.get_urlbase() + "/api/licenses" + self._get_parameter_string(parameters)
+        response = self.execute_get(url, custom_headers={'Accept':'application/json'})
+        json_data = response.json()
+        return json_data
+
+    ##
+    #
+    # General methods including get, put, post, etc
+    #
+    ##
     def _validated_json_data(self, data_to_validate):
         if isinstance(data_to_validate, dict) or isinstance(data_to_validate, list):
             json_data = json.dumps(data_to_validate)
