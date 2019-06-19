@@ -17,4 +17,7 @@ from sys import argv
 
 hub = HubInstance()
 
-print(hub.delete_unmapped_codelocations())
+codelocations = hub.get_codelocations()
+for location in codelocations['items']:
+    print (location)
+    print (hub.get_codelocation_scan_summaries(location['_meta']['href'].split('/')[5]))

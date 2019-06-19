@@ -1199,9 +1199,12 @@ class HubInstance(object):
     ###
     
     def upload_scan(self, filename):
-        url = self.get_apibase() + "/scan/data"
+        url = self.get_apibase() + "/api/scan/data/"
         files = {'file':open(filename,'rb')}
-        response = requests.post(url, headers=self.get_headers(), files=files, verify=False)
+        headers = self.get_headers()
+        print (headers)
+        #headers['Accept'] = 'application/vnd.blackducksoftware.user-4+json'
+        response = requests.post(url, headers=headers, files=files, verify=False)
         print (response)
         
         print (url)
