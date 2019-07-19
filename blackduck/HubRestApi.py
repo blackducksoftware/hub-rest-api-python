@@ -1293,15 +1293,13 @@ class HubInstance(object):
     ###
     
     def upload_scan(self, filename):
-        url = self.get_apibase() + "/api/scan/data/"
+        url = self.get_apibase() + "/scan/data/?mode=replace"
         files = {'file':open(filename,'rb')}
         headers = self.get_headers()
-        print (headers)
-        #headers['Accept'] = 'application/vnd.blackducksoftware.user-4+json'
-        response = requests.post(url, headers=headers, files=files, verify=False)
-        print (response)
-        
-        print (url)
+        headers['Content-Type'] = 'application/vnd.blackducksoftware.bdio+zip'
+        with open(filename,"rb") as f:
+            response = requests.post(url, headers=headers, data=f, verify=False)
+        return response
     
     def download_project_scans(self, project_name,version_name, output_folder=None):
         version = self.get_project_version_by_name(project_name,version_name)
