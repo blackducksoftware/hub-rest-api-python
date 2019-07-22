@@ -23,17 +23,20 @@ from blackduck.HubRestApi import HubInstance
 import sys
 from argparse import ArgumentParser
 from datetime import datetime
-
+from datetime import timedelta
+import logging
 
 def delete_empty_projects(before=None):
     
     hub = HubInstance()
+    logging.basicConfig(level=logging.DEBUG)
+    
     projects = hub.get_projects(limit=500)
     print (projects)
     if before:
         aDate = datetime.strptime(before, '%Y-%m-%d')
     else:
-        aDate = datetime.now()
+        aDate = datetime.now() + timedelta(days=1)
     
     for project in projects['items']:
         name = project['name']
