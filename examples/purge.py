@@ -26,13 +26,13 @@ for project in projects['items']:
     if len(versionlist) == 1:
         continue
     for index in range(len(versionlist) - 1):
-        print ("index is ".format(index))
+        print ("index is ", format(index))
         va = versionlist[index]
         components = hub.get_version_components(va)
         codelocations = hub.get_version_codelocations(va)
         # hub.execute_delete(va['_meta']['href'])
         print ("version {} has {} codelocations".format(va['versionName'], codelocations['totalCount']))
-        if codelocations > 0:
+        if codelocations['totalCount'] > 0:
             for codelocation in codelocations['items']:
                 print (codelocation['_meta']['href'])
                 locationid = codelocation['_meta']['href'].split("/")[5]

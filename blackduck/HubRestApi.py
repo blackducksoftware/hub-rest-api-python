@@ -745,6 +745,7 @@ class HubInstance(object):
         url = self._get_projects_url() + self._get_parameter_string(parameters)
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        ## @SMELL need to gracfully handle not finding the project
         jsondata = response.json()
         return jsondata
 
@@ -1237,6 +1238,32 @@ class HubInstance(object):
         if link:
             response = self.execute_get(link)
             return response.json()
+        else:
+            return {} # nada
+
+    def get_project_violation_status(self, project_name, version):
+
+        project = self.get_project_by_name(project_name)
+        if (project is None):
+            print ("Project " + project_name + " not found")
+            return ("NO_PROJECT")
+
+        link = self.get_link(project, "versions")
+        if link:
+            response = self.execute_get(link)
+            if response.status_code == 200:
+                versions_list = json.loads(response.text)
+                for version_item in versions_list['items']:
+                    print("Got version in file "+version_item['versionName'])
+                    if version == 'empty':
+                        version = version_item['versionName']
+                    if version_item['versionName'] == version:
+                        print("Found " + version)
+                        return version_item['policyStatus']
+                else:
+                    return ("VERSION_NOT_SCANNED")
+            else:
+                return ("SERVER_NOT_RETURNED_200")
         else:
             return {} # nada
 

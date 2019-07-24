@@ -34,7 +34,7 @@ hub = HubInstance()
 
 project = hub.get_project_by_name(args.project_name)
 
-print(json.dumps(project))
+print(json.dumps(project, indent=4, sort_keys=True))
 
 if args.link:
-	print(json.dumps(hub.get_project_info(args.project_name, args.link)))
+	print(json.dumps(hub.get_project_info(args.project_name, args.link), indent=4))
