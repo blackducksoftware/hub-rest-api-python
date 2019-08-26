@@ -49,6 +49,7 @@ It is possible to generate generate_config file by initalizing API as following:
 import logging
 import requests
 import json
+from operator import itemgetter
 
 # TODO: Create some kind of Black Duck exception grouping/hierarchy?
 
@@ -193,7 +194,7 @@ class HubInstance(object):
         return version
 
     def _get_parameter_string(self, parameters={}):
-        parameter_string = "&".join(["{}={}".format(k,v) for k,v in parameters.items()])
+        parameter_string = "&".join(["{}={}".format(k,v) for k,v in sorted(parameters.items(), key=itemgetter(0))])
         return "?" + parameter_string
 
     def get_tags_url(self, component_or_project):
