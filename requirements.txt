@@ -9,6 +9,7 @@ timestring
 # for unit testing
 pytest
 requests-mock
+pytest-datadir
 
 # For package building and distribution (e.g. to PyPi)
 setuptools
