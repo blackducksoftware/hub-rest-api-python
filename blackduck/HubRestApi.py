@@ -771,7 +771,7 @@ class HubInstance(object):
         response = self.execute_post(url, data=post_data)
         return response
 
-    def create_project_version(self, project_obj, new_version_name, parameters={}):
+    def create_project_version(self, project_obj, new_version_name, clone_version=None, parameters={}):
         url = self.get_link(project_obj, "versions")
 
         version_phase = parameters.get("phase", "PLANNING")
@@ -786,9 +786,11 @@ class HubInstance(object):
                 "COMPONENT_DATA"
             ],
             "versionName": new_version_name,
-            "phase": parameters.get("phase", "PLANNING"),
+            "phase": version_phase,
             "distribution": parameters.get("distribution", "EXTERNAL")
         }
+        if clone_version:
+            post_data["cloneFromReleaseUrl"] = clone_version['_meta']['href']
         response = self.execute_post(url, data=post_data)
         return response
 
