@@ -111,6 +111,8 @@ setup(
     #     'git+git://github.com/blackducksoftware/tortilla#egg=tortilla-0.5.1b'
     # ],
     install_requires=REQUIRED,
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest', 'requests-mock', 'pytest-datadir'],
     include_package_data=True,
     license='Apache',
     classifiers=[
