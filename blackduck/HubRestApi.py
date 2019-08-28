@@ -491,11 +491,8 @@ class HubInstance(object):
         logging.debug("query results in status code {}, json data: {}".format(response.status_code, response.json()))
         # TODO: Error checking and retry? For now, as POC just assuming it worked
         component_list_d = response.json()
-        if component_list_d['totalCount'] >= 1:
-            return component_list_d['items'][0]
-        else:
-            return component_list_d['items']
-
+        return response.json()
+        
     def get_vulnerable_bom_components(self, version_obj, limit=9999):
         url = "{}/vulnerable-bom-components".format(version_obj['_meta']['href'])
         custom_headers = {'Content-Type': 'application/vnd.blackducksoftware.bill-of-materials-4+json'}
@@ -1388,9 +1385,25 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
+    ##
     #
+    # Component stuff
     #
-    #
+    ##
+    def _get_components_url(self):
+        return self.get_urlbase() + "/api/components"
+
+    def get_components(self, limit=100, parameters={}):
+        if limit:
+            parameters.update({'limit':limit})
+        #
+        # I was only able to GET components when using this internal media type which is how the GUI works
+        #       July 19, 2019 Glenn Snyder
+        #
+        custom_headers = {'Accept':'application/vnd.blackducksoftware.internal-1+json'}
+        url = self._get_components_url() + self._get_parameter_string(parameters)
+        response = self.execute_get(url, custom_headers=custom_headers)
+        return response.json()
 
     def get_component_by_id(self, component_id):
         url = self.config['baseurl'] + "/api/components/{}".format(component_id)
@@ -1408,6 +1421,13 @@ class HubInstance(object):
 
     def update_component_by_url(self, component_url, update_json):
         return self.execute_put(component_url, update_json)
+
+
+    ##
+    #
+    # General stuff
+    #
+    ##
 
     def execute_delete(self, url):
         headers = self.get_headers()
