@@ -49,6 +49,7 @@ It is possible to generate generate_config file by initalizing API as following:
 import logging
 import requests
 import json
+from operator import itemgetter
 
 # TODO: Create some kind of Black Duck exception grouping/hierarchy?
 
@@ -193,7 +194,7 @@ class HubInstance(object):
         return version
 
     def _get_parameter_string(self, parameters={}):
-        parameter_string = "&".join(["{}={}".format(k,v) for k,v in parameters.items()])
+        parameter_string = "&".join(["{}={}".format(k,v) for k,v in sorted(parameters.items(), key=itemgetter(0))])
         return "?" + parameter_string
 
     def get_tags_url(self, component_or_project):
@@ -768,7 +769,7 @@ class HubInstance(object):
         response = self.execute_post(url, data=post_data)
         return response
 
-    def create_project_version(self, project_obj, new_version_name, parameters={}):
+    def create_project_version(self, project_obj, new_version_name, clone_version=None, parameters={}):
         url = self.get_link(project_obj, "versions")
 
         version_phase = parameters.get("phase", "PLANNING")
@@ -783,9 +784,11 @@ class HubInstance(object):
                 "COMPONENT_DATA"
             ],
             "versionName": new_version_name,
-            "phase": parameters.get("phase", "PLANNING"),
+            "phase": version_phase,
             "distribution": parameters.get("distribution", "EXTERNAL")
         }
+        if clone_version:
+            post_data["cloneFromReleaseUrl"] = clone_version['_meta']['href']
         response = self.execute_post(url, data=post_data)
         return response
 
@@ -1290,12 +1293,13 @@ class HubInstance(object):
     ###
     
     def upload_scan(self, filename):
-        url = self.get_apibase() + "/scan/data"
+        url = self.get_apibase() + "/scan/data/?mode=replace"
         files = {'file':open(filename,'rb')}
-        response = requests.post(url, headers=self.get_headers(), files=files, verify=False)
-        print (response)
-        
-        print (url)
+        headers = self.get_headers()
+        headers['Content-Type'] = 'application/vnd.blackducksoftware.bdio+zip'
+        with open(filename,"rb") as f:
+            response = requests.post(url, headers=headers, data=f, verify=False)
+        return response
     
     def download_project_scans(self, project_name,version_name, output_folder=None):
         version = self.get_project_version_by_name(project_name,version_name)
