@@ -50,6 +50,7 @@ import logging
 import requests
 import json
 from operator import itemgetter
+import urllib.parse
 
 # TODO: Create some kind of Black Duck exception grouping/hierarchy?
 
@@ -1409,6 +1410,13 @@ class HubInstance(object):
         response = self.execute_get(url, custom_headers=custom_headers)
         return response.json()
 
+    def search_components(self, search_str, limit=100, parameters={}):
+        if limit:
+            parameters.update({'limit':limit})
+        url = self.get_apibase() + "/search/components?q=name:{}".format(urllib.parse.quote(search_str))
+        response = self.execute_get(url)
+        return response.json()
+        
     def get_component_by_id(self, component_id):
         url = self.config['baseurl'] + "/api/components/{}".format(component_id)
         return self.get_component_by_url(url)
