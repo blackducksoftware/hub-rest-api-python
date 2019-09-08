@@ -799,6 +799,28 @@ class HubInstance(object):
             if project['name'] == project_name:
                 return project
 
+    def get_projects_by_version_name(self, version_name, exclude_projects=None):
+        """Returns all project dicts which have given version_name, including the version object under 'version' key
+        
+        Arguments:
+            version_name {str} -- version name to be searched
+            exclude_projects {list} -- list of project names to be excluded from scanning for given version name
+        """
+        headers = self.get_headers()
+        projects = self.get_projects(limit=9999).get('items',[])
+        if len(projects) == 0:
+            logging.error('No projects found')
+        else:
+            jsondata = {'items':[]}
+            for project in projects:
+                if project['name'] not in exclude_projects:
+                    version = self.get_version_by_name(project, version_name)
+                    if version:
+                        project['version'] = version
+                        jsondata['items'].append(project)
+            jsondata['totalCount'] = len(jsondata['items'])
+            return jsondata
+
     def get_version_by_name(self, project, version_name):
         version_list = self.get_project_versions(project, parameters={'q':"versionName:{}".format(version_name)})
         # A query by name can return more than one version if other versions
