@@ -1482,7 +1482,6 @@ class HubInstance(object):
             self._cf_objects = response.json()
         return self._cf_objects
 
-
     def _get_cf_object_url(self, object_name):
         for cf_object in self.get_cf_objects().get('items', []):
             if cf_object['name'].lower() == object_name.lower():
@@ -1531,15 +1530,52 @@ class HubInstance(object):
         return response
 
     def delete_cf(self, object_name, field_id):
+        '''Delete a custom field from a given object type, e.g. Project, Project Version, Component, etc
+
+        WARNING: Deleting a custom field is irreversiable. Any data in the custom fields could be lost so use with caution.
+        '''
+        assert object_name in self.supported_cf_object_types(), "You must supply a supported object name that is in {}".format(self.supported_cf_object_types())
+
         delete_url = self._get_cf_object_url(object_name) + "/fields/{}".format(field_id)
         return self.execute_delete(delete_url)
 
     def get_custom_fields(self, object_name):
+        '''Get the custom field (definition) for a given object type, e.g. Project, Project Version, Component, etc
+        '''
+        assert object_name in self.supported_cf_object_types(), "You must supply a supported object name that is in {}".format(self.supported_cf_object_types())
+
         url = self._get_cf_object_url(object_name) + "/fields"
 
         custom_headers = {'Accept': 'application/vnd.blackducksoftware.admin-4+json'}
         response = self.execute_get(url, custom_headers=custom_headers)        
         return response.json()
+
+    def get_cf_values(self, obj):
+        '''Get all of the custom fields from an object such as a Project, Project Version, Component, etc
+
+        The obj is expected to be the JSON document for a project, project-version, component, etc
+        '''
+        url = self.get_link(obj, "custom-fields")
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.component-detail-5+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        return response.json()
+
+    def get_cf_value(self, obj, field_id):
+        '''Get a custom field value from an object such as a Project, Project Version, Component, etc
+
+        The obj is expected to be the JSON document for a project, project-version, component, etc
+        '''
+        url = self.get_link(obj, "custom-fields") + "/{}".format(field_id)
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.component-detail-5+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        return response.json()
+
+    def put_cf_value(self, cf_url, new_cf_obj):
+        '''new_cf_obj is expected to be a modified custom field value object with the values updated accordingly, e.g.
+        call get_cf_value, modify the object, and then call put_cf_value
+        '''
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.component-detail-5+json'}
+        return self.execute_put(cf_url, new_cf_obj, custom_headers=custom_headers)
 
     ##
     #
