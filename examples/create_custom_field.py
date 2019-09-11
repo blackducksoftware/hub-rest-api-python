@@ -8,7 +8,7 @@ import sys
 
 from blackduck.HubRestApi import HubInstance
 
-parser = argparse.ArgumentParser("Work with custom fields")
+parser = argparse.ArgumentParser("Create a custom field")
 parser.add_argument("object", choices=["BOM Component", "Component", "Component Version", "Project", "Project Version"], help="The object that the custom field should be attached to")
 parser.add_argument("field_type", choices=["BOOLEAN", "DATE", "DROPDOWN", "MULTISELECT", "RADIO", "TEXT", "TEXTAREA"])
 parser.add_argument("description")

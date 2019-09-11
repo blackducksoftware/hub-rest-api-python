@@ -8,9 +8,9 @@ import sys
 
 from blackduck.HubRestApi import HubInstance
 
-parser = argparse.ArgumentParser("Work with custom fields")
+parser = argparse.ArgumentParser("Delete a custom field or all of them")
 parser.add_argument("object", choices=["BOM Component", "Component", "Component Version", "Project", "Project Version"], help="The object that the custom field should be attached to")
-parser.add_argument("field_id")
+parser.add_argument("field_id", help="Use a value of 'all' to delete all the custom fields for the given object")
 args = parser.parse_args()
 
 
