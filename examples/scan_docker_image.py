@@ -31,6 +31,8 @@ positional arguments:
 optional arguments:
   -h, --help         show this help message and exit
   --cleanup CLEANUP  Delete project hierarchy only. Do not scan
+  
+  --rescan-layer  NUM  Rescans specific layer. No project structure cleanup will be performed
 
 '''
 
@@ -120,7 +122,8 @@ class DockerWrapper():
  
 class Detector():
     def __init__(self, hub):
-        self.detecturl = 'https://blackducksoftware.github.io/hub-detect/hub-detect.sh'
+        # self.detecturl = 'https://blackducksoftware.github.io/hub-detect/hub-detect.sh'
+        self.detecturl = 'https://detect.synopsys.com/detect.sh'
         self.baseurl = hub.config['baseurl']
         self.filename = '/tmp/hub-detect.sh'
         self.token=hub.config['api_token']
@@ -190,6 +193,15 @@ class ContainerImageScanner():
             sub_project_release = self.hub.get_or_create_project_version(layer['name'], self.image_version, parameters=parameters)
             self.hub.add_version_as_component(main_project_release, sub_project_release)
 
+    def generate_single_layer_project_structure(self, layer_number):
+        main_project_release = self.hub.get_or_create_project_version(self.image_name, self.image_version)
+
+        layer = self.layers[layer_number - 1]
+        parameters = {}
+        parameters['description'] = layer['command']['created_by']
+        sub_project_release = self.hub.get_or_create_project_version(layer['name'], self.image_version, parameters=parameters)
+        self.hub.add_version_as_component(main_project_release, sub_project_release)
+
     def submit_layer_scans(self):
         for layer in self.layers:
             options = []
@@ -199,6 +211,16 @@ class ContainerImageScanner():
             options.append('--detect.code.location.name={}_{}_code_{}'.format(layer['name'],self.image_version,layer['path']))
             options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path'].split('/')[0]))
             self.hub_detect.detect_run(options)
+
+    def submit_single_layer_scan(self, layer_number):
+        layer = self.layers[layer_number-1]
+        options = []
+        options.append('--detect.project.name={}'.format(layer['name']))
+        options.append('--detect.project.version.name="{}"'.format(self.image_version))
+        options.append('--detect.blackduck.signature.scanner.disabled=false')
+        options.append('--detect.code.location.name={}_{}_code_{}'.format(layer['name'],self.image_version,layer['path']))
+        options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path'].split('/')[0]))
+        self.hub_detect.detect_run(options)
 
     def cleanup_project_structure(self):
         release = self.hub.get_or_create_project_version(self.image_name,self.image_version)
@@ -216,14 +238,18 @@ class ContainerImageScanner():
         print(self.hub.delete_project_by_name(self.image_name))
 
 
-def scan_container_image(imagespec):
+def scan_container_image(imagespec, layer_number=0):
     
     hub = HubInstance()
     scanner = ContainerImageScanner(hub, imagespec)
     scanner.prepare_container_image()
     scanner.process_container_image()
-    scanner.generate_project_structures()
-    scanner.submit_layer_scans()
+    if layer_number == 0:
+        scanner.generate_project_structures()
+        scanner.submit_layer_scans()
+    else:
+        scanner.generate_single_layer_project_structure(layer_number)
+        scanner.submit_single_layer_scan(int(layer_number))
 
 
 def clean_container_project(imagespec):
@@ -241,15 +267,22 @@ def main(argv=None):
         
     parser = ArgumentParser()
     parser.add_argument('imagespec', help="Container image tag, e.g.  repository/imagename:version")
-    parser.add_argument('--cleanup',default=False, help="Delete project hierarchy only. Do not scan")
+    parser.add_argument('--cleanup', default=False, help="Delete project hierarchy only. Do not scan")
+    parser.add_argument('--rescan-layer',default=0, type=int, help="Rescan specific layer in case of failure, 0 - scan as usual")
     args = parser.parse_args()
+    
+    print (args);
     
     hub = HubInstance()
 
-    clean_container_project(args.imagespec)
-    if not args.cleanup:
-        scan_container_image(args.imagespec)
-
+    if args.cleanup:
+        clean_container_project(args.imagespec)
+    else:
+        if args.rescan_layer == 0:
+            clean_container_project(args.imagespec)
+            scan_container_image(args.imagespec)
+        else:
+            scan_container_image(args.imagespec, args.rescan_layer)
     
 if __name__ == "__main__":
     sys.exit(main())
