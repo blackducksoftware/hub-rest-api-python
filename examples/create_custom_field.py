@@ -30,8 +30,6 @@ logging.debug("Creating custom field using arguments: {}".format(args))
 
 initial_options = [{"label": io[0], "position": io[1]} for io in args.initial_options]
 
-import pdb; pdb.set_trace()
-
 response = hub.create_cf(
     args.object, 
     args.field_type, 
