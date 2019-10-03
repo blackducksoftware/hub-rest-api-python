@@ -398,88 +398,8 @@ def test_create_version_notices_report(requests_mock, mock_hub_instance):
     pass
 
 @pytest.fixture()
-def unreviewed_snippet_json(shared_datadir):
-    with (shared_datadir / "unreviewed_snippet.json").open() as f:
-        yield json.load(f)[0]
-
-def test_get_ignore_snippet_json(unreviewed_snippet_json, mock_hub_instance):
-    assert 'fileSnippetBomComponents' in unreviewed_snippet_json
-    assert unreviewed_snippet_json['fileSnippetBomComponents'][0]['ignored'] == False
-
-    result = mock_hub_instance.get_ignore_snippet_json(unreviewed_snippet_json)
-
-    assert isinstance(result, list)
-    assert len(result) == 1
-    assert 'fileSnippetBomComponents' in result[0]
-    assert 'ignored' in result[0]['fileSnippetBomComponents'][0]
-    assert 'reviewStatus' in result[0]['fileSnippetBomComponents'][0]
-    assert result[0]['fileSnippetBomComponents'][0]['ignored'] == True
-    assert result[0]['fileSnippetBomComponents'][0]['reviewStatus'] == 'NOT_REVIEWED'
-
-def test_get_confirm_snippet_json(unreviewed_snippet_json, mock_hub_instance):
-    assert 'fileSnippetBomComponents' in unreviewed_snippet_json
-    assert unreviewed_snippet_json['fileSnippetBomComponents'][0]['ignored'] == False
-    
-    result = mock_hub_instance.get_confirm_snippet_json(unreviewed_snippet_json)
-
-    assert isinstance(result, list)
-    assert len(result) == 1
-    assert 'fileSnippetBomComponents' in result[0]
-    assert 'ignored' in result[0]['fileSnippetBomComponents'][0]
-    assert 'reviewStatus' in result[0]['fileSnippetBomComponents'][0]
-    assert result[0]['fileSnippetBomComponents'][0]['ignored'] == False
-    assert result[0]['fileSnippetBomComponents'][0]['reviewStatus'] == 'REVIEWED'
-
-
-@pytest.fixture()
-def sample_snippet_match_json(shared_datadir):
-    yield json.load((shared_datadir / "sample-snippet-match.json").open())
-
-
-def test_generate_new_match_selection(sample_snippet_match_json, mock_hub_instance):
-    assert 'fileSnippetBomComponents' in sample_snippet_match_json
-    assert len(sample_snippet_match_json['fileSnippetBomComponents']) == 1
-
-    # Copy the snippet component match data and delete the keys that are normally missing
-    # from a (vanilla) snippet component alternate match
-    new_component = copy.deepcopy(sample_snippet_match_json['fileSnippetBomComponents'][0])
-    del new_component['ignored']
-    del new_component['reviewStatus']
-    del new_component['versionBomComponentId']
-    new_component['release']['version'] = 'different-version'
-
-    # now verify that they are restored when we prepare to select/update using the alternate match
-    update_body = mock_hub_instance._generate_new_match_selection(sample_snippet_match_json, new_component)
-
-    assert len(update_body) == 1
-    assert 'fileSnippetBomComponents' in update_body[0]
-    assert len(update_body[0]['fileSnippetBomComponents']) == 1
-    updated_component_info = update_body[0]['fileSnippetBomComponents'][0]
-    original_component_info = sample_snippet_match_json['fileSnippetBomComponents'][0]
-    for k in ['ignored', 'reviewStatus', 'versionBomComponentId']:
-        assert k in updated_component_info
-        assert updated_component_info[k] == original_component_info[k]
-
-@pytest.fixture()
 def sample_bom_component_json(shared_datadir):
     yield json.load((shared_datadir / "sample-bom-component.json").open())
-
-def test_get_edit_snippet_json(sample_snippet_match_json, sample_bom_component_json, mock_hub_instance):
-    assert 'component' in sample_bom_component_json
-    assert 'componentVersion' in sample_bom_component_json
-    assert 'fileSnippetBomComponents' in sample_snippet_match_json
-    assert len(sample_snippet_match_json['fileSnippetBomComponents']) == 1
-
-    new_component_id = sample_bom_component_json['component'].split("/")[-1]
-    new_component_version_id = sample_bom_component_json['componentVersion'].split("/")[-1]
-
-    new_snippet_bom_entry_l = mock_hub_instance.get_edit_snippet_json(sample_snippet_match_json, sample_bom_component_json)
-
-    assert len(new_snippet_bom_entry_l) == 1
-    new_snippet_bom_entry = new_snippet_bom_entry_l[0]
-    
-    assert new_component_id == new_snippet_bom_entry['fileSnippetBomComponents'][0]['project']['id']
-    assert new_component_version_id == new_snippet_bom_entry['fileSnippetBomComponents'][0]['release']['id']
 
 @pytest.fixture()
 def no_roles_user(shared_datadir):
