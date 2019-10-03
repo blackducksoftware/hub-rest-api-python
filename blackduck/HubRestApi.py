@@ -597,17 +597,6 @@ class HubInstance(object):
         if int(self.bd_major_version) < 2018:
             raise UnsupportedBDVersion("The BD major version {} is less than the minimum required major version {}".format(self.bd_major_version, 2018))        
 
-    def get_file_bom_entries(self, hub_release_id, limit=100):
-        self._check_version_compatibility()
-        paramstring = self.get_limit_paramstring(limit)
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        url =  "{}/v1/releases/{}/file-bom-entries{}".format(self.get_apibase(), hub_release_id)
-        url += paramstring
-        logging.debug("GET {}".format(url))
-        response = self.execute_get(url)
-        jsondata = response.json()
-        return jsondata
-
     def get_file_matches_for_bom_component(self, bom_component, limit=1000):
         self._check_version_compatibility()
         url = self.get_link(bom_component, "matched-files")
@@ -617,116 +606,6 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
-    def get_snippet_bom_entries(self, project_id, version_id, reviewed=False, included=False, limit=100, offset=0):
-        self._check_version_compatibility()
-        paramstring = "?limit=" + str(limit) + "&offset=" + \
-            str(offset) + "&filter=bomReviewStatus:" + str(reviewed).lower() + "&filter=bomInclusion:" + str(included).lower()
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        path =  "{}/internal/projects/{}/versions/{}/snippet-bom-entries".format(self.get_apibase(), project_id, version_id)
-        url = path + paramstring
-        response = self.execute_get(url)
-        jsondata = response.json()
-        return jsondata
-
-    def ignore_snippet_bom_entry(self, hub_version_id, snippet_bom_entry):
-        self._check_version_compatibility()
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        url = "{}/v1/releases/{}/snippet-bom-entries".format(self.get_apibase(), hub_version_id)
-        body = self.get_ignore_snippet_json(snippet_bom_entry)
-        response = self.execute_put(url, body)
-        jsondata = response.json()
-        return jsondata
-
-    def get_ignore_snippet_json(self, snippet_bom_entry):
-        self._check_version_compatibility()
-        for cur_fileSnippetBomComponents in snippet_bom_entry['fileSnippetBomComponents']:
-            cur_fileSnippetBomComponents['ignored'] = True
-        return [snippet_bom_entry]
-    
-    def confirm_snippet_bom_entry(self, hub_version_id, snippet_bom_entry):
-        self._check_version_compatibility()
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        url = "{}/v1/releases/{}/snippet-bom-entries".format(self.get_apibase(), hub_version_id)
-        body = self.get_confirm_snippet_json(snippet_bom_entry)
-        response = self.execute_put(url, body)
-        jsondata = response.json()
-        return jsondata
-
-    def get_confirm_snippet_json(self, snippet_bom_entry):
-        self._check_version_compatibility()
-        for cur_fileSnippetBomComponents in snippet_bom_entry['fileSnippetBomComponents']:
-            cur_fileSnippetBomComponents['reviewStatus'] = 'REVIEWED'
-            cur_fileSnippetBomComponents['ignored'] = False
-        return [snippet_bom_entry]
-    
-    def edit_snippet_bom_entry(self, hub_version_id, snippet_bom_entry, new_kb_component):
-        self._check_version_compatibility()
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        url = "{}/v1/releases/{}/snippet-bom-entries".format(self.get_apibase(), hub_version_id)
-        body = self.get_edit_snippet_json(snippet_bom_entry, new_kb_component)
-        response = self.execute_put(url, body)
-        jsondata = response.json()
-        return jsondata
-
-    def get_edit_snippet_json(self, snippet_bom_entry, new_kb_component):
-        self._check_version_compatibility()
-        assert 'fileSnippetBomComponents' in snippet_bom_entry
-        assert len(snippet_bom_entry['fileSnippetBomComponents']) == 1, "We can only edit the component info for one snippet match at a time"
-
-        # TODO: Handle case where either the component from snippet_bom_entry OR new_kb_component does not have a version?
-        snippet_component_info = snippet_bom_entry['fileSnippetBomComponents'][0]
-        snippet_component_info['project']['id'] = new_kb_component['component'].split("/")[-1]
-        snippet_component_info['release']['id'] = new_kb_component['componentVersion'].split("/")[-1]
-        return [snippet_bom_entry]
-    
-    def get_alternate_matches_for_snippet(self, project_id, version_id, snippet_object):
-        self._check_version_compatibility()
-        version_bom_entry_id = snippet_object['fileSnippetBomComponents'][0]['versionBomEntryId']
-
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        url =  "{}/internal/projects/{}/versions/{}/alternate-snippet-matches/{}".format(
-            self.get_apibase(), project_id, version_id, version_bom_entry_id)
-        response = self.execute_get(url)
-        jsondata = response.json()
-        alternate_matches = list()
-        for snippet_bom_components_d in jsondata['snippetMatches']:
-            for snippet_bom_component in snippet_bom_components_d['snippetBomComponents']:
-                alternate_matches.append(snippet_bom_component)
-        return alternate_matches
-
-    def find_matching_alternative_snippet_match(self, project_id, version_id, snippet_object, kb_component):
-        # Given a KB component, find the matching alternative snippet match for a given snippet BOM entry
-        # Returns None if no match was found
-        kb_component_id = kb_component['component'].split("/")[-1]
-        # TODO: handle cases where there is no version supplied?
-        kb_component_version_id = kb_component['componentVersion'].split("/")[-1]
-        for alternative_match in self.get_alternate_matches_for_snippet(project_id, version_id, snippet_object):
-            alternative_match_component_id = alternative_match['project']['id']
-            alternative_match_component_version_id = alternative_match['release']['id']
-            if kb_component_id == alternative_match_component_id and kb_component_version_id == alternative_match_component_version_id:
-                return alternative_match
-
-    def _generate_new_match_selection(self, original_snippet_match, new_component_match):
-        # Merge the values from new_component_match into the origingal_snippet_match
-        # Note: Must do the merge to preserver other key/value pairs in the original_snippet_match (e.g. ignored, reviewStatus, versionBomComponentId)
-        # TODO: Can there ever be more than one item in fileSnippetBomComponents?
-        for k in original_snippet_match['fileSnippetBomComponents'][0].keys():
-            if k in new_component_match:
-                original_snippet_match['fileSnippetBomComponents'][0][k] = new_component_match[k]
-        return [original_snippet_match]
-
-    def update_snippet_match(self, version_id, current_snippet_match, new_snippet_match_component):
-        # Update the (snippet) component selection for a given snippet match
-        # Assumption: new_snippet_match_component is from one of the alternate matches listed for the file snippet match
-        self._check_version_compatibility()
-        headers = self.get_headers()
-        headers['ContentType'] = "application/json"
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        url = "{}/v1/releases/{}/snippet-bom-entries".format(self.get_apibase(), version_id)
-        body = self._generate_new_match_selection(current_snippet_match, new_snippet_match_component)
-        response = self.execute_put(url, body)
-        jsondata = response.json()
-        return jsondata
 
     ##
     #
