@@ -46,6 +46,7 @@ import shutil
 import subprocess
 import sys
 from argparse import ArgumentParser
+import argparse
 
 #hub = HubInstance()
 
@@ -59,14 +60,18 @@ class DockerWrapper():
         self.imagedir = self.workdir + "/container"
         self.imagefile = self.workdir + "/image.tar"
         if scratch:
-            if os.path.exists(self.workdir):
-                if os.path.isdir(self.workdir):
-                    shutil.rmtree(self.workdir)
-                else:
-                    os.remove(self.workdir)
-            os.makedirs(self.workdir, 0o755, True)
-            os.makedirs(self.workdir + "/container", 0o755, True)
+            self.initdir()
         self.docker_path = self.locate_docker()
+        
+    def initdir(self):
+        if os.path.exists(self.workdir):
+            if os.path.isdir(self.workdir):
+                shutil.rmtree(self.workdir)
+            else:
+                os.remove(self.workdir)
+        os.makedirs(self.workdir, 0o755, True)
+        os.makedirs(self.workdir + "/container", 0o755, True)
+
         
     def locate_docker(self):
         os.environ['PATH'] += os.pathsep + '/usr/local/bin'
@@ -146,7 +151,7 @@ class Detector():
 
 class ContainerImageScanner():
     
-    def __init__(self, hub, container_image_name, workdir='/tmp/workdir'):
+    def __init__(self, hub, container_image_name, workdir='/tmp/workdir', dockerfile=None, base_image=None, omit_base_layers=False):
         self.hub = hub
         self.hub_detect = Detector(hub)
         self.docker = DockerWrapper(workdir)
@@ -158,8 +163,12 @@ class ContainerImageScanner():
         else:
             self.image_name = container_image_name[:cindex]
             self.image_version = container_image_name[cindex+1:]
+        self.dockerfile = dockerfile
+        self.base_image = base_image
+        self.omit_base_layers = omit_base_layers
         
     def prepare_container_image(self):
+        self.docker.initdir()
         self.docker.pull_container_image(self.container_image_name)
         self.docker.save_container_image(self.container_image_name)
         self.docker.unravel_container()
@@ -184,7 +193,7 @@ class ContainerImageScanner():
             num = num + 1
         print (json.dumps(self.layers, indent=4))
 
-    def generate_project_structures(self):
+    def generate_project_structures(self, base_layers=None):
         main_project_release = self.hub.get_or_create_project_version(self.image_name, self.image_version)
 
         for layer in self.layers:
@@ -192,7 +201,43 @@ class ContainerImageScanner():
             parameters['description'] = layer['command']['created_by']
             sub_project_release = self.hub.get_or_create_project_version(layer['name'], self.image_version, parameters=parameters)
             self.hub.add_version_as_component(main_project_release, sub_project_release)
-
+        # Process base and add-on parts
+        if base_layers:
+            base_image_version = self.image_version + "__base_layers"
+            addon_image_version = self.image_version + "_addon_layers"
+            base = []
+            addon = []
+            
+            for layer in self.layers:
+                if layer['path'] in base_layers:
+                    base.append(layer)
+                else:
+                    addon.append(layer)
+            
+            print ("Number of base layers {}".format(len(base)))
+            print ("Number of addon layers {}".format(len(addon))) 
+            
+            if (len(base) > 0):
+                main_project_release_addon = self.hub.get_or_create_project_version(self.image_name, addon_image_version)
+                if not self.omit_base_layers:
+                    main_project_release_base = self.hub.get_or_create_project_version(self.image_name, base_image_version)
+                    for layer in base:
+                        parameters = {}
+                        parameters['description'] = layer['command']['created_by']
+                        sub_project_release = self.hub.get_or_create_project_version(layer['name'], self.image_version, parameters=parameters)
+                        self.hub.add_version_as_component(main_project_release_base, sub_project_release)
+                for layer in addon:
+                    parameters = {}
+                    parameters['description'] = layer['command']['created_by']
+                    sub_project_release = self.hub.get_or_create_project_version(layer['name'], self.image_version, parameters=parameters)
+                    self.hub.add_version_as_component(main_project_release_addon, sub_project_release)
+            else:
+                print("************************************************************")
+                print("*                                                          *")
+                print("* No layers from Dockerfile/base  are present in the image *")
+                print("*                                                          *")
+                print("************************************************************")
+            
     def generate_single_layer_project_structure(self, layer_number):
         main_project_release = self.hub.get_or_create_project_version(self.image_name, self.image_version)
 
@@ -224,7 +269,9 @@ class ContainerImageScanner():
 
     def cleanup_project_structure(self):
         release = self.hub.get_or_create_project_version(self.image_name,self.image_version)
-            
+        base_release = self.hub.get_or_create_project_version(self.image_name,self.image_version + "__base_layers")
+        addon_release = self.hub.get_or_create_project_version(self.image_name,self.image_version + "_addon_layers")
+                    
         components = self.hub.get_version_components(release)
         
         print (components)
@@ -234,9 +281,44 @@ class ContainerImageScanner():
             sub_version_name = item['componentVersionName']
             sub_release = self.hub.get_or_create_project_version(sub_name, sub_version_name)
             print(self.hub.remove_version_as_component(release, sub_release))
+            print(self.hub.remove_version_as_component(base_release, sub_release))
+            print(self.hub.remove_version_as_component(addon_release, sub_release))
             print(self.hub.delete_project_by_name(sub_name))
         print(self.hub.delete_project_by_name(self.image_name))
-
+        
+    def get_base_layers(self):
+        if (not self.dockerfile)and (not self.base_image):
+            raise Exception ("No dockerfile or base image specified")
+        imagelist = []
+        
+        if self.dockerfile:
+            from pathlib import Path
+            dfile = Path(self.dockerfile)
+            if not dfile.exists():
+                raise Exception ("Dockerfile {} does not exist",format(self.dockerfile))
+            if not dfile.is_file():
+                raise Exception ("{} is not a file".format(self.dockerfile))
+            with open(dfile) as f:
+                for line in f:
+                    if 'FROM' in line.upper():
+                        a = line.split()
+                        if a[0].upper() == 'FROM':
+                            imagelist.append(a[1])                    
+        if self.base_image:
+            imagelist.append(self.base_image)
+        
+        print (imagelist)
+        base_layers = []
+        for image in imagelist:
+            self.docker.initdir()
+            self.docker.pull_container_image(image)
+            self.docker.save_container_image(image)
+            self.docker.unravel_container()
+            manifest = self.docker.read_manifest()
+            print(manifest)
+            base_layers.extend(manifest[0]['Layers'])
+        return base_layers  
+    
 
 def scan_container_image(imagespec, layer_number=0):
     
@@ -251,7 +333,16 @@ def scan_container_image(imagespec, layer_number=0):
         scanner.generate_single_layer_project_structure(layer_number)
         scanner.submit_single_layer_scan(int(layer_number))
 
-
+def scan_container_image_with_dockerfile(imagespec, dockerfile, base_image, omit_base_layers):
+    hub = HubInstance()
+    scanner = ContainerImageScanner(hub, imagespec, dockerfile=dockerfile, base_image=base_image, omit_base_layers=omit_base_layers)
+    base_layers = scanner.get_base_layers()
+    print (base_layers)
+    scanner.prepare_container_image()
+    scanner.process_container_image()
+    scanner.generate_project_structures(base_layers)
+    scanner.submit_layer_scans()
+    
 def clean_container_project(imagespec):
     hub = HubInstance()
     scanner = ContainerImageScanner(hub, imagespec)
@@ -269,14 +360,31 @@ def main(argv=None):
     parser.add_argument('imagespec', help="Container image tag, e.g.  repository/imagename:version")
     parser.add_argument('--cleanup', default=False, help="Delete project hierarchy only. Do not scan")
     parser.add_argument('--rescan-layer',default=0, type=int, help="Rescan specific layer in case of failure, 0 - scan as usual")
+    parser.add_argument('--dockerfile',default=None, type=str, help="Specify dockerfile used to build this container(experimantal), can't use with --base-image")
+    parser.add_argument('--base-image',default=None, type=str, help="Specify base image used to build this container(experimantal), can't use with --dockerfile")
+    parser.add_argument('--omit-base-layers',default=False, type=bool, help="Omit base layer (requires --dockerfile or --base-image)")
     args = parser.parse_args()
     
     print (args);
-    
-    hub = HubInstance()
 
+    if not args.imagespec:
+        parser.print_help(sys.stdout)
+        sys.exit(1)
+
+    if args.dockerfile and args.base_image:
+        parser.print_help(sys.stdout)
+        sys.exit(1)
+            
+    if args.omit_base_layers and not (args.dockerfile or args.base_image):
+        parser.print_help(sys.stdout)
+        sys.exit(1)
+    
     if args.cleanup:
         clean_container_project(args.imagespec)
+        sys.exit(1)
+    if args.dockerfile or args.base_image:
+        clean_container_project(args.imagespec)
+        scan_container_image_with_dockerfile(args.imagespec, args.dockerfile, args.base_image, args.omit_base_layers)
     else:
         if args.rescan_layer == 0:
             clean_container_project(args.imagespec)
