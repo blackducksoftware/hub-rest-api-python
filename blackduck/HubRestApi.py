@@ -1139,7 +1139,7 @@ class HubInstance(object):
 
     def get_project_info(self, project_name, link_name):
         project = self.get_project_by_name(project_name)
-        link = self.get_link(project, link_name)
+        link = self.get_link(project_name, link_name)
         if link:
             response = self.execute_get(link)
             return response.json()
