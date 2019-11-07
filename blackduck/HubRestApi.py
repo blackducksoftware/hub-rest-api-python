@@ -208,7 +208,7 @@ class HubInstance(object):
 
     def get_link(self, bd_rest_obj, link_name):
         # returns the URL for the link_name OR None
-        if '_meta' in bd_rest_obj and 'links' in bd_rest_obj['_meta']:
+        if bd_rest_obj and '_meta' in bd_rest_obj and 'links' in bd_rest_obj['_meta']:
             for link_obj in bd_rest_obj['_meta']['links']:
                 if 'rel' in link_obj and link_obj['rel'] == link_name:
                     return link_obj.get('href', None)
