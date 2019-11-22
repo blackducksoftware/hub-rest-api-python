@@ -1260,7 +1260,11 @@ class HubInstance(object):
         url = self.get_apibase() + "/codelocations" + paramstring
         headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        return response.json()
+        jsondata = response.json()
+        if unmapped:
+            jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
+            jsondata['totalCount'] = len(jsondata['items'])
+        return jsondata
 
     def get_codelocation_scan_summaries(self, code_location_id = None, code_location_obj = None, limit=100):
         '''Retrieve the scans (aka scan summaries) for the given location. You can give either
