@@ -16,6 +16,7 @@ from blackduck.HubRestApi import HubInstance
 parser = argparse.ArgumentParser("A program that will delete a project along with its scans")
 parser.add_argument("project", help="Project name")
 parser.add_argument("-k", "--keep_scans", action = 'store_true', default=False, help="Use this option if you want to keep scans associated with the project-versions. Default is False, scans will be deleted.")
+parser.add_argument("-b", "--backup_scans", action = 'store_true', default=False, help="Use this option if you want to backup scans associated with the project-versions. Default is False, scans will not be backuped.")
 args = parser.parse_args()
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
@@ -24,4 +25,4 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 hub = HubInstance()
 
-hub.delete_project_by_name(args.project, save_scans=args.keep_scans)
+hub.delete_project_by_name(args.project, save_scans=args.keep_scans, backup_scans=args.backup_scans)

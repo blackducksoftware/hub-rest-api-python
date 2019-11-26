@@ -847,7 +847,7 @@ class HubInstance(object):
         else:
             logging.debug("Did not find project with name {}".format(project_name))
     
-    def delete_project_by_name(self, project_name, save_scans=False):
+    def delete_project_by_name(self, project_name, save_scans=False, backup_scans=False):
         project = self.get_project_by_name(project_name)
         if project:
             # get project versions
@@ -861,6 +861,9 @@ class HubInstance(object):
             if delete_scans:
                 # delete all code locations associated with each version
                 for version in versions:
+                    if backup_scans:
+                        logging.debug("Backup code locations (aka scans) for version {}".format(version['versionName']))
+                        self.download_project_scans(project_name, version['versionName'])
                     logging.debug("Deleting code locations (aka scans) for version {}".format(version['versionName']))
                     self.delete_project_version_codelocations(version)
                         
@@ -1222,7 +1225,9 @@ class HubInstance(object):
                 if output_folder:
                     pathname = os.path.join(output_folder, filename)
                 else:
-                    pathname = filename
+                    if not os.path.exists(project_name):
+                        os.mkdir(project_name)
+                    pathname = os.path.join(project_name, filename)
                 responce = requests.get(url, headers=self.get_headers(), stream=True, verify=False)
                 with open(pathname, "wb") as f:
                     for data in responce.iter_content():
