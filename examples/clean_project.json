@@ -1,0 +1,6 @@
+{
+    "clean_project" : [
+        "proftpd",
+        "libiec"
+    ]
+}
