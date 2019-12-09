@@ -177,7 +177,7 @@ class ContainerImageScanner():
         self.manifest = self.docker.read_manifest()
         print(self.manifest)
         self.config = self.docker.read_config()
-        print (self.config)
+        print (json.dumps(self.config, indent=4))
         
         self.layers = []
         num = 1
@@ -189,6 +189,7 @@ class ContainerImageScanner():
             while self.config['history'][num + offset -1].get('empty_layer', False):
                 offset = offset + 1
             layer['command'] = self.config['history'][num + offset - 1]
+            layer['shaid'] = self.config['rootfs']['diff_ids'][num - 1]
             self.layers.append(layer)
             num = num + 1
         print (json.dumps(self.layers, indent=4))
@@ -209,7 +210,7 @@ class ContainerImageScanner():
             addon = []
             
             for layer in self.layers:
-                if layer['path'] in base_layers:
+                if layer['shaid'] in base_layers:
                     base.append(layer)
                 else:
                     addon.append(layer)
@@ -252,7 +253,7 @@ class ContainerImageScanner():
             options = []
             options.append('--detect.project.name={}'.format(layer['name']))
             options.append('--detect.project.version.name="{}"'.format(self.image_version))
-            options.append('--detect.blackduck.signature.scanner.disabled=false')
+            # options.append('--detect.blackduck.signature.scanner.disabled=false')
             options.append('--detect.code.location.name={}_{}_code_{}'.format(layer['name'],self.image_version,layer['path']))
             options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path'].split('/')[0]))
             self.hub_detect.detect_run(options)
@@ -262,15 +263,18 @@ class ContainerImageScanner():
         options = []
         options.append('--detect.project.name={}'.format(layer['name']))
         options.append('--detect.project.version.name="{}"'.format(self.image_version))
-        options.append('--detect.blackduck.signature.scanner.disabled=false')
+        # options.append('--detect.blackduck.signature.scanner.disabled=false')
         options.append('--detect.code.location.name={}_{}_code_{}'.format(layer['name'],self.image_version,layer['path']))
         options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path'].split('/')[0]))
         self.hub_detect.detect_run(options)
 
     def cleanup_project_structure(self):
         release = self.hub.get_or_create_project_version(self.image_name,self.image_version)
-        base_release = self.hub.get_or_create_project_version(self.image_name,self.image_version + "__base_layers")
-        addon_release = self.hub.get_or_create_project_version(self.image_name,self.image_version + "_addon_layers")
+        base_release = self.hub.get_project_version_by_name(self.image_name,self.image_version + "__base_layers")
+        addon_release = self.hub.get_project_version_by_name(self.image_name,self.image_version + "_addon_layers")
+        
+        print("--------")
+        print(base_release)
                     
         components = self.hub.get_version_components(release)
         
@@ -281,10 +285,28 @@ class ContainerImageScanner():
             sub_version_name = item['componentVersionName']
             sub_release = self.hub.get_or_create_project_version(sub_name, sub_version_name)
             print(self.hub.remove_version_as_component(release, sub_release))
-            print(self.hub.remove_version_as_component(base_release, sub_release))
-            print(self.hub.remove_version_as_component(addon_release, sub_release))
-            print(self.hub.delete_project_by_name(sub_name))
-        print(self.hub.delete_project_by_name(self.image_name))
+            if base_release:
+                print(self.hub.remove_version_as_component(base_release, sub_release))
+            if addon_release:
+                print(self.hub.remove_version_as_component(addon_release, sub_release))
+        
+            project = self.hub.get_project_by_name(sub_name)
+            versions = self.hub.get_project_versions(project)
+            if versions['totalCount'] == 1:
+                print(self.hub.delete_project_by_name(sub_name))
+            else:
+                print(self.hub.delete_project_version_by_name(sub_name, sub_version_name))
+        
+        if base_release:
+            print(self.hub.delete_project_version_by_name(self.image_name,self.image_version + "__base_layers"))
+        if addon_release:
+            print(self.hub.delete_project_version_by_name(self.image_name,self.image_version + "_addon_layers"))
+        project = self.hub.get_project_by_name(self.image_name)
+        versions = self.hub.get_project_versions(project)
+        if versions['totalCount'] == 1:
+            print(self.hub.delete_project_by_name(self.image_name))
+        else:
+            print(self.hub.delete_project_version_by_name(self.image_name,self.image_version))
         
     def get_base_layers(self):
         if (not self.dockerfile)and (not self.base_image):
@@ -316,7 +338,9 @@ class ContainerImageScanner():
             self.docker.unravel_container()
             manifest = self.docker.read_manifest()
             print(manifest)
-            base_layers.extend(manifest[0]['Layers'])
+            config = self.docker.read_config()
+            print(config)
+            base_layers.extend(config['rootfs']['diff_ids'])
         return base_layers  
     
 
@@ -337,7 +361,8 @@ def scan_container_image_with_dockerfile(imagespec, dockerfile, base_image, omit
     hub = HubInstance()
     scanner = ContainerImageScanner(hub, imagespec, dockerfile=dockerfile, base_image=base_image, omit_base_layers=omit_base_layers)
     base_layers = scanner.get_base_layers()
-    print (base_layers)
+    print (json.dumps(base_layers, indent=2))
+    # sys.exit()
     scanner.prepare_container_image()
     scanner.process_container_image()
     scanner.generate_project_structures(base_layers)
