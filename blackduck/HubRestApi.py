@@ -728,10 +728,10 @@ class HubInstance(object):
         if project:
             version = self.get_version_by_name(project, version_name)
             if not version:
-                self.create_project_version(project, version_name, parameters)
+                self.create_project_version(project, version_name, parameters=parameters)
                 version = self.get_version_by_name(project, version_name)
         else:
-            self.create_project(project_name, version_name, parameters)
+            self.create_project(project_name, version_name, parameters=parameters)
             project = self.get_project_by_name(project_name)
             version = self.get_version_by_name(project, version_name)
         return version
