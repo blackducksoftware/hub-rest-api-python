@@ -16,3 +16,5 @@ setuptools
 wheel
 twine
 
+#For some reporting libraries
+pandas
