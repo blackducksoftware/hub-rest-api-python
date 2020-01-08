@@ -208,7 +208,7 @@ class HubInstance(object):
 
     def get_link(self, bd_rest_obj, link_name):
         # returns the URL for the link_name OR None
-        if '_meta' in bd_rest_obj and 'links' in bd_rest_obj['_meta']:
+        if bd_rest_obj and '_meta' in bd_rest_obj and 'links' in bd_rest_obj['_meta']:
             for link_obj in bd_rest_obj['_meta']['links']:
                 if 'rel' in link_obj and link_obj['rel'] == link_name:
                     return link_obj.get('href', None)
@@ -472,10 +472,32 @@ class HubInstance(object):
         return response.json()
 
     def get_vulnerability_affected_projects(self, vulnerability):
-        url = self.config['baseurl'] + "/api/v1/composite/vulnerability"+ "/{}".format(vulnerability) 
+        url = self._get_vulnerabilities_url() + "/{}/affected-projects".format(vulnerability) 
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.vulnerability-4+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        return response.json()
+
+    # TODO: Refactor this, i.e. use get_link method?
+    def get_vulnerable_bom_components(self, version_obj, limit=9999):
+        url = "{}/vulnerable-bom-components".format(version_obj['_meta']['href'])
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.bill-of-materials-6+json'}
+        param_string = self._get_parameter_string({'limit': limit})
+        url = "{}{}".format(url, param_string)
+        response = self.execute_get(url, custom_headers=custom_headers)
+        return response.json()
+
+    # TODO: Remove or refactor this
+    def get_component_remediation(self, bom_component):
+        url = "{}/remediating".format(bom_component['componentVersion'])
+        logging.debug("Url for getting remediation info is : {}".format(url))
         response = self.execute_get(url)
         return response.json()
 
+    ##
+    #
+    # Lookup Black Duck (Hub) KB info given Protex KB info
+    #
+    ##
     def find_component_info_for_protex_component(self, protex_component_id, protex_component_release_id):
         '''Will return the Hub component corresponding to the protex_component_id, and if a release (version) id
         is given, the response will also include the component-version. Returns an empty list if there were
@@ -495,24 +517,6 @@ class HubInstance(object):
         component_list_d = response.json()
         return response.json()
         
-    def get_vulnerable_bom_components(self, version_obj, limit=9999):
-        url = "{}/vulnerable-bom-components".format(version_obj['_meta']['href'])
-        custom_headers = {'Content-Type': 'application/vnd.blackducksoftware.bill-of-materials-4+json'}
-        param_string = self._get_parameter_string({'limit': limit})
-        url = "{}{}".format(url, param_string)
-        response = self.execute_get(url, custom_headers=custom_headers)
-        if response.status_code == 200:
-            vulnerable_bom_components = response.json()
-            return vulnerable_bom_components
-        else:
-            logging.warning("Failed to retrieve vulnerable bom components for project {}, status code {}".format(
-                version_obj, response.status_code))
-
-    def get_component_remediation(self, bom_component):
-        url = "{}/remediating".format(bom_component['componentVersion'])
-        logging.debug("Url for getting remediation info is : {}".format(url))
-        response = self.execute_get(url)
-        return response.json()
 
     ##
     #
@@ -724,10 +728,10 @@ class HubInstance(object):
         if project:
             version = self.get_version_by_name(project, version_name)
             if not version:
-                self.create_project_version(project, version_name, parameters)
+                self.create_project_version(project, version_name, parameters=parameters)
                 version = self.get_version_by_name(project, version_name)
         else:
-            self.create_project(project_name, version_name, parameters)
+            self.create_project(project_name, version_name, parameters=parameters)
             project = self.get_project_by_name(project_name)
             version = self.get_version_by_name(project, version_name)
         return version
@@ -1149,6 +1153,25 @@ class HubInstance(object):
         all_project_roles = self.get_roles(parameters={"filter":"scope:project"})
         return all_project_roles['items']
 
+    def get_version_scan_info(self, version_obj):
+        url = self.get_link(version_obj, "codelocations")
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.project-detail-5+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        code_locations = response.json().get('items', [])
+        if code_locations:
+            scan_info = {
+                'most_recent_scan': max([cl['updatedAt'] for cl in code_locations]),
+                'oldest_scan': min([cl['createdAt'] for cl in code_locations]),
+                'number_scans': len(code_locations)
+            }
+        else:
+            scan_info = {
+                'most_recent_scan': None,
+                'oldest_scan': None,
+                'number_scans': None
+            }
+        return scan_info
+
     ###
     #
     # Add project version as a component to another project
@@ -1242,18 +1265,11 @@ class HubInstance(object):
         url = self.get_apibase() + "/codelocations" + paramstring
         headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        if response.status_code == 200:
-            jsondata = response.json()
-            if unmapped:
-                jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
-                jsondata['totalCount'] = len(jsondata['items'])
-            return jsondata
-        elif response.status_code == 403:
-            logging.warning("Failed to retrieve code locations (aka scans) probably due to lack of permissions, status code {}".format(
-                response.status_code))
-        else:
-            logging.error("Failed to retrieve code locations (aka scans), status code {}".format(
-                response.status_code))
+        jsondata = response.json()
+        if unmapped:
+            jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
+            jsondata['totalCount'] = len(jsondata['items'])
+        return jsondata
 
     def get_codelocation_scan_summaries(self, code_location_id = None, code_location_obj = None, limit=100):
         '''Retrieve the scans (aka scan summaries) for the given location. You can give either
@@ -1274,7 +1290,7 @@ class HubInstance(object):
         return jsondata
     
     def delete_unmapped_codelocations(self, limit=1000):
-        code_locations = self.get_codelocations(limit, True).get('items', [])
+        code_locations = self.get_codelocations(limit=limit, unmapped=True).get('items', [])
 
         for c in code_locations:
             scan_summaries = self.get_codelocation_scan_summaries(code_location_obj = c).get('items', [])
@@ -1514,6 +1530,18 @@ class HubInstance(object):
         url = self.get_urlbase() + "/api/health-checks/liveness"
         return self.execute_get(url)
     
+    ##
+    #
+    # Jobs
+    #
+    ##
+    def get_jobs(self, parameters={}):
+        url = self.get_apibase() + "/jobs"
+        url = url + self._get_parameter_string(parameters)
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.status-4+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        return response.json()
+
     ##
     #
     # Job Statistics

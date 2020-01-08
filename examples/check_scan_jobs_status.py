@@ -34,19 +34,7 @@ class CodeLocationStatusChecker(object):
 
         if not cls.jobs:
             logging.debug("retrieving jobs")
-            cls.jobs = cls._get_all_jobs()
-
-    @classmethod
-    def _get_all_jobs(cls):
-        # See https://jira.dc1.lan/browse/HUB-14263 - Rest API for Job status
-        # The below is using a private endpoint that could change on any release and break this code
-        jobs_url = cls.hub.get_urlbase() + "/api/v1/jobs?limit={}".format(10000)
-        response = cls.hub.execute_get(jobs_url)
-        jobs = []
-        if response.status_code == 200:
-            return response.json().get('items', [])
-        else:
-            raise Exception("Failed to retrieve jobs, status code: {}".format(response.status_code))
+            cls.jobs = cls.hub.get_jobs().get('items', [])
 
     def __init__(self, code_location_obj):
         self.initialize()

@@ -470,3 +470,29 @@ def test_validated_json_fails_with_invalid_json_str(mock_hub_instance):
     with pytest.raises(JSONDecodeError) as e_info:
         validated_json = mock_hub_instance._validated_json_data('invalid json')
 
+@pytest.fixture()
+def code_locations(requests_mock, shared_datadir):
+    data = json.load((shared_datadir / 'code_locations.json').open())
+    requests_mock.get(
+        "{}/api/codelocations?limit=100".format(fake_hub_host),
+        json = data
+    )
+    yield data
+
+def test_get_codelocations_all(mock_hub_instance, code_locations):
+    code_locs = mock_hub_instance.get_codelocations()
+
+    assert code_locs == code_locations
+
+def test_get_codelocations_unmapped(mock_hub_instance, code_locations):
+    code_locs = mock_hub_instance.get_codelocations(unmapped=True)
+
+    assert code_locs != code_locations
+
+    expected_data = copy.deepcopy(code_locations)
+    expected_data['items'] = [cl for cl in code_locations['items'] if 'mappedProjectVersion' not in cl]
+    expected_data['totalCount'] = len(expected_data['items'])
+
+    assert code_locs == expected_data
+
+
