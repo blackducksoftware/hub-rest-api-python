@@ -559,6 +559,26 @@ class HubInstance(object):
 
     ##
     #
+    # (Global) Vulnerability reports
+    #
+    ##
+    valid_vuln_status_report_formats = ["CSV", "JSON"]
+    def create_vuln_status_report(self, format="CSV"):
+        assert format in HubInstance.valid_vuln_status_report_formats, "Format must be one of {}".format(HubInstance.valid_vuln_status_report_formats)
+
+        post_data = {
+            "reportFormat": format,
+            "locale": "en_US"
+        }
+        url = self.get_apibase() + "/vulnerability-status-reports"
+        custom_headers = {
+            'Content-Type': 'application/vnd.blackducksoftware.report-4+json',
+            'Accept': 'application/vnd.blackducksoftware.report-4+json'
+        }
+        return self.execute_post(url, custom_headers=custom_headers, data=post_data)
+
+    ##
+    #
     # License stuff
     #
     ##
