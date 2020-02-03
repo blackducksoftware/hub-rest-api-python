@@ -424,7 +424,7 @@ class HubInstance(object):
 
     def get_policies(self, parameters={}):
         url = self._get_policy_url() + self._get_parameter_string(parameters)
-        headers = {'Accept': 'application/vnd.blackducksoftware.policy-4+json'}
+        headers = {'Accept': 'application/json'}
         response = self.execute_get(url, custom_headers=headers)
         return response.json()
 
