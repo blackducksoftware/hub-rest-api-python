@@ -10,42 +10,51 @@ from blackduck.HubRestApi import HubInstance
 
 import argparse
 import json
+import logging
+import sys
 import time
 import zipfile
 
 parser = argparse.ArgumentParser("A program to generate the notices file for a given project-version")
 parser.add_argument("project_name")
 parser.add_argument("version_name")
-parser.add_argument("--zip_file_name", default="notices_report.zip")
-parser.add_argument("--reports",
-	default="version,scans,components,vulnerabilities,source", 
-	help="Comma separated list (no spaces) of the reports to generate - version, scans, components, vulnerabilities, source, and cryptography reports (default: all, except cryptography")
-parser.add_argument('--format', default='TEXT', choices=["HTML", "TEXT"], help="Report format - choices are TEXT or HTML")
+parser.add_argument('-f', "--file_name_base", default="notices_report", help="Base file name to write the report data into. If the report format is TEXT a .zip file will be created, otherwise a .json file")
+parser.add_argument('-r', '--report_format', default='TEXT', choices=["JSON", "TEXT"], help="Report format - choices are TEXT or HTML")
 
 args = parser.parse_args()
 
 hub = HubInstance()
 
-# TODO: Promote this to the API?
+logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', stream=sys.stderr, level=logging.DEBUG)
+
 class FailedReportDownload(Exception):
 	pass
 
-def download_report(location, filename, retries=4):
+def download_report(location, file_name_base, retries=10):
 	report_id = location.split("/")[-1]
 
 	if retries:
-		print("Retrieving generated report from {}".format(location))
-		response = hub.download_report(report_id)
+		logging.debug("Retrieving generated report from {}".format(location))
+		# response = hub.download_report(report_id)
+		response, report_format = hub.download_notification_report(location)
 		if response.status_code == 200:
-			with open(filename, "wb") as f:
-				f.write(response.content)
-			print("Successfully downloaded zip file to {} for report {}".format(filename, report_id))
+			if report_format == "TEXT":
+				filename = file_name_base + ".zip"
+				with open(filename, "wb") as f:
+					f.write(response.content)
+			else:
+				# JSON format
+				filename = file_name_base + ".json"
+				with open(filename, "w") as f:
+					json.dump(response.json(), f, indent=3)
+			logging.info("Successfully downloaded json file to {} for report {}".format(
+					filename, report_id))
 		else:
-			print("Failed to retrieve report {}".format(report_id))
-			print("Probably not ready yet, waiting 5 seconds then retrying...")
+			logging.warning("Failed to retrieve report {}".format(report_id))
+			logging.warning("Probably not ready yet, waiting 5 seconds then retrying (remaining retries={}".format(retries))
 			time.sleep(5)
 			retries -= 1
-			download_report(location, filename, retries)
+			download_report(location, file_name_base, retries)
 	else:
 		raise FailedReportDownload("Failed to retrieve report {} after multiple retries".format(report_id))
 
@@ -54,22 +63,23 @@ project = hub.get_project_by_name(args.project_name)
 if project:
 	version = hub.get_version_by_name(project, args.version_name)
 
-	response = hub.create_version_notices_report(version, args.format)
+	response = hub.create_version_notices_report(version, args.report_format)
 
 	if response.status_code == 201:
-		print("Successfully created reports ({}) for project {} and version {}".format(
-			args.reports, args.project_name, args.version_name))
+		logging.info("Successfully created notices report in {} format for project {} and version {}".format(
+			args.report_format, args.project_name, args.version_name))
 		location = response.headers['Location']
-		download_report(location, args.zip_file_name)
+		download_report(location, args.file_name_base)
+
 
 		# Showing how you can interact with the downloaded zip and where to find the
 		# output content. Uncomment the lines below to see how it works.
 
-		# with zipfile.ZipFile(zip_file_name, 'r') as zipf:
+		# with zipfile.ZipFile(zip_file_name_base, 'r') as zipf:
 		# 	with zipf.open("{}/{}/version-license.txt".format(args.project_name, args.version_name), "r") as license_file:
 		# 		print(license_file.read())
 	else:
-		print("Failed to create reports for project {} version {}, status code returned {}".format(
+		logging.error("Failed to create reports for project {} version {}, status code returned {}".format(
 			args.project_name, args.version_name, response.status_code))
 else:
-	print("Did not find project with name {}".format(args.project_name))
+	logging.warning("Did not find project with name {}".format(args.project_name))
