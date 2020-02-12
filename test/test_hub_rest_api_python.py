@@ -13,10 +13,6 @@ from unittest.mock import patch, MagicMock, mock_open
 
 fake_hub_host = "https://my-hub-host"
 
-policies_json_file = open("policies.json")
-policies = json.loads(policies_json_file.read())
-assert 'items' in policies
-test_policy = policies['items'][0]
 
 def return_auth_token(api_token):
     if api_token:
@@ -88,26 +84,25 @@ def mock_hub_instance_using_api_token(requests_mock):
     yield HubInstance(fake_hub_host, api_token=made_up_api_token)
 
 @pytest.fixture()
-def policy_info_json():
-    with open("policies.json") as policies_json_file:
-        yield json.loads(policies_json_file.read())
+def policy_info_json(shared_datadir):
+    yield json.load((shared_datadir / "policies.json").open())
 
 @pytest.fixture()
-def a_test_policy():
+def a_test_policy(policy_info_json):
+    test_policy = policy_info_json['items'][0]
     yield test_policy
 
 @pytest.fixture()
-def a_test_policy_for_create_or_update():
+def a_test_policy_for_create_or_update(a_test_policy):
         # a_policy_for_creating_or_updating = dict(
         #     (attr, test_policy[attr]) for attr in 
         #     ['name', 'description', 'enabled', 'overridable', 'expression', 'severity'] if attr in test_policy)
         # yield a_policy_for_creating_or_updating
-        yield test_policy
+        yield a_test_policy
 
 @pytest.fixture()
-def test_vulnerability_info(requests_mock):
-    with open("sample-vulnerability.json") as sample_vulnerability_file:
-        yield json.loads(sample_vulnerability_file.read())
+def test_vulnerability_info(requests_mock, shared_datadir):
+    yield json.loads((shared_datadir / "sample-vulnerability.json").read_text())
 
 def test_get_major_version(requests_mock):
     requests_mock.post(
@@ -233,13 +228,13 @@ def test_hub_instance_with_write_config_false(requests_mock):
         assert not mock_write_config.called
 
 def test_get_policy_by_id(requests_mock, mock_hub_instance, a_test_policy):
-    requests_mock.get(fake_hub_host + "/api/policy-rules/00000000-0000-0000-0000-000000000001", json=test_policy)
+    requests_mock.get(fake_hub_host + "/api/policy-rules/00000000-0000-0000-0000-000000000001", json=a_test_policy)
     policy = mock_hub_instance.get_policy_by_id("00000000-0000-0000-0000-000000000001")
     for key in a_test_policy.keys():
         assert policy[key] == a_test_policy[key]
 
 def test_get_policy_by_url(requests_mock, mock_hub_instance, a_test_policy):
-    requests_mock.get(fake_hub_host + "/api/policy-rules/00000000-0000-0000-0000-000000000001", json=test_policy)
+    requests_mock.get(fake_hub_host + "/api/policy-rules/00000000-0000-0000-0000-000000000001", json=a_test_policy)
     policy = mock_hub_instance.get_policy_by_url(mock_hub_instance._get_policy_url() + "/00000000-0000-0000-0000-000000000001")
     for key in a_test_policy.keys():
         assert policy[key] == a_test_policy[key]
@@ -248,7 +243,7 @@ def test_update_policy_by_id(requests_mock, mock_hub_instance, a_test_policy, a_
     policy_id = a_test_policy['_meta']['href'].split("/")[-1]
 
     requests_mock.put(fake_hub_host + "/api/policy-rules/" + policy_id,
-        json=test_policy
+        json=a_test_policy
     )
     response = mock_hub_instance.update_policy_by_id(policy_id, a_test_policy_for_create_or_update)
     assert response.status_code == 200
@@ -259,7 +254,7 @@ def test_update_policy_by_url(requests_mock, mock_hub_instance, a_test_policy, a
     policy_url = mock_hub_instance._get_policy_url() + "/" + policy_id
 
     requests_mock.put(fake_hub_host + "/api/policy-rules/" + policy_id,
-        json=test_policy
+        json=a_test_policy
     )
     response = mock_hub_instance.update_policy_by_url(policy_url, a_test_policy_for_create_or_update)
     assert response.status_code == 200
@@ -293,9 +288,9 @@ def test_get_vulnerability(requests_mock, mock_hub_instance, test_vulnerability_
 
     assert response_json == test_vulnerability_info
 
-def test_get_projects_with_limit(requests_mock, mock_hub_instance):
+def test_get_projects_with_limit(requests_mock, mock_hub_instance, shared_datadir):
     url = mock_hub_instance.get_urlbase() + "/api/projects?limit=20"
-    json_data = json.load(open('sample-projects.json'))
+    json_data = json.load((shared_datadir / 'sample-projects.json').open())
     requests_mock.get(url, json=json_data)
     projects = mock_hub_instance.get_projects(limit=20)
 
@@ -303,9 +298,9 @@ def test_get_projects_with_limit(requests_mock, mock_hub_instance):
     assert 'totalCount' in projects
     assert projects['totalCount'] == 18
 
-def test_get_projects_with_name_query(requests_mock, mock_hub_instance):
+def test_get_projects_with_name_query(requests_mock, mock_hub_instance, shared_datadir):
     url = mock_hub_instance.get_urlbase() + "/api/projects?q=name:accelerator-initializer-ui&limit=100"
-    json_data = json.load(open('sample-projects-using-name-query.json'))
+    json_data = json.load((shared_datadir / 'sample-projects-using-name-query.json').open())
     requests_mock.get(url, json=json_data)
     projects = mock_hub_instance.get_projects(parameters={'q':"name:accelerator-initializer-ui"})
 
@@ -313,11 +308,11 @@ def test_get_projects_with_name_query(requests_mock, mock_hub_instance):
     assert 'totalCount' in projects
     assert projects['totalCount'] == 1
 
-def test_get_project_versions(requests_mock, mock_hub_instance):
+def test_get_project_versions(requests_mock, mock_hub_instance, shared_datadir):
     baseurl = mock_hub_instance.get_urlbase()
     url = baseurl + "/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions?limit=100"
-    json_data = json.load(open('sample-project-versions.json'))
-    project_json_data = json.load(open('sample-project.json'))
+    json_data = json.load((shared_datadir / 'sample-project-versions.json').open())
+    project_json_data = json.load((shared_datadir / 'sample-project.json').open())
     # replace project URL with the right one to agree with our mocked URL above
     project_json_data['_meta']['href'] = re.sub("https://.*/api", "{}/api".format(baseurl), project_json_data['_meta']['href'])
     requests_mock.get(url, json=json_data)
@@ -326,11 +321,11 @@ def test_get_project_versions(requests_mock, mock_hub_instance):
     assert 'totalCount' in versions
     assert versions['totalCount'] == 1
 
-def test_get_project_versions_with_parameters(requests_mock, mock_hub_instance):
+def test_get_project_versions_with_parameters(requests_mock, mock_hub_instance, shared_datadir):
     baseurl = mock_hub_instance.get_urlbase()
     url = baseurl + "/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions?limit=100&q=versionName:1.0"
-    json_data = json.load(open('sample-project-versions.json'))
-    project_json_data = json.load(open('sample-project.json'))
+    json_data = json.load((shared_datadir / 'sample-project-versions.json').open())
+    project_json_data = json.load((shared_datadir / 'sample-project.json').open())
     # replace project URL with the right one to agree with our mocked URL above
     project_json_data['_meta']['href'] = re.sub("https://.*/api", "{}/api".format(baseurl), project_json_data['_meta']['href'])
     requests_mock.get(url, json=json_data)
@@ -345,10 +340,10 @@ def test_delete_project_version_by_name():
     pass
 
 
-def test_get_users(requests_mock, mock_hub_instance):
+def test_get_users(requests_mock, mock_hub_instance, shared_datadir):
     baseurl = mock_hub_instance.get_urlbase()
     url = baseurl + "/api/users"
-    user_json_data = json.load(open("users.json"))
+    user_json_data = json.load((shared_datadir / "users.json").open())
     requests_mock.get(url, json=user_json_data)
     users = mock_hub_instance.get_users()
 
@@ -377,9 +372,9 @@ def test_delete_user_by_id(requests_mock, mock_hub_instance):
 def test_delete_user_by_url(requests_mock, mock_hub_instance):
     pass
     
-def test_get_project_by_name(requests_mock, mock_hub_instance):
+def test_get_project_by_name(requests_mock, mock_hub_instance, shared_datadir):
     url = mock_hub_instance.get_urlbase() + "/api/projects"
-    projects_json = json.load(open("sample-projects.json"))
+    projects_json = json.load((shared_datadir / "sample-projects.json").open())
     project_name = "accelerator-initializer-ui"
     requests_mock.get(url, json=projects_json)
 
@@ -387,8 +382,8 @@ def test_get_project_by_name(requests_mock, mock_hub_instance):
 
     assert project['name'] == project_name
 
-def test_get_version_by_name(requests_mock, mock_hub_instance):
-    mock_hub_instance.get_project_versions = MagicMock(return_value=json.load(open("sample-project-versions.json")))
+def test_get_version_by_name(requests_mock, mock_hub_instance, shared_datadir):
+    mock_hub_instance.get_project_versions = MagicMock(return_value=json.load((shared_datadir / "sample-project-versions.json").open()))
 
     mock_project_obj = MagicMock()
     version_name = "1.0" # a version that exists in sample-project-versions.json
@@ -403,110 +398,24 @@ def test_create_version_notices_report(requests_mock, mock_hub_instance):
     pass
 
 @pytest.fixture()
-def unreviewed_snippet_json():
-    with open("unreviewed_snippet.json") as f:
-        yield json.load(f)[0]
-
-def test_get_ignore_snippet_json(unreviewed_snippet_json, mock_hub_instance):
-    assert 'fileSnippetBomComponents' in unreviewed_snippet_json
-    assert unreviewed_snippet_json['fileSnippetBomComponents'][0]['ignored'] == False
-
-    result = mock_hub_instance.get_ignore_snippet_json(unreviewed_snippet_json)
-
-    assert isinstance(result, list)
-    assert len(result) == 1
-    assert 'fileSnippetBomComponents' in result[0]
-    assert 'ignored' in result[0]['fileSnippetBomComponents'][0]
-    assert 'reviewStatus' in result[0]['fileSnippetBomComponents'][0]
-    assert result[0]['fileSnippetBomComponents'][0]['ignored'] == True
-    assert result[0]['fileSnippetBomComponents'][0]['reviewStatus'] == 'NOT_REVIEWED'
-
-def test_get_confirm_snippet_json(unreviewed_snippet_json, mock_hub_instance):
-    assert 'fileSnippetBomComponents' in unreviewed_snippet_json
-    assert unreviewed_snippet_json['fileSnippetBomComponents'][0]['ignored'] == False
-    
-    result = mock_hub_instance.get_confirm_snippet_json(unreviewed_snippet_json)
-
-    assert isinstance(result, list)
-    assert len(result) == 1
-    assert 'fileSnippetBomComponents' in result[0]
-    assert 'ignored' in result[0]['fileSnippetBomComponents'][0]
-    assert 'reviewStatus' in result[0]['fileSnippetBomComponents'][0]
-    assert result[0]['fileSnippetBomComponents'][0]['ignored'] == False
-    assert result[0]['fileSnippetBomComponents'][0]['reviewStatus'] == 'REVIEWED'
-
+def sample_bom_component_json(shared_datadir):
+    yield json.load((shared_datadir / "sample-bom-component.json").open())
 
 @pytest.fixture()
-def sample_snippet_match_json():
-    with open("sample-snippet-match.json") as f:
-        yield json.load(f)
-
-
-def test_generate_new_match_selection(sample_snippet_match_json, mock_hub_instance):
-    assert 'fileSnippetBomComponents' in sample_snippet_match_json
-    assert len(sample_snippet_match_json['fileSnippetBomComponents']) == 1
-
-    # Copy the snippet component match data and delete the keys that are normally missing
-    # from a (vanilla) snippet component alternate match
-    new_component = copy.deepcopy(sample_snippet_match_json['fileSnippetBomComponents'][0])
-    del new_component['ignored']
-    del new_component['reviewStatus']
-    del new_component['versionBomComponentId']
-    new_component['release']['version'] = 'different-version'
-
-    # now verify that they are restored when we prepare to select/update using the alternate match
-    update_body = mock_hub_instance._generate_new_match_selection(sample_snippet_match_json, new_component)
-
-    assert len(update_body) == 1
-    assert 'fileSnippetBomComponents' in update_body[0]
-    assert len(update_body[0]['fileSnippetBomComponents']) == 1
-    updated_component_info = update_body[0]['fileSnippetBomComponents'][0]
-    original_component_info = sample_snippet_match_json['fileSnippetBomComponents'][0]
-    for k in ['ignored', 'reviewStatus', 'versionBomComponentId']:
-        assert k in updated_component_info
-        assert updated_component_info[k] == original_component_info[k]
+def no_roles_user(shared_datadir):
+    yield json.load((shared_datadir / 'no-roles-user.json').open())
 
 @pytest.fixture()
-def sample_bom_component_json():
-    with open("sample-bom-component.json") as f:
-        yield json.load(f)
-
-def test_get_edit_snippet_json(sample_snippet_match_json, sample_bom_component_json, mock_hub_instance):
-    assert 'component' in sample_bom_component_json
-    assert 'componentVersion' in sample_bom_component_json
-    assert 'fileSnippetBomComponents' in sample_snippet_match_json
-    assert len(sample_snippet_match_json['fileSnippetBomComponents']) == 1
-
-    new_component_id = sample_bom_component_json['component'].split("/")[-1]
-    new_component_version_id = sample_bom_component_json['componentVersion'].split("/")[-1]
-
-    new_snippet_bom_entry_l = mock_hub_instance.get_edit_snippet_json(sample_snippet_match_json, sample_bom_component_json)
-
-    assert len(new_snippet_bom_entry_l) == 1
-    new_snippet_bom_entry = new_snippet_bom_entry_l[0]
-    
-    assert new_component_id == new_snippet_bom_entry['fileSnippetBomComponents'][0]['project']['id']
-    assert new_component_version_id == new_snippet_bom_entry['fileSnippetBomComponents'][0]['release']['id']
+def no_roles_roles(shared_datadir):
+    yield json.load((shared_datadir / 'no-roles-roles.json').open())
 
 @pytest.fixture()
-def no_roles_user():
-    with open('no-roles-user.json') as f:
-        yield json.load(f)
+def sysadmin_user(shared_datadir):
+    yield json.load((shared_datadir / 'sysadmin-user.json').open())
 
 @pytest.fixture()
-def no_roles_roles():
-    with open('no-roles-roles.json') as f:
-        yield json.load(f)
-
-@pytest.fixture()
-def sysadmin_user():
-    with open('sysadmin-user.json') as f:
-        yield json.load(f)
-
-@pytest.fixture()
-def sysadmin_roles():
-    with open('sysadmin-roles.json') as f:
-        yield json.load(f)
+def sysadmin_roles(shared_datadir):
+    yield json.load((shared_datadir / 'sysadmin-roles.json').open())
 
 def test_user_has_role(no_roles_user, no_roles_roles, sysadmin_user, sysadmin_roles, mock_hub_instance):
     test_roles = [
@@ -560,4 +469,30 @@ def test_validated_json_fails_with_invalid_json_str(mock_hub_instance):
 
     with pytest.raises(JSONDecodeError) as e_info:
         validated_json = mock_hub_instance._validated_json_data('invalid json')
+
+@pytest.fixture()
+def code_locations(requests_mock, shared_datadir):
+    data = json.load((shared_datadir / 'code_locations.json').open())
+    requests_mock.get(
+        "{}/api/codelocations?limit=100".format(fake_hub_host),
+        json = data
+    )
+    yield data
+
+def test_get_codelocations_all(mock_hub_instance, code_locations):
+    code_locs = mock_hub_instance.get_codelocations()
+
+    assert code_locs == code_locations
+
+def test_get_codelocations_unmapped(mock_hub_instance, code_locations):
+    code_locs = mock_hub_instance.get_codelocations(unmapped=True)
+
+    assert code_locs != code_locations
+
+    expected_data = copy.deepcopy(code_locations)
+    expected_data['items'] = [cl for cl in code_locations['items'] if 'mappedProjectVersion' not in cl]
+    expected_data['totalCount'] = len(expected_data['items'])
+
+    assert code_locs == expected_data
+
 

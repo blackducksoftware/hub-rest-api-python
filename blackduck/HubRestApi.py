@@ -49,6 +49,8 @@ It is possible to generate generate_config file by initalizing API as following:
 import logging
 import requests
 import json
+from operator import itemgetter
+import urllib.parse
 
 # TODO: Create some kind of Black Duck exception grouping/hierarchy?
 
@@ -193,7 +195,7 @@ class HubInstance(object):
         return version
 
     def _get_parameter_string(self, parameters={}):
-        parameter_string = "&".join(["{}={}".format(k,v) for k,v in parameters.items()])
+        parameter_string = "&".join(["{}={}".format(k,v) for k,v in sorted(parameters.items(), key=itemgetter(0))])
         return "?" + parameter_string
 
     def get_tags_url(self, component_or_project):
@@ -206,7 +208,7 @@ class HubInstance(object):
 
     def get_link(self, bd_rest_obj, link_name):
         # returns the URL for the link_name OR None
-        if '_meta' in bd_rest_obj and 'links' in bd_rest_obj['_meta']:
+        if bd_rest_obj and '_meta' in bd_rest_obj and 'links' in bd_rest_obj['_meta']:
             for link_obj in bd_rest_obj['_meta']['links']:
                 if 'rel' in link_obj and link_obj['rel'] == link_name:
                     return link_obj.get('href', None)
@@ -470,10 +472,32 @@ class HubInstance(object):
         return response.json()
 
     def get_vulnerability_affected_projects(self, vulnerability):
-        url = self.config['baseurl'] + "/api/v1/composite/vulnerability"+ "/{}".format(vulnerability) 
+        url = self._get_vulnerabilities_url() + "/{}/affected-projects".format(vulnerability) 
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.vulnerability-4+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        return response.json()
+
+    # TODO: Refactor this, i.e. use get_link method?
+    def get_vulnerable_bom_components(self, version_obj, limit=9999):
+        url = "{}/vulnerable-bom-components".format(version_obj['_meta']['href'])
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.bill-of-materials-6+json'}
+        param_string = self._get_parameter_string({'limit': limit})
+        url = "{}{}".format(url, param_string)
+        response = self.execute_get(url, custom_headers=custom_headers)
+        return response.json()
+
+    # TODO: Remove or refactor this
+    def get_component_remediation(self, bom_component):
+        url = "{}/remediating".format(bom_component['componentVersion'])
+        logging.debug("Url for getting remediation info is : {}".format(url))
         response = self.execute_get(url)
         return response.json()
 
+    ##
+    #
+    # Lookup Black Duck (Hub) KB info given Protex KB info
+    #
+    ##
     def find_component_info_for_protex_component(self, protex_component_id, protex_component_release_id):
         '''Will return the Hub component corresponding to the protex_component_id, and if a release (version) id
         is given, the response will also include the component-version. Returns an empty list if there were
@@ -491,29 +515,8 @@ class HubInstance(object):
         logging.debug("query results in status code {}, json data: {}".format(response.status_code, response.json()))
         # TODO: Error checking and retry? For now, as POC just assuming it worked
         component_list_d = response.json()
-        if component_list_d['totalCount'] >= 1:
-            return component_list_d['items'][0]
-        else:
-            return component_list_d['items']
-
-    def get_vulnerable_bom_components(self, version_obj, limit=9999):
-        url = "{}/vulnerable-bom-components".format(version_obj['_meta']['href'])
-        custom_headers = {'Content-Type': 'application/vnd.blackducksoftware.bill-of-materials-4+json'}
-        param_string = self._get_parameter_string({'limit': limit})
-        url = "{}{}".format(url, param_string)
-        response = self.execute_get(url, custom_headers=custom_headers)
-        if response.status_code == 200:
-            vulnerable_bom_components = response.json()
-            return vulnerable_bom_components
-        else:
-            logging.warning("Failed to retrieve vulnerable bom components for project {}, status code {}".format(
-                version_obj, response.status_code))
-
-    def get_component_remediation(self, bom_component):
-        url = "{}/remediating".format(bom_component['componentVersion'])
-        logging.debug("Url for getting remediation info is : {}".format(url))
-        response = self.execute_get(url)
         return response.json()
+        
 
     ##
     #
@@ -553,6 +556,26 @@ class HubInstance(object):
     def download_report(self, report_id):
         url = self.get_urlbase() + "/api/reports/{}".format(report_id)
         return self.execute_get(url, {'Content-Type': 'application/zip', 'Accept':'application/zip'})
+
+    ##
+    #
+    # (Global) Vulnerability reports
+    #
+    ##
+    valid_vuln_status_report_formats = ["CSV", "JSON"]
+    def create_vuln_status_report(self, format="CSV"):
+        assert format in HubInstance.valid_vuln_status_report_formats, "Format must be one of {}".format(HubInstance.valid_vuln_status_report_formats)
+
+        post_data = {
+            "reportFormat": format,
+            "locale": "en_US"
+        }
+        url = self.get_apibase() + "/vulnerability-status-reports"
+        custom_headers = {
+            'Content-Type': 'application/vnd.blackducksoftware.report-4+json',
+            'Accept': 'application/vnd.blackducksoftware.report-4+json'
+        }
+        return self.execute_post(url, custom_headers=custom_headers, data=post_data)
 
     ##
     #
@@ -598,17 +621,6 @@ class HubInstance(object):
         if int(self.bd_major_version) < 2018:
             raise UnsupportedBDVersion("The BD major version {} is less than the minimum required major version {}".format(self.bd_major_version, 2018))        
 
-    def get_file_bom_entries(self, hub_release_id, limit=100):
-        self._check_version_compatibility()
-        paramstring = self.get_limit_paramstring(limit)
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        url =  "{}/v1/releases/{}/file-bom-entries{}".format(self.get_apibase(), hub_release_id)
-        url += paramstring
-        logging.debug("GET {}".format(url))
-        response = self.execute_get(url)
-        jsondata = response.json()
-        return jsondata
-
     def get_file_matches_for_bom_component(self, bom_component, limit=1000):
         self._check_version_compatibility()
         url = self.get_link(bom_component, "matched-files")
@@ -618,116 +630,6 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
-    def get_snippet_bom_entries(self, project_id, version_id, reviewed=False, included=False, limit=100, offset=0):
-        self._check_version_compatibility()
-        paramstring = "?limit=" + str(limit) + "&offset=" + \
-            str(offset) + "&filter=bomReviewStatus:" + str(reviewed).lower() + "&filter=bomInclusion:" + str(included).lower()
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        path =  "{}/internal/projects/{}/versions/{}/snippet-bom-entries".format(self.get_apibase(), project_id, version_id)
-        url = path + paramstring
-        response = self.execute_get(url)
-        jsondata = response.json()
-        return jsondata
-
-    def ignore_snippet_bom_entry(self, hub_version_id, snippet_bom_entry):
-        self._check_version_compatibility()
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        url = "{}/v1/releases/{}/snippet-bom-entries".format(self.get_apibase(), hub_version_id)
-        body = self.get_ignore_snippet_json(snippet_bom_entry)
-        response = self.execute_put(url, body)
-        jsondata = response.json()
-        return jsondata
-
-    def get_ignore_snippet_json(self, snippet_bom_entry):
-        self._check_version_compatibility()
-        for cur_fileSnippetBomComponents in snippet_bom_entry['fileSnippetBomComponents']:
-            cur_fileSnippetBomComponents['ignored'] = True
-        return [snippet_bom_entry]
-    
-    def confirm_snippet_bom_entry(self, hub_version_id, snippet_bom_entry):
-        self._check_version_compatibility()
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        url = "{}/v1/releases/{}/snippet-bom-entries".format(self.get_apibase(), hub_version_id)
-        body = self.get_confirm_snippet_json(snippet_bom_entry)
-        response = self.execute_put(url, body)
-        jsondata = response.json()
-        return jsondata
-
-    def get_confirm_snippet_json(self, snippet_bom_entry):
-        self._check_version_compatibility()
-        for cur_fileSnippetBomComponents in snippet_bom_entry['fileSnippetBomComponents']:
-            cur_fileSnippetBomComponents['reviewStatus'] = 'REVIEWED'
-            cur_fileSnippetBomComponents['ignored'] = False
-        return [snippet_bom_entry]
-    
-    def edit_snippet_bom_entry(self, hub_version_id, snippet_bom_entry, new_kb_component):
-        self._check_version_compatibility()
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        url = "{}/v1/releases/{}/snippet-bom-entries".format(self.get_apibase(), hub_version_id)
-        body = self.get_edit_snippet_json(snippet_bom_entry, new_kb_component)
-        response = self.execute_put(url, body)
-        jsondata = response.json()
-        return jsondata
-
-    def get_edit_snippet_json(self, snippet_bom_entry, new_kb_component):
-        self._check_version_compatibility()
-        assert 'fileSnippetBomComponents' in snippet_bom_entry
-        assert len(snippet_bom_entry['fileSnippetBomComponents']) == 1, "We can only edit the component info for one snippet match at a time"
-
-        # TODO: Handle case where either the component from snippet_bom_entry OR new_kb_component does not have a version?
-        snippet_component_info = snippet_bom_entry['fileSnippetBomComponents'][0]
-        snippet_component_info['project']['id'] = new_kb_component['component'].split("/")[-1]
-        snippet_component_info['release']['id'] = new_kb_component['componentVersion'].split("/")[-1]
-        return [snippet_bom_entry]
-    
-    def get_alternate_matches_for_snippet(self, project_id, version_id, snippet_object):
-        self._check_version_compatibility()
-        version_bom_entry_id = snippet_object['fileSnippetBomComponents'][0]['versionBomEntryId']
-
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        url =  "{}/internal/projects/{}/versions/{}/alternate-snippet-matches/{}".format(
-            self.get_apibase(), project_id, version_id, version_bom_entry_id)
-        response = self.execute_get(url)
-        jsondata = response.json()
-        alternate_matches = list()
-        for snippet_bom_components_d in jsondata['snippetMatches']:
-            for snippet_bom_component in snippet_bom_components_d['snippetBomComponents']:
-                alternate_matches.append(snippet_bom_component)
-        return alternate_matches
-
-    def find_matching_alternative_snippet_match(self, project_id, version_id, snippet_object, kb_component):
-        # Given a KB component, find the matching alternative snippet match for a given snippet BOM entry
-        # Returns None if no match was found
-        kb_component_id = kb_component['component'].split("/")[-1]
-        # TODO: handle cases where there is no version supplied?
-        kb_component_version_id = kb_component['componentVersion'].split("/")[-1]
-        for alternative_match in self.get_alternate_matches_for_snippet(project_id, version_id, snippet_object):
-            alternative_match_component_id = alternative_match['project']['id']
-            alternative_match_component_version_id = alternative_match['release']['id']
-            if kb_component_id == alternative_match_component_id and kb_component_version_id == alternative_match_component_version_id:
-                return alternative_match
-
-    def _generate_new_match_selection(self, original_snippet_match, new_component_match):
-        # Merge the values from new_component_match into the origingal_snippet_match
-        # Note: Must do the merge to preserver other key/value pairs in the original_snippet_match (e.g. ignored, reviewStatus, versionBomComponentId)
-        # TODO: Can there ever be more than one item in fileSnippetBomComponents?
-        for k in original_snippet_match['fileSnippetBomComponents'][0].keys():
-            if k in new_component_match:
-                original_snippet_match['fileSnippetBomComponents'][0][k] = new_component_match[k]
-        return [original_snippet_match]
-
-    def update_snippet_match(self, version_id, current_snippet_match, new_snippet_match_component):
-        # Update the (snippet) component selection for a given snippet match
-        # Assumption: new_snippet_match_component is from one of the alternate matches listed for the file snippet match
-        self._check_version_compatibility()
-        headers = self.get_headers()
-        headers['ContentType'] = "application/json"
-        # Using internal API - see https://jira.dc1.lan/browse/HUB-18270: Make snippet API calls for ignoring, confirming snippet matches public
-        url = "{}/v1/releases/{}/snippet-bom-entries".format(self.get_apibase(), version_id)
-        body = self._generate_new_match_selection(current_snippet_match, new_snippet_match_component)
-        response = self.execute_put(url, body)
-        jsondata = response.json()
-        return jsondata
 
     ##
     #
@@ -772,7 +674,7 @@ class HubInstance(object):
         response = self.execute_post(url, data=post_data)
         return response
 
-    def create_project_version(self, project_obj, new_version_name, parameters={}):
+    def create_project_version(self, project_obj, new_version_name, clone_version=None, parameters={}):
         url = self.get_link(project_obj, "versions")
 
         version_phase = parameters.get("phase", "PLANNING")
@@ -787,9 +689,11 @@ class HubInstance(object):
                 "COMPONENT_DATA"
             ],
             "versionName": new_version_name,
-            "phase": parameters.get("phase", "PLANNING"),
+            "phase": version_phase,
             "distribution": parameters.get("distribution", "EXTERNAL")
         }
+        if clone_version:
+            post_data["cloneFromReleaseUrl"] = clone_version['_meta']['href']
         response = self.execute_post(url, data=post_data)
         return response
 
@@ -798,6 +702,28 @@ class HubInstance(object):
         for project in project_list['items']:
             if project['name'] == project_name:
                 return project
+
+    def get_projects_by_version_name(self, version_name, exclude_projects=None):
+        """Returns all project dicts which have given version_name, including the version object under 'version' key
+        
+        Arguments:
+            version_name {str} -- version name to be searched
+            exclude_projects {list} -- list of project names to be excluded from scanning for given version name
+        """
+        headers = self.get_headers()
+        projects = self.get_projects(limit=9999).get('items',[])
+        if len(projects) == 0:
+            logging.error('No projects found')
+        else:
+            jsondata = {'items':[]}
+            for project in projects:
+                if project['name'] not in exclude_projects:
+                    version = self.get_version_by_name(project, version_name)
+                    if version:
+                        project['version'] = version
+                        jsondata['items'].append(project)
+            jsondata['totalCount'] = len(jsondata['items'])
+            return jsondata
 
     def get_version_by_name(self, project, version_name):
         version_list = self.get_project_versions(project, parameters={'q':"versionName:{}".format(version_name)})
@@ -823,10 +749,10 @@ class HubInstance(object):
         if project:
             version = self.get_version_by_name(project, version_name)
             if not version:
-                self.create_project_version(project, version_name, parameters)
+                self.create_project_version(project, version_name, parameters=parameters)
                 version = self.get_version_by_name(project, version_name)
         else:
-            self.create_project(project_name, version_name, parameters)
+            self.create_project(project_name, version_name, parameters=parameters)
             project = self.get_project_by_name(project_name)
             version = self.get_version_by_name(project, version_name)
         return version
@@ -1271,6 +1197,25 @@ class HubInstance(object):
         all_project_roles = self.get_roles(parameters={"filter":"scope:project"})
         return all_project_roles['items']
 
+    def get_version_scan_info(self, version_obj):
+        url = self.get_link(version_obj, "codelocations")
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.project-detail-5+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        code_locations = response.json().get('items', [])
+        if code_locations:
+            scan_info = {
+                'most_recent_scan': max([cl['updatedAt'] for cl in code_locations]),
+                'oldest_scan': min([cl['createdAt'] for cl in code_locations]),
+                'number_scans': len(code_locations)
+            }
+        else:
+            scan_info = {
+                'most_recent_scan': None,
+                'oldest_scan': None,
+                'number_scans': None
+            }
+        return scan_info
+
     ###
     #
     # Add project version as a component to another project
@@ -1362,18 +1307,11 @@ class HubInstance(object):
         url = self.get_apibase() + "/codelocations" + paramstring
         headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        if response.status_code == 200:
-            jsondata = response.json()
-            if unmapped:
-                jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
-                jsondata['totalCount'] = len(jsondata['items'])
-            return jsondata
-        elif response.status_code == 403:
-            logging.warning("Failed to retrieve code locations (aka scans) probably due to lack of permissions, status code {}".format(
-                response.status_code))
-        else:
-            logging.error("Failed to retrieve code locations (aka scans), status code {}".format(
-                response.status_code))
+        jsondata = response.json()
+        if unmapped:
+            jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
+            jsondata['totalCount'] = len(jsondata['items'])
+        return jsondata
 
     def get_codelocation_scan_summaries(self, code_location_id = None, code_location_obj = None, limit=100):
         '''Retrieve the scans (aka scan summaries) for the given location. You can give either
@@ -1394,7 +1332,7 @@ class HubInstance(object):
         return jsondata
     
     def delete_unmapped_codelocations(self, limit=1000):
-        code_locations = self.get_codelocations(limit, True).get('items', [])
+        code_locations = self.get_codelocations(limit=limit, unmapped=True).get('items', [])
 
         for c in code_locations:
             scan_summaries = self.get_codelocation_scan_summaries(code_location_obj = c).get('items', [])
@@ -1416,10 +1354,33 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
+    ##
     #
+    # Component stuff
     #
-    #
+    ##
+    def _get_components_url(self):
+        return self.get_urlbase() + "/api/components"
 
+    def get_components(self, limit=100, parameters={}):
+        if limit:
+            parameters.update({'limit':limit})
+        #
+        # I was only able to GET components when using this internal media type which is how the GUI works
+        #       July 19, 2019 Glenn Snyder
+        #
+        custom_headers = {'Accept':'application/vnd.blackducksoftware.internal-1+json'}
+        url = self._get_components_url() + self._get_parameter_string(parameters)
+        response = self.execute_get(url, custom_headers=custom_headers)
+        return response.json()
+
+    def search_components(self, search_str, limit=100, parameters={}):
+        if limit:
+            parameters.update({'limit':limit})
+        url = self.get_apibase() + "/search/components?q=name:{}".format(urllib.parse.quote(search_str))
+        response = self.execute_get(url)
+        return response.json()
+        
     def get_component_by_id(self, component_id):
         url = self.config['baseurl'] + "/api/components/{}".format(component_id)
         return self.get_component_by_url(url)
@@ -1436,6 +1397,133 @@ class HubInstance(object):
 
     def update_component_by_url(self, component_url, update_json):
         return self.execute_put(component_url, update_json)
+
+
+    ##
+    #
+    # Custom fields
+    #
+    ##
+    def _get_cf_url(self):
+        return self.get_apibase() + "/custom-fields/objects"
+
+    def supported_cf_object_types(self):
+        '''Get the types and cache them since they are static (on a per-release basis)'''
+        if not hasattr(self, "_cf_object_types"):
+            logging.debug("retrieving object types")
+            self._cf_object_types = [cfo['name'] for cfo in self.get_cf_objects().get('items', [])]
+        return self._cf_object_types
+
+    def get_cf_objects(self):
+        '''Get CF objects and cache them since these are static (on a per-release basis)'''
+        url = self._get_cf_url()
+        if not hasattr(self, "_cf_objects"):
+            logging.debug("retrieving objects")
+            custom_headers = {'Accept': 'application/vnd.blackducksoftware.admin-4+json'}
+            response = self.execute_get(url, custom_headers=custom_headers)
+            self._cf_objects = response.json()
+        return self._cf_objects
+
+    def _get_cf_object_url(self, object_name):
+        for cf_object in self.get_cf_objects().get('items', []):
+            if cf_object['name'].lower() == object_name.lower():
+                return cf_object['_meta']['href']
+
+    def get_cf_object(self, object_name):
+        assert object_name in self.supported_cf_object_types(), "Object name {} not one of the supported types ({})".format(object_name, self.supported_cf_object_types())
+
+        object_url = self._get_cf_object_url(object_name)
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.admin-4+json'}
+        response = self.execute_get(object_url, custom_headers=custom_headers)
+        return response.json()
+
+    def _get_cf_obj_rel_path(self, object_name):
+        return object_name.lower().replace(" ", "-")
+
+    def create_cf(self, object_name, field_type, description, label, position, active=True, initial_options=[]):
+        '''
+            Create a custom field for the given object type (e.g. "Project", "Project Version") using the field_type and other parameters.
+
+            Initial options are needed for field types like multi-select where the multiple values to choose from must also be provided.
+
+            initial_options = [{"label":"val1", "position":0}, {"label":"val2", "position":1}]
+        '''
+        assert isinstance(position, int) and position >= 0, "position must be an integer that is greater than or equal to 0"
+        assert field_type in ["BOOLEAN", "DATE", "DROPDOWN", "MULTISELECT", "RADIO", "TEXT", "TEXTAREA"]
+
+        types_using_initial_options = ["DROPDOWN", "MULTISELECT", "RADIO"]
+
+        post_url = self._get_cf_object_url(object_name) + "/fields"
+        cf_object = self._get_cf_obj_rel_path(object_name)
+        cf_request = {
+            "active": active,
+            "description": description,
+            "label": label,
+            "position": position,
+            "type": field_type,
+        }
+        if field_type in types_using_initial_options and initial_options:
+            cf_request.update({"initialOptions": initial_options})
+        custom_headers = {
+            'Content-Type': 'application/vnd.blackducksoftware.admin-4+json',
+            'Accept': 'application/json'
+        }
+        response = self.execute_post(post_url, data=cf_request, custom_headers=custom_headers)
+        return response
+
+    def delete_cf(self, object_name, field_id):
+        '''Delete a custom field from a given object type, e.g. Project, Project Version, Component, etc
+
+        WARNING: Deleting a custom field is irreversiable. Any data in the custom fields could be lost so use with caution.
+        '''
+        assert object_name in self.supported_cf_object_types(), "You must supply a supported object name that is in {}".format(self.supported_cf_object_types())
+
+        delete_url = self._get_cf_object_url(object_name) + "/fields/{}".format(field_id)
+        return self.execute_delete(delete_url)
+
+    def get_custom_fields(self, object_name):
+        '''Get the custom field (definition) for a given object type, e.g. Project, Project Version, Component, etc
+        '''
+        assert object_name in self.supported_cf_object_types(), "You must supply a supported object name that is in {}".format(self.supported_cf_object_types())
+
+        url = self._get_cf_object_url(object_name) + "/fields"
+
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.admin-4+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)        
+        return response.json()
+
+    def get_cf_values(self, obj):
+        '''Get all of the custom fields from an object such as a Project, Project Version, Component, etc
+
+        The obj is expected to be the JSON document for a project, project-version, component, etc
+        '''
+        url = self.get_link(obj, "custom-fields")
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.component-detail-5+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        return response.json()
+
+    def get_cf_value(self, obj, field_id):
+        '''Get a custom field value from an object such as a Project, Project Version, Component, etc
+
+        The obj is expected to be the JSON document for a project, project-version, component, etc
+        '''
+        url = self.get_link(obj, "custom-fields") + "/{}".format(field_id)
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.component-detail-5+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        return response.json()
+
+    def put_cf_value(self, cf_url, new_cf_obj):
+        '''new_cf_obj is expected to be a modified custom field value object with the values updated accordingly, e.g.
+        call get_cf_value, modify the object, and then call put_cf_value
+        '''
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.component-detail-5+json'}
+        return self.execute_put(cf_url, new_cf_obj, custom_headers=custom_headers)
+
+    ##
+    #
+    # General stuff
+    #
+    ##
 
     def execute_delete(self, url):
         headers = self.get_headers()
@@ -1484,6 +1572,18 @@ class HubInstance(object):
         url = self.get_urlbase() + "/api/health-checks/liveness"
         return self.execute_get(url)
     
+    ##
+    #
+    # Jobs
+    #
+    ##
+    def get_jobs(self, parameters={}):
+        url = self.get_apibase() + "/jobs"
+        url = url + self._get_parameter_string(parameters)
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.status-4+json'}
+        response = self.execute_get(url, custom_headers=custom_headers)
+        return response.json()
+
     ##
     #
     # Job Statistics

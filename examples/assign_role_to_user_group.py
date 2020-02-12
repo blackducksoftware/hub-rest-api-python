@@ -24,10 +24,12 @@ parser.add_argument("role", choices=global_roles, help="Assign a global role to 
 
 args = parser.parse_args()
 
-user_groups = hub.get_user_groups(parameters={'q':args.group_name})
+user_groups = hub.get_user_groups(parameters={'q':'name:{}'.format(args.group_name)})
 
 if user_groups['totalCount'] == 1:
 	user_group = user_groups['items'][0]
+else:
+	user_group = None
 
 if user_group:
 	if args.role == 'All':
@@ -42,3 +44,5 @@ if user_group:
 			print("Failed to assign role {} to group {} due to status code 412. Has the role already been assigned?".format(role_to_assign, args.group_name))
 		else:
 			print("Failed to assign role {} to group {}. status code: {}".format(role_to_assign, args.group_name, response.status_code))
+else:
+	print("Didn't find user group {}".format(args.group_name))

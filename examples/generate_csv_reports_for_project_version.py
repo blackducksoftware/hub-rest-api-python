@@ -20,6 +20,8 @@ parser.add_argument("-r", "--reports",
 	default="version,scans,components,vulnerabilities,source", 
 	help="Comma separated list (no spaces) of the reports to generate - version, scans, components, vulnerabilities, source, and cryptography reports (default: all, except cryptography")
 parser.add_argument('--format', default='CSV', choices=["CSV"], help="Report format - only CSV available for now")
+parser.add_argument('-t', '--tries', default=4, type=int, help="How many times to retry downloading the report, i.e. wait for the report to be generated")
+parser.add_argument('-s', '--sleep_time', default=5, type=int, help="The amount of time to sleep in-between (re-)tries to download the report")
 
 args = parser.parse_args()
 
@@ -33,27 +35,10 @@ version_name_map = {
 	'source':'FILES'
 }
 
-# def get_version_id(version_obj):
-# 	version_id = version_obj['_meta']['href'].split("/")[-1]
-# 	return version_id
-
-# def generate_reports_json(version_obj, reports_str):
-# 	version_id = get_version_id(version_obj)
-# 	reports_l = reports_str.split(",")
-# 	categories = [version_name_map[r.lower()] for r in reports_l]
-# 	reports_json = {
-# 		'categories': categories,
-# 		'versionId': version_id,
-# 		'reportType': 'VERSION',
-# 		'reportFormat': 'CSV',
-# 	}
-# 	return json.dumps(reports_json)
-
-# TODO: Promote this to the API
 class FailedReportDownload(Exception):
 	pass
 
-def download_report(location, filename, retries=4):
+def download_report(location, filename, retries=args.tries):
 	report_id = location.split("/")[-1]
 
 	if retries:
@@ -66,7 +51,7 @@ def download_report(location, filename, retries=4):
 		else:
 			print("Failed to retrieve report {}".format(report_id))
 			print("Probably not ready yet, waiting 5 seconds then retrying...")
-			time.sleep(5)
+			time.sleep(args.sleep_time)
 			retries -= 1
 			download_report(location, filename, retries)
 	else:
