@@ -1171,7 +1171,7 @@ class HubInstance(object):
 
         project = self.get_project_by_name(project_name)
         if (project is None):
-            print ("Project " + project_name + " not found")
+            logging.debug("Project " + project_name + " not found")
             return ("NO_PROJECT")
 
         link = self.get_link(project, "versions")
@@ -1180,11 +1180,11 @@ class HubInstance(object):
             if response.status_code == 200:
                 versions_list = json.loads(response.text)
                 for version_item in versions_list['items']:
-                    print("Got version in file "+version_item['versionName'])
+                    logging.debug("Got version in file "+version_item['versionName'])
                     if version == 'empty':
                         version = version_item['versionName']
                     if version_item['versionName'] == version:
-                        print("Found " + version)
+                        logging.debug("Found " + version)
                         return version_item['policyStatus']
                 else:
                     return ("VERSION_NOT_SCANNED")

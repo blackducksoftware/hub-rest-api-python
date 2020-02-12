@@ -19,21 +19,21 @@ projects = hub.get_projects(limit=100)
 print ("total projects found: %s" % projects['totalCount'])
 
 for project in projects['items']:
-    print (project['name'])
+    print(project['name'])
     versions = hub.get_project_versions(project)
-    print ("\t versions found %s" % versions['totalCount'])
+    print("\t versions found %s" % versions['totalCount'])
     versionlist = versions['items']
     if len(versionlist) == 1:
         continue
     for index in range(len(versionlist) - 1):
-        print ("index is ", format(index))
+        print("index is ".format(index))
         va = versionlist[index]
         components = hub.get_version_components(va)
         codelocations = hub.get_version_codelocations(va)
         # hub.execute_delete(va['_meta']['href'])
-        print ("version {} has {} codelocations".format(va['versionName'], codelocations['totalCount']))
+        print("version {} has {} codelocations".format(va['versionName'], codelocations['totalCount']))
         if codelocations['totalCount'] > 0:
-            for codelocation in codelocations['items']:
+            for codelocation in codelocations.get['items',[]]:
                 print (codelocation['_meta']['href'])
                 locationid = codelocation['_meta']['href'].split("/")[5]
                 print (locationid)
