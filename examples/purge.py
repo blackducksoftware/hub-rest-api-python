@@ -33,7 +33,7 @@ for project in projects['items']:
         # hub.execute_delete(va['_meta']['href'])
         print("version {} has {} codelocations".format(va['versionName'], codelocations['totalCount']))
         if codelocations['totalCount'] > 0:
-            for codelocation in codelocations.get['items',[]]:
+            for codelocation in codelocations['items']:
                 print (codelocation['_meta']['href'])
                 locationid = codelocation['_meta']['href'].split("/")[5]
                 print (locationid)
