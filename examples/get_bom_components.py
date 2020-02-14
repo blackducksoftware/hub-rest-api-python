@@ -5,7 +5,6 @@ from datetime import datetime
 import json
 import logging
 import sys
-import timestring
 
 from blackduck.HubRestApi import HubInstance
 
@@ -13,9 +12,11 @@ parser = argparse.ArgumentParser("Retreive BOM component info for the given proj
 parser.add_argument("project_name")
 parser.add_argument("version")
 group = parser.add_mutually_exclusive_group()
+group.add_argument("-l", "--limit", default=10, help="Set limit on number of components to retrieve")
 group.add_argument("-u", "--unreviewed", action='store_true')
 group.add_argument("-r", "--reviewed", action='store_true')
 parser.add_argument("-v", "--vulnerabilities", action='store_true', help="Get the vulnerability info for each of the components")
+parser.add_argument("-c", "--custom_fields", action='store_true', help="Get the custom field info for each of the components")
 
 args = parser.parse_args()
 
@@ -31,7 +32,11 @@ version = hub.get_version_by_name(project, args.version)
 
 components_url = hub.get_link(version, "components")
 
-response = hub.execute_get(components_url)
+components_url += "?limit={}".format(args.limit)
+
+custom_headers = {'Accept': 'application/vnd.blackducksoftware.bill-of-materials-6+json'}
+
+response = hub.execute_get(components_url, custom_headers=custom_headers)
 if response.status_code == 200:
     components = response.json()
     components = components.get('items', [])
@@ -49,4 +54,14 @@ if response.status_code == 200:
             if response.status_code == 200:
                 vulnerabilities = response.json().get('items', [])
             component['vulnerabilities'] = vulnerabilities
+
+    if args.custom_fields:
+        for component in components:
+            custom_fields_url = hub.get_link(component, "custom-fields")
+            response = hub.execute_get(custom_fields_url, custom_headers=custom_headers)
+            custom_fields = []
+            if response.status_code == 200:
+                custom_fields = response.json().get('items', [])
+            component['custom_fields'] = custom_fields
+
     print(json.dumps(components))

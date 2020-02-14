@@ -424,7 +424,7 @@ class HubInstance(object):
 
     def get_policies(self, parameters={}):
         url = self._get_policy_url() + self._get_parameter_string(parameters)
-        headers = {'Accept': 'application/vnd.blackducksoftware.policy-4+json'}
+        headers = {'Accept': 'application/json'}
         response = self.execute_get(url, custom_headers=headers)
         return response.json()
 
@@ -540,12 +540,12 @@ class HubInstance(object):
         version_reports_url = self.get_link(version, 'versionReport')
         return self.execute_post(version_reports_url, post_data)
 
-    valid_notices_formats = ["TEXT", "HTML"]
+    valid_notices_formats = ["TEXT", "JSON"]
     def create_version_notices_report(self, version, format="TEXT"):
         assert format in HubInstance.valid_notices_formats, "Format must be one of {}".format(HubInstance.valid_notices_formats)
 
         post_data = {
-            'categories': HubInstance.valid_categories,
+            'categories': ["COPYRIGHT_TEXT"],
             'versionId': version['_meta']['href'].split("/")[-1],
             'reportType': 'VERSION_LICENSE',
             'reportFormat': format
@@ -554,8 +554,27 @@ class HubInstance(object):
         return self.execute_post(notices_report_url, post_data)
 
     def download_report(self, report_id):
+        # TODO: Fix me, looks like the reports should be downloaded from different paths than the one here, and depending on the type and format desired the path can change
         url = self.get_urlbase() + "/api/reports/{}".format(report_id)
         return self.execute_get(url, {'Content-Type': 'application/zip', 'Accept':'application/zip'})
+
+    def download_notification_report(self, report_location_url):
+        '''Download the notices report using the report URL. Inspect the report object to determine
+        the format and use the appropriate media header'''
+        custom_headers = {'Accept': 'application/vnd.blackducksoftware.report-4+json'}
+        response = self.execute_get(report_location_url, custom_headers=custom_headers)
+        report_obj = response.json()
+
+        if report_obj['reportFormat'] == 'TEXT':
+            download_url = self.get_link(report_obj, "download") + ".json"
+            logging.debug("downloading report from {}".format(download_url))
+            response = self.execute_get(download_url, {'Accept': 'application/zip'})
+        else:
+            # JSON
+            contents_url = self.get_link(report_obj, "content")
+            logging.debug("retrieving report contents from {}".format(contents_url))
+            response = self.execute_get(contents_url, {'Accept': 'application/json'})
+        return response, report_obj['reportFormat']
 
     ##
     #
