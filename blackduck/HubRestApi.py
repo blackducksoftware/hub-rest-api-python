@@ -181,6 +181,7 @@ class HubInstance(object):
             return {
                 'X-CSRF-TOKEN': self.csrf_token, 
                 'Authorization': 'Bearer {}'.format(self.token), 
+                'Accept': 'application/json',
                 'Content-Type': 'application/json'}
         else:
             if self.bd_major_version == "3":
