@@ -140,7 +140,8 @@ def test_get_headers(mock_hub_instance):
     assert mock_hub_instance.get_headers() == {
                 'X-CSRF-TOKEN': the_csrf_token, 
                 'Authorization': "Bearer {}".format(the_token),
-                'Content-Type': 'application/json'}
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'}
 
     del mock_hub_instance.config['api_token']
     for bd_major_version in ["2018", "5", "4", "3"]:
@@ -172,7 +173,8 @@ def test_hub_instance_api_token_for_auth(mock_hub_instance_using_api_token):
     assert mock_hub_instance_using_api_token.get_headers() == {
                 'X-CSRF-TOKEN': invalid_csrf_token, 
                 'Authorization': 'Bearer {}'.format(invalid_bearer_token), 
-                'Content-Type': 'application/json'}
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'}
 
     assert 'api_token' in mock_hub_instance_using_api_token.config
     assert 'baseurl' in mock_hub_instance_using_api_token.config

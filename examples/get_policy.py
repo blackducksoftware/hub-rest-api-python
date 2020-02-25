@@ -20,8 +20,11 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 hub = HubInstance()
-policies = hub.get_policies()
-for policy in policies.get('items', []):
+policies_url = hub.get_apibase() + "/policy-rules"
+# policies = hub.get_policies()
+policies = hub.execute_get(policies_url).json().get('items', [])
+
+for policy in policies:
     if policy['name'] == args.name:
         if args.prep:
             for attribute in ['createdAt', 'createdBy', 'createdByUser', 'updatedAt', 'updatedBy', 'updatedByUser', '_meta']:
