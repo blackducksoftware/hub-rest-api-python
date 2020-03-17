@@ -31,7 +31,10 @@ else:
     project = hub.get_project_by_name(args.project_name)
     version = hub.get_version_by_name(project, args.version)
 
-bom_components = hub.get_version_components(version)
+if project and version:
+    bom_components = hub.get_version_components(version)
+else:
+    sys.exit()
 
 all_policy_violations = dict()
 
