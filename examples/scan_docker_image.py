@@ -14,9 +14,9 @@ For a standard container image specification as in
 
       repository/image-name:version
 
-Main project will be named "Docker_repository/image-name" and will have "version" as a version
+Main project will be named "repository/image-name" and will have "version" as a version
 
-Docker Inspector scan project will be named as DI_"repository/image-name" and will have "version" as a version
+Docker Inspector scan project on squashed imaged will be named as "repository/image-name"_squashed and will have "version" as a version
 
 Sub-projects for layers will be named as
       repository/image-name_layer_1
@@ -165,12 +165,11 @@ class Detector():
 
 class ContainerImageScanner():
     
-    def __init__(self, hub, container_image_name, proj_name, workdir='/tmp/workdir', dockerfile=None, base_image=None, omit_base_layers=False):
+    def __init__(self, hub, container_image_name, workdir='/tmp/workdir', dockerfile=None, base_image=None, omit_base_layers=False):
         self.hub = hub
         self.hub_detect = Detector(hub)
         self.docker = DockerWrapper(workdir)
         self.container_image_name = container_image_name
-        self.proj_name = proj_name
         cindex = container_image_name.rfind(':')
         if cindex == -1:
             self.image_name = container_image_name
@@ -199,7 +198,7 @@ class ContainerImageScanner():
         offset = 0
         for i in self.manifest[0]['Layers']:
             layer = {}
-            layer['name'] = self.proj_name + "_layer_" + str(num)
+            layer['name'] = self.image_name + "_layer_" + str(num)
             layer['path'] = i
             while self.config['history'][num + offset -1].get('empty_layer', False):
                 offset = offset + 1
@@ -210,7 +209,7 @@ class ContainerImageScanner():
         print (json.dumps(self.layers, indent=4))
 
     def generate_project_structures(self, base_layers=None):
-        main_project_release = self.hub.get_or_create_project_version("Docker_" + self.proj_name, self.image_version)
+        main_project_release = self.hub.get_or_create_project_version(self.image_name, self.image_version)
 
         for layer in self.layers:
             parameters = {}
@@ -234,17 +233,15 @@ class ContainerImageScanner():
             print ("Number of addon layers {}".format(len(addon))) 
             
             if (len(base) > 0):
-                main_project_release_addon = self.hub.get_or_create_project_version(self.proj_name, addon_image_version)
+                main_project_release_addon = self.hub.get_or_create_project_version(self.image_name, addon_image_version)
                 if not self.omit_base_layers:
-                    main_project_release_base = self.hub.get_or_create_project_version(self.proj_name, base_image_version)
+                    main_project_release_base = self.hub.get_or_create_project_version(self.image_name, base_image_version)
                     for layer in base:
-                        parameters = {}
-                        parameters['description'] = layer['command']['created_by']
+                        parameters = {'description': layer['command']['created_by']}
                         sub_project_release = self.hub.get_or_create_project_version(layer['name'], self.image_version, parameters=parameters)
                         self.hub.add_version_as_component(main_project_release_base, sub_project_release)
                 for layer in addon:
-                    parameters = {}
-                    parameters['description'] = layer['command']['created_by']
+                    parameters = {'description': layer['command']['created_by']}
                     sub_project_release = self.hub.get_or_create_project_version(layer['name'], self.image_version, parameters=parameters)
                     self.hub.add_version_as_component(main_project_release_addon, sub_project_release)
             else:
@@ -255,7 +252,7 @@ class ContainerImageScanner():
                 print("************************************************************")
             
     def generate_single_layer_project_structure(self, layer_number):
-        main_project_release = self.hub.get_or_create_project_version("Docker_" + self.proj_name, self.image_version)
+        main_project_release = self.hub.get_or_create_project_version(self.image_name, self.image_version)
 
         layer = self.layers[layer_number - 1]
         parameters = {}
@@ -284,20 +281,20 @@ class ContainerImageScanner():
         self.hub_detect.detect_run(options)
 
     def submit_docker_inspector_scan(self):
-        main_project_release = self.hub.get_or_create_project_version("Docker_" + self.proj_name, self.image_version)
-        sub_project_release = self.hub.get_or_create_project_version('DI_{}'.format(self.proj_name), self.image_version)
+        main_project_release = self.hub.get_or_create_project_version(self.image_name, self.image_version)
+        sub_project_release = self.hub.get_or_create_project_version(self.image_name + "_squashed", self.image_version)
         self.hub.add_version_as_component(main_project_release, sub_project_release)
-        options = []
-        options.append('--detect.project.name=DI_{}'.format(self.proj_name))
-        options.append('--detect.project.version.name="{}"'.format(self.image_version))
-        options.append('--detect.code.location.name=DI_{}'.format(self.docker.imagefile))
-        options.append('--detect.docker.tar={}'.format(self.docker.imagefile))
+        options = ['--detect.project.name={}_squashed'.format(self.image_name),
+                   '--detect.project.version.name="{}"'.format(self.image_version),
+                   '--detect.code.location.name=DI_{}'.format(self.docker.imagefile),
+                   '--detect.docker.tar={}'.format(self.docker.imagefile)]
         self.hub_detect.detect_inspector_run(options)
 
     def cleanup_project_structure(self):
-        release = self.hub.get_or_create_project_version(self.proj_name,self.image_version)
-        base_release = self.hub.get_project_version_by_name(self.proj_name,self.image_version + "__base_layers")
-        addon_release = self.hub.get_project_version_by_name(self.proj_name,self.image_version + "_addon_layers")
+        release = self.hub.get_or_create_project_version(self.image_name,self.image_version)
+        base_release = self.hub.get_project_version_by_name(self.image_name,self.image_version + "__base_layers")
+        addon_release = self.hub.get_project_version_by_name(self.image_name,self.image_version + "_addon_layers")
+        squahed_release = self.hub.get_project_version_by_name(self.image_name,self.image_version + "_squashed")
         
         print("--------")
         print(base_release)
@@ -324,15 +321,17 @@ class ContainerImageScanner():
                 print(self.hub.delete_project_version_by_name(sub_name, sub_version_name))
         
         if base_release:
-            print(self.hub.delete_project_version_by_name(self.proj_name,self.image_version + "__base_layers"))
+            print(self.hub.delete_project_version_by_name(self.image_name,self.image_version + "__base_layers"))
         if addon_release:
-            print(self.hub.delete_project_version_by_name(self.proj_name,self.image_version + "_addon_layers"))
-        project = self.hub.get_project_by_name(self.proj_name)
+            print(self.hub.delete_project_version_by_name(self.image_name,self.image_version + "_addon_layers"))
+        if squahed_release :
+            print(self.hub.delete_project_version_by_name(self.image_name, self.image_version + "_squashed"))
+        project = self.hub.get_project_by_name(self.image_name)
         versions = self.hub.get_project_versions(project)
         if versions['totalCount'] == 1:
-            print(self.hub.delete_project_by_name(self.proj_name))
+            print(self.hub.delete_project_by_name(self.image_name))
         else:
-            print(self.hub.delete_project_version_by_name(self.proj_name,self.image_version))
+            print(self.hub.delete_project_version_by_name(self.image_name,self.image_version))
         
     def get_base_layers(self):
         if (not self.dockerfile)and (not self.base_image):
@@ -370,10 +369,10 @@ class ContainerImageScanner():
         return base_layers  
     
 
-def scan_container_image(imagespec, projname, layer_number=0):
+def scan_container_image(imagespec, layer_number=0):
     
     hub = HubInstance()
-    scanner = ContainerImageScanner(hub, imagespec, projname)
+    scanner = ContainerImageScanner(hub, imagespec)
     scanner.prepare_container_image()
     scanner.process_container_image()
     if layer_number == 0:
@@ -382,11 +381,18 @@ def scan_container_image(imagespec, projname, layer_number=0):
     else:
         scanner.generate_single_layer_project_structure(layer_number)
         scanner.submit_single_layer_scan(int(layer_number))
+
+
+def scan_squashed_image(imagespec) :
+    hub = HubInstance()
+    scanner = ContainerImageScanner(hub, imagespec)
+    scanner.prepare_container_image()
     scanner.submit_docker_inspector_scan()
 
-def scan_container_image_with_dockerfile(imagespec, projname, dockerfile, base_image, omit_base_layers):
+
+def scan_container_image_with_dockerfile(imagespec, dockerfile, base_image, omit_base_layers):
     hub = HubInstance()
-    scanner = ContainerImageScanner(hub, imagespec, projname, dockerfile=dockerfile, base_image=base_image, omit_base_layers=omit_base_layers)
+    scanner = ContainerImageScanner(hub, imagespec, dockerfile=dockerfile, base_image=base_image, omit_base_layers=omit_base_layers)
     base_layers = scanner.get_base_layers()
     print (json.dumps(base_layers, indent=2))
     # sys.exit()
@@ -394,11 +400,11 @@ def scan_container_image_with_dockerfile(imagespec, projname, dockerfile, base_i
     scanner.process_container_image()
     scanner.generate_project_structures(base_layers)
     scanner.submit_layer_scans()
-    scanner.submit_docker_inspector_scan()
-    
-def clean_container_project(imagespec, projname):
+
+
+def clean_container_project(imagespec):
     hub = HubInstance()
-    scanner = ContainerImageScanner(hub, imagespec, projname)
+    scanner = ContainerImageScanner(hub, imagespec)
     scanner.cleanup_project_structure()
 
 
@@ -411,7 +417,7 @@ def main(argv=None):
         
     parser = ArgumentParser()
     parser.add_argument('imagespec', help="Container image tag, e.g.  repository/imagename:version")
-    parser.add_argument('projname', help="Project Name")
+    parser.add_argument('--inspector', default=False, help="Runs Docker Inspector scan on squashed image")
     parser.add_argument('--cleanup', default=False, help="Delete project hierarchy only. Do not scan")
     parser.add_argument('--rescan-layer',default=0, type=int, help="Rescan specific layer in case of failure, 0 - scan as usual")
     parser.add_argument('--dockerfile',default=None, type=str, help="Specify dockerfile used to build this container(experimantal), can't use with --base-image")
@@ -434,18 +440,19 @@ def main(argv=None):
         sys.exit(1)
     
     if args.cleanup:
-        clean_container_project(args.imagespec, args.projname)
+        clean_container_project(args.imagespec)
         sys.exit(1)
     if args.dockerfile or args.base_image:
-        clean_container_project(args.imagespec, args.projname)
-        scan_container_image_with_dockerfile(args.imagespec, args.projname, args.dockerfile, args.base_image, args.omit_base_layers)
+        clean_container_project(args.imagespec)
+        scan_container_image_with_dockerfile(args.imagespec, args.dockerfile, args.base_image, args.omit_base_layers)
     else:
         if args.rescan_layer == 0:
-            clean_container_project(args.imagespec, args.projname)
-            scan_container_image(args.imagespec, args.projname)
+            clean_container_project(args.imagespec)
+            scan_container_image(args.imagespec)
         else:
-            scan_container_image(args.imagespec, args.rescan_layer, args.projname)
-    
+            scan_container_image(args.imagespec, args.rescan_layer)
+    if args.inspector :
+            scan_squashed_image(args.imagespec)
+
 if __name__ == "__main__":
     sys.exit(main())
-    
