@@ -1417,8 +1417,7 @@ class HubInstance(object):
         url = self._get_cf_url()
         if not hasattr(self, "_cf_objects"):
             logging.debug("retrieving objects")
-            custom_headers = {'Accept': 'application/vnd.blackducksoftware.admin-4+json'}
-            response = self.execute_get(url, custom_headers=custom_headers)
+            response = self.execute_get(url)
             self._cf_objects = response.json()
         return self._cf_objects
 
@@ -1431,8 +1430,7 @@ class HubInstance(object):
         assert object_name in self.supported_cf_object_types(), "Object name {} not one of the supported types ({})".format(object_name, self.supported_cf_object_types())
 
         object_url = self._get_cf_object_url(object_name)
-        custom_headers = {'Accept': 'application/vnd.blackducksoftware.admin-4+json'}
-        response = self.execute_get(object_url, custom_headers=custom_headers)
+        response = self.execute_get(object_url)
         return response.json()
 
     def _get_cf_obj_rel_path(self, object_name):
@@ -1462,11 +1460,7 @@ class HubInstance(object):
         }
         if field_type in types_using_initial_options and initial_options:
             cf_request.update({"initialOptions": initial_options})
-        custom_headers = {
-            'Content-Type': 'application/vnd.blackducksoftware.admin-4+json',
-            'Accept': 'application/json'
-        }
-        response = self.execute_post(post_url, data=cf_request, custom_headers=custom_headers)
+        response = self.execute_post(post_url, data=cf_request)
         return response
 
     def delete_cf(self, object_name, field_id):
@@ -1486,8 +1480,7 @@ class HubInstance(object):
 
         url = self._get_cf_object_url(object_name) + "/fields"
 
-        custom_headers = {'Accept': 'application/vnd.blackducksoftware.admin-4+json'}
-        response = self.execute_get(url, custom_headers=custom_headers)        
+        response = self.execute_get(url)        
         return response.json()
 
     def get_cf_values(self, obj):
@@ -1496,8 +1489,7 @@ class HubInstance(object):
         The obj is expected to be the JSON document for a project, project-version, component, etc
         '''
         url = self.get_link(obj, "custom-fields")
-        custom_headers = {'Accept': 'application/vnd.blackducksoftware.component-detail-5+json'}
-        response = self.execute_get(url, custom_headers=custom_headers)
+        response = self.execute_get(url)
         return response.json()
 
     def get_cf_value(self, obj, field_id):
@@ -1506,16 +1498,14 @@ class HubInstance(object):
         The obj is expected to be the JSON document for a project, project-version, component, etc
         '''
         url = self.get_link(obj, "custom-fields") + "/{}".format(field_id)
-        custom_headers = {'Accept': 'application/vnd.blackducksoftware.component-detail-5+json'}
-        response = self.execute_get(url, custom_headers=custom_headers)
+        response = self.execute_get(url)
         return response.json()
 
     def put_cf_value(self, cf_url, new_cf_obj):
         '''new_cf_obj is expected to be a modified custom field value object with the values updated accordingly, e.g.
         call get_cf_value, modify the object, and then call put_cf_value
         '''
-        custom_headers = {'Accept': 'application/vnd.blackducksoftware.component-detail-5+json'}
-        return self.execute_put(cf_url, new_cf_obj, custom_headers=custom_headers)
+        return self.execute_put(cf_url, new_cf_obj)
 
     ##
     #
