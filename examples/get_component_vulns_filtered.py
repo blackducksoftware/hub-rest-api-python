@@ -34,13 +34,13 @@ negative_filter_string='?filter=ignored:false'
 
 result = hub.execute_get(url)
 #print (json.dumps(result.json(), indent=2))
-print ("Total Number of components: {}".format(result.json()['totalCount']))
+print ("Total Number of vulnerabilities: {}".format(result.json()['totalCount']))
 
 result = hub.execute_get(url+positive_filter_string)
 #print (json.dumps(result.json(), indent=2))
-print ("Number of ignored components: {}".format(result.json()['totalCount']))
+print ("Number of ignored vulnerabilities: {}".format(result.json()['totalCount']))
 
 result = hub.execute_get(url+negative_filter_string)
 #print (json.dumps(result.json(), indent=2))
-print ("Number of Not ignored components: {}".format(result.json()['totalCount']))
+print ("Number of Not ignored vulnerabilities: {}".format(result.json()['totalCount']))
 
