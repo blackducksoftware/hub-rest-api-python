@@ -65,8 +65,8 @@ if 'totalCount' in project_list and project_list['totalCount'] > 0:
 
 			if args.phase:
 				new_list = list()
-				for idx, version in enumerate(sorted_version_list):
-					if sorted_version_list[idx]['phase'] == phase_map[args.phase]:
+				for version in sorted_version_list:
+					if version['phase'] == phase_map[args.phase]:
 						new_list.append(version)
 				sorted_version_list = new_list
 			if args.limit:
