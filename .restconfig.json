@@ -1,6 +1,0 @@
-{
-   "baseurl": "https://blackduck.test.maerskdev.net/",
-   "api_token": "NThmZTA3MGUtNWJkZi00ZjlhLWIzZjgtZjFhYjNhOGQwYTM0OjAxYmRhOTU4LTJmZjctNDdhMy1iNDAzLTM2YThlYWI4N2U1ZQ==",
-   "insecure": true,
-   "debug": false
-}
