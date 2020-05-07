@@ -803,6 +803,14 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
+    
+    def update_project_settings(self, project, new_settings={}):
+        url = project['_meta']['href']
+        headers = self.get_headers()
+        headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
+        headers['Content-Type'] = 'application/vnd.blackducksoftware.project-detail-4+json'
+        response = self.execute_put(url, new_settings, headers)
+        return response
 
     def update_project_version_settings(self, project_name, version_name, new_settings={}):
         # Apply any new settings to the given project version
