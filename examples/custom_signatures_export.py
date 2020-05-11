@@ -1,4 +1,4 @@
-#!/usr/local/bin/python2.7
+#!/usr/local/bin/python3
 # encoding: utf-8
 '''
 examples.custom_signatures_export -- Exports project scan data for projects that have custom signatures enabled
