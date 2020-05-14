@@ -1678,4 +1678,3 @@ class HubInstance(object):
 		url = "{}{}".format(url, param_string)
 		response = self.execute_get(url)
 		return response.json()
-
