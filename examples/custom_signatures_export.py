@@ -146,6 +146,8 @@ USAGE
         ### handle keyboard interrupt ###
         return 0
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         if DEBUG or TESTRUN:
             raise(e)
         indent = len(program_name) * " "
