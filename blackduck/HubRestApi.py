@@ -1673,7 +1673,6 @@ class HubInstance(object):
 
 	def get_matched_components(self, version_obj, limit=9999):
 		url = "{}/matched-files".format(version_obj['_meta']['href'])
-		#custom_headers = {'Accept': 'application/vnd.blackducksoftware.bill-of-materials-6+json'}
 		param_string = self._get_parameter_string({'limit': limit})
 		url = "{}{}".format(url, param_string)
 		response = self.execute_get(url)
