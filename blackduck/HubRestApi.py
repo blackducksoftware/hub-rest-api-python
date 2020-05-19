@@ -1270,11 +1270,17 @@ class HubInstance(object):
     
     def upload_scan(self, filename):
         url = self.get_apibase() + "/scan/data/?mode=replace"
-        files = {'file':open(filename,'rb')}
         headers = self.get_headers()
-        headers['Content-Type'] = 'application/vnd.blackducksoftware.bdio+zip'
-        with open(filename,"rb") as f:
-            response = requests.post(url, headers=headers, data=f, verify=False)
+        if filename.endswith('.json') or filename.endswith('.jsonld'):
+            headers['Content-Type'] = 'application/ld+json'
+            with open(filename,"r") as f:
+                response = requests.post(url, headers=headers, data=f, verify=False)
+        elif filename.endswith('.bdio'):
+            headers['Content-Type'] = 'application/vnd.blackducksoftware.bdio+zip'
+            with open(filename,"rb") as f:
+                response = requests.post(url, headers=headers, data=f, verify=False)
+        else:
+            raise Exception("Unkown file type")
         return response
     
     def download_project_scans(self, project_name,version_name, output_folder=None):
