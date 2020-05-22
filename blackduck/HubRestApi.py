@@ -3,13 +3,13 @@ Created on Jul 6, 2018
 
 @author: kumykov
 
-Wrapper for common HUB API queries. 
+Wrapper for common HUB API queries.
 Upon initialization Bearer tocken is obtained and used for all subsequent calls
 
-Usage: 
+Usage:
 
 credentials and hub URL could be placed in the .restconfig.json file
-    
+
     {
       "baseurl": "https://hub-hostname",
       "username": "<username goes here>",
@@ -28,23 +28,23 @@ credentials and hub URL could be placed in the .restconfig.json file
     }
 
     .restconfig.json should be present in the current directory.
-    
+
     from blackduck.HubRestApi import HubInstance
-    
+
     hub = HubInstance()
     projects = hub.get_projects()
 
 It is possible to generate generate_config file by initalizing API as following:
-   
+
     from blackduck.HubRestApi import HubInstance
-    
+
     username="<username goes here>"
     password="<password goes here>"
     urlbase="https://hub-hostname"
-    
+
     hub = HubInstance(urlbase, username, password, insecure=True)
-    
-    
+
+
 '''
 import logging
 import requests
@@ -104,13 +104,13 @@ class HubInstance(object):
                 self.write_config()
         except Exception:
             self.read_config()
-            
+
         if self.config['insecure']:
             requests.packages.urllib3.disable_warnings()
-        
+
         if self.config['debug']:
             print(self.configfile)
-        
+
         self.token, self.csrf_token, self.cookie = self.get_auth_token()
         try:
             self.version_info = self._get_hub_rest_api_version_info()
@@ -118,15 +118,15 @@ class HubInstance(object):
             self.version_info = {'version': '3'} # assume it's v3 since all versions after 3 supported version info
 
         self.bd_major_version = self._get_major_version()
-        
+
     def read_config(self):
         with open('.restconfig.json','r') as f:
             self.config = json.load(f)
-            
+
     def write_config(self):
         with open(self.configfile,'w') as f:
             json.dump(self.config, f, indent=3)
-          
+
     def get_auth_token(self):
         api_token = self.config.get('api_token', False)
         if api_token:
@@ -134,9 +134,9 @@ class HubInstance(object):
             url = self.config['baseurl'] + authendpoint
             session = requests.session()
             response = session.post(
-                url, 
-                data={}, 
-                headers={'Authorization': 'token {}'.format(api_token)}, 
+                url,
+                data={},
+                headers={'Authorization': 'token {}'.format(api_token)},
                 verify=not self.config['insecure']
             )
             csrf_token = response.headers['X-CSRF-TOKEN']
@@ -158,7 +158,7 @@ class HubInstance(object):
             cookie = response.headers['Set-Cookie']
             token = cookie[cookie.index('=')+1:cookie.index(';')]
         return (token, None, cookie)
-    
+
     def _get_hub_rest_api_version_info(self):
         '''Get the version info from the server, if available
         '''
@@ -184,8 +184,8 @@ class HubInstance(object):
     def get_headers(self):
         if self.config.get('api_token', False):
             return {
-                'X-CSRF-TOKEN': self.csrf_token, 
-                'Authorization': 'Bearer {}'.format(self.token), 
+                'X-CSRF-TOKEN': self.csrf_token,
+                'Authorization': 'Bearer {}'.format(self.token),
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'}
         else:
@@ -226,7 +226,7 @@ class HubInstance(object):
 
     def get_apibase(self):
         return self.config['baseurl'] + "/api"
-    
+
     ###
     #
     # Role stuff
@@ -347,7 +347,7 @@ class HubInstance(object):
 
     def delete_user_by_url(self, user_url):
         return self.execute_delete(user_url)
-		
+
     def reset_user_password(self, user_id, new_password):
         url = self.config['baseurl'] + "/api/users/" + user_id + "/resetpassword"
         headers = {'Content-Type':'application/vnd.blackducksoftware.user-1+json', 'Accept': 'application/json'}
@@ -478,7 +478,7 @@ class HubInstance(object):
         return response.json()
 
     def get_vulnerability_affected_projects(self, vulnerability):
-        url = self._get_vulnerabilities_url() + "/{}/affected-projects".format(vulnerability) 
+        url = self._get_vulnerabilities_url() + "/{}/affected-projects".format(vulnerability)
         custom_headers = {'Accept': 'application/vnd.blackducksoftware.vulnerability-4+json'}
         response = self.execute_get(url, custom_headers=custom_headers)
         return response.json()
@@ -522,7 +522,7 @@ class HubInstance(object):
         # TODO: Error checking and retry? For now, as POC just assuming it worked
         component_list_d = response.json()
         return response.json()
-        
+
 
     ##
     #
@@ -644,7 +644,7 @@ class HubInstance(object):
     ##
     def _check_version_compatibility(self):
         if int(self.bd_major_version) < 2018:
-            raise UnsupportedBDVersion("The BD major version {} is less than the minimum required major version {}".format(self.bd_major_version, 2018))        
+            raise UnsupportedBDVersion("The BD major version {} is less than the minimum required major version {}".format(self.bd_major_version, 2018))
 
     def get_file_matches_for_bom_component(self, bom_component, limit=1000):
         self._check_version_compatibility()
@@ -729,7 +729,7 @@ class HubInstance(object):
 
     def get_projects_by_version_name(self, version_name, exclude_projects=None):
         """Returns all project dicts which have given version_name, including the version object under 'version' key
-        
+
         Arguments:
             version_name {str} -- version name to be searched
             exclude_projects {list} -- list of project names to be excluded from scanning for given version name
@@ -808,7 +808,7 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
-    
+
     def update_project_settings(self, project, new_settings={}):
         url = project['_meta']['href']
         headers = self.get_headers()
@@ -853,7 +853,7 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
-        
+
     def compare_project_versions(self, version, compareTo):
         apibase = self.config['baseurl'] + "/api"
         paramstring = "?limit=1000&sortField=component.securityRiskProfile&ascending=false&offset=0"
@@ -864,7 +864,7 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
-    
+
     def get_version_codelocations(self, version, limit=100, offset=0):
         url = self.get_link(version, "codelocations") + self._get_parameter_string({
             'limit': limit,
@@ -879,7 +879,7 @@ class HubInstance(object):
         if project:
             logging.debug("found project {}".format(project))
             project_versions = self.get_project_versions(
-                project, 
+                project,
                 parameters={'q':"versionName:{}".format(version_name)}
             )
 
@@ -903,7 +903,7 @@ class HubInstance(object):
                 logging.debug("Did not find version with name {} in project {}".format(version_name, project_name))
         else:
             logging.debug("Did not find project with name {}".format(project_name))
-    
+
     def delete_project_by_name(self, project_name, save_scans=False, backup_scans=False):
         project = self.get_project_by_name(project_name)
         if project:
@@ -911,10 +911,10 @@ class HubInstance(object):
             project_versions = self.get_project_versions(project)
             versions = project_versions.get('items', [])
             logging.debug("Retrieved {} versions for project {}".format(len(versions), project_name))
-            
+
             delete_scans = not save_scans
             logging.debug("delete_scans was {}".format(delete_scans))
-                
+
             if delete_scans:
                 # delete all code locations associated with each version
                 for version in versions:
@@ -923,14 +923,14 @@ class HubInstance(object):
                         self.download_project_scans(project_name, version['versionName'])
                     logging.debug("Deleting code locations (aka scans) for version {}".format(version['versionName']))
                     self.delete_project_version_codelocations(version)
-                        
+
             # delete the project itself
             project_url = project['_meta']['href']
             logging.info("Deleting project {}".format(project_name))
             self.execute_delete(project_url)
         else:
             logging.debug("Did not find project with name {}".format(project_name))
-            
+
     def delete_project_version_codelocations(self, version):
         version_name = version['versionName']
         try:
@@ -1052,9 +1052,9 @@ class HubInstance(object):
                         headers['Content-Type'] = 'application/json'
 
                     response = requests.post(
-                        url, 
-                        headers=headers, 
-                        data=json.dumps(post_data), 
+                        url,
+                        headers=headers,
+                        data=json.dumps(post_data),
                         verify = not self.config['insecure'])
                     return response
                 else:
@@ -1228,13 +1228,13 @@ class HubInstance(object):
     ###
     #
     # Add project version as a component to another project
-    # 
+    #
     # WARNING: Uses internal API
     ###
-    
+
     # TODO: Refactor this code to use the (newly released, v2019.4.0) public endpoint for adding sub-projects (POST /api/projects/{projectId}/versions/{projectVersionId}/components)
     #       ref: https://jira.dc1.lan/browse/HUB-16972
-    
+
     def add_version_as_component(self, main_project_release, sub_project_release):
         headers = self.get_headers()
         main_data = main_project_release['_meta']['href'].split('/')
@@ -1244,7 +1244,7 @@ class HubInstance(object):
         payload = {}
         payload['producerProject'] = {}
         payload['producerProject']['id'] = sub_data[5]
-        payload['producerRelease'] = {} 
+        payload['producerRelease'] = {}
         payload['producerRelease']['id'] = sub_data[7]
         print (json.dumps(payload))
         response = requests.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
@@ -1272,7 +1272,7 @@ class HubInstance(object):
     # Code locations or Scans Stuff
     #
     ###
-    
+
     def upload_scan(self, filename):
         url = self.get_apibase() + "/scan/data/?mode=replace"
         headers = self.get_headers()
@@ -1287,7 +1287,7 @@ class HubInstance(object):
         else:
             raise Exception("Unkown file type")
         return response
-    
+
     def download_project_scans(self, project_name,version_name, output_folder=None):
         version = self.get_project_version_by_name(project_name,version_name)
         codelocations = self.get_version_codelocations(version)
@@ -1295,9 +1295,9 @@ class HubInstance(object):
         if output_folder:
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder, 0o755, True)
-        
+
         result = []
-        
+
         for item in codelocations['items']:
             links = item['_meta']['links']
             matches = [x for x in links if x['rel'] == 'enclosure']
@@ -1316,7 +1316,7 @@ class HubInstance(object):
                         f.write(data)
                 result.append({filename, pathname})
         return result
-                            
+
     def get_codelocations(self, limit=100, unmapped=False, parameters={}):
         parameters['limit'] = limit
         paramstring = self._get_parameter_string(parameters)
@@ -1347,7 +1347,7 @@ class HubInstance(object):
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
-    
+
     def delete_unmapped_codelocations(self, limit=1000):
         code_locations = self.get_codelocations(limit=limit, unmapped=True).get('items', [])
 
@@ -1362,7 +1362,7 @@ class HubInstance(object):
         headers = self.get_headers()
         response = requests.delete(url, headers=headers, verify = not self.config['insecure'])
         return response
-        
+
     def get_scan_locations(self, code_location_id):
         headers = self.get_headers()
         headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
@@ -1397,7 +1397,7 @@ class HubInstance(object):
         url = self.get_apibase() + "/search/components?q=name:{}".format(urllib.parse.quote(search_str))
         response = self.execute_get(url)
         return response.json()
-        
+
     def get_component_by_id(self, component_id):
         url = self.config['baseurl'] + "/api/components/{}".format(component_id)
         return self.get_component_by_url(url)
@@ -1499,7 +1499,7 @@ class HubInstance(object):
 
         url = self._get_cf_object_url(object_name) + "/fields"
 
-        response = self.execute_get(url)        
+        response = self.execute_get(url)
         return response.json()
 
     def get_cf_values(self, obj):
@@ -1552,7 +1552,7 @@ class HubInstance(object):
         response = requests.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
         jsondata = response.json()
         return jsondata
-        
+
     def disable_ldap(self):
         url = self.config['baseurl'] + "/api/v1/ldap/state"
         headers = self.get_headers()
@@ -1561,7 +1561,7 @@ class HubInstance(object):
         response = requests.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
         jsondata = response.json()
         return jsondata
-        
+
     def get_ldap_configs(self):
         url = self.config['baseurl'] + "/api/v1/ldap/configs"
         headers = self.get_headers()
@@ -1578,7 +1578,7 @@ class HubInstance(object):
     def get_health_checks(self):
         url = self.get_urlbase() + "/api/health-checks/liveness"
         return self.execute_get(url)
-    
+
     ##
     #
     # Jobs
@@ -1600,7 +1600,7 @@ class HubInstance(object):
         url = self.get_urlbase() + "/api/job-statistics"
         response = self.execute_get(url)
         return response.json()
-        
+
     ##
     #
     # Notifications
@@ -1642,7 +1642,7 @@ class HubInstance(object):
         headers.update(custom_headers)
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         return response
-        
+
     def execute_put(self, url, data, custom_headers={}):
         json_data = self._validated_json_data(data)
         headers = self.get_headers()
@@ -1682,9 +1682,9 @@ class HubInstance(object):
         response = requests.post(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
 
-	def get_matched_components(self, version_obj, limit=9999):
-		url = "{}/matched-files".format(version_obj['_meta']['href'])
-		param_string = self._get_parameter_string({'limit': limit})
-		url = "{}{}".format(url, param_string)
-		response = self.execute_get(url)
-		return response.json()
+    def get_matched_components(self, version_obj, limit=9999):
+        url = "{}/matched-files".format(version_obj['_meta']['href'])
+        param_string = self._get_parameter_string({'limit': limit})
+        url = "{}{}".format(url, param_string)
+        response = self.execute_get(url)
+        return response.json()
