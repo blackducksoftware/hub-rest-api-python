@@ -672,7 +672,6 @@ class HubInstance(object):
         url = self._get_projects_url() + self._get_parameter_string(parameters)
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
-        print (response)
         jsondata = response.json()
         return jsondata
 
