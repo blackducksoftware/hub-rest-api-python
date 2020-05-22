@@ -140,7 +140,12 @@ class HubInstance(object):
                 verify=not self.config['insecure']
             )
             csrf_token = response.headers['X-CSRF-TOKEN']
-            bearer_token = json.loads(response.content.decode('utf-8'))['bearerToken']
+            try:
+              bearer_token = json.loads(response.content.decode('utf-8'))['bearerToken']
+            except json.decoder.JSONDecodeError as e:
+              import traceback
+              traceback.print_exc()
+              raise Exception("Failed to obtain bearer token, check for valid authentucation token")
             return (bearer_token, csrf_token, None)
         else:
             authendpoint="/j_spring_security_check"
