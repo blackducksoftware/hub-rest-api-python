@@ -140,7 +140,12 @@ class HubInstance(object):
                 verify=not self.config['insecure']
             )
             csrf_token = response.headers['X-CSRF-TOKEN']
-            bearer_token = json.loads(response.content.decode('utf-8'))['bearerToken']
+            try:
+              bearer_token = json.loads(response.content.decode('utf-8'))['bearerToken']
+            except json.decoder.JSONDecodeError as e:
+              import traceback
+              traceback.print_exc()
+              raise Exception("Failed to obtain bearer token, check for valid authentucation token")
             return (bearer_token, csrf_token, None)
         else:
             authendpoint="/j_spring_security_check"
@@ -667,6 +672,7 @@ class HubInstance(object):
         url = self._get_projects_url() + self._get_parameter_string(parameters)
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        print (response)
         jsondata = response.json()
         return jsondata
 
