@@ -1677,4 +1677,9 @@ class HubInstance(object):
         response = requests.post(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
 
-
+	def get_matched_components(self, version_obj, limit=9999):
+		url = "{}/matched-files".format(version_obj['_meta']['href'])
+		param_string = self._get_parameter_string({'limit': limit})
+		url = "{}{}".format(url, param_string)
+		response = self.execute_get(url)
+		return response.json()
