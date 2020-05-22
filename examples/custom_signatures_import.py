@@ -60,15 +60,21 @@ def read_metadata_file(metadata_path):
 def create_projects(hub, metadata):
     for project_name in metadata['content']:
         for version_name in metadata['content'][project_name]:
-            version = hub.get_or_create_project_version(project_name, version_name)
-        project = hub.get_project_by_name(project_name)
-        if not project['customSignatureEnabled']:
-            print ("Enabling custom signature for {}".format(project['name']))
-            project['customSignatureEnabled'] = True
-            response = hub.update_project_settings(project, new_settings=project)
-            print (response)
-        else:
-            print ("Custom signature for {} already enabled".format(project_name))
+            try:
+                version = hub.get_or_create_project_version(project_name, version_name)
+            except:
+                print ("Failed to create project {} version {}".format(project_name, version_name))
+        try:
+            project = hub.get_project_by_name(project_name)
+            if not project['customSignatureEnabled']:
+                print ("Enabling custom signature for {}".format(project['name']))
+                project['customSignatureEnabled'] = True
+                response = hub.update_project_settings(project, new_settings=project)
+                print (response)
+            else:
+                print ("Custom signature for {} already enabled".format(project_name))
+        except:
+            print ("Failed to set custom signature flag for {}".format(project_name))
 
 def upload_scan_data(hub, workdir):
     with (os.scandir(workdir)) as entries:
@@ -131,7 +137,7 @@ USAGE
         return 0
     except Exception as e:
         import traceback
-        traceback.print_exc()
+        traceback.print_stack()
         if DEBUG or TESTRUN:
             raise(e)
         indent = len(program_name) * " "
