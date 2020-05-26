@@ -14,7 +14,6 @@ from blackduck.HubRestApi import HubInstance
 parser = argparse.ArgumentParser("Given the URL to a Github repository, find it in the Black Duck KB and return any info available")
 parser.add_argument("github_url")
 parser.add_argument("-l", "--limit", type=int, default=100, help="The number of components to return with each call to the REST API (default: 100)")
-# parser.add_argument("-t", "--total", type=int, default=99999, help="The total number of components to retrieve")
 args = parser.parse_args()
 
 logging.basicConfig(format='%(asctime)s%(levelname)s:%(message)s', stream=sys.stderr, level=logging.DEBUG)
@@ -47,8 +46,6 @@ def has_github_link(links):
     return (http or https)
 
 hub = HubInstance()
-
-# search_url = hub.get_apibase() + "/v1/search/PROJECT?ownership=1&ownership=3"
 
 # 
 # Get the repo name which, for now, is defined as the last "part" in the pathname to the repo
