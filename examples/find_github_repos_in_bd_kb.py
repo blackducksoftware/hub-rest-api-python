@@ -16,7 +16,7 @@ parser.add_argument("github_url")
 parser.add_argument("-l", "--limit", type=int, default=100, help="The number of components to return with each call to the REST API (default: 100)")
 args = parser.parse_args()
 
-logging.basicConfig(format='%(asctime)s%(levelname)s:%(message)s', stream=sys.stderr, level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', stream=sys.stderr, level=logging.DEBUG)
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
