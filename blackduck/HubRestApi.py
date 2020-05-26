@@ -1391,10 +1391,17 @@ class HubInstance(object):
         response = self.execute_get(url, custom_headers=custom_headers)
         return response.json()
 
-    def search_components(self, search_str, limit=100, parameters={}):
+    def search_components(self, search_str_or_query, limit=100, parameters={}):
         if limit:
             parameters.update({'limit':limit})
-        url = self.get_apibase() + "/search/components?q=name:{}".format(urllib.parse.quote(search_str))
+        if search_str_or_query.startswith("q="):
+            # allow caller to override original behavior with their own query
+            query = search_str_or_query
+        else:
+            # maintain original, somewhat flawed behavior
+            query = "q=name:{}".format(search_str_or_query)
+        parm_str = self._get_parameter_string(parameters)
+        url = self.get_apibase() + "/search/components{}&{}".format(parm_str, query)
         response = self.execute_get(url)
         return response.json()
         
