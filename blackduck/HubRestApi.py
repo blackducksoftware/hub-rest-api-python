@@ -201,7 +201,7 @@ class HubInstance(object):
         return version
 
     def _get_parameter_string(self, parameters={}):
-        parameter_string = "&".join(["{}={}".format(k,v) for k,v in sorted(parameters.items(), key=itemgetter(0))])
+        parameter_string = "&".join(["{}={}".format(k,urllib.parse.quote(str(v))) for k,v in sorted(parameters.items(), key=itemgetter(0))])
         return "?" + parameter_string
 
     def get_tags_url(self, component_or_project):
