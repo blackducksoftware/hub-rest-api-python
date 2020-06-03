@@ -77,13 +77,12 @@ def create_projects(hub, metadata):
             print ("Failed to set custom signature flag for {}".format(project_name))
 
 def upload_scan_data(hub, workdir):
-    with (os.scandir(workdir)) as entries:
-        for entry in entries:
-            pathname = entry.path
-            if pathname.endswith('.bdio'):
-                print("Uploading {}".format(pathname), end = ". ")
-                response = hub.upload_scan(pathname)
-                print ("Response {}".format(response))
+    for entry in os.scandir(workdir):
+        pathname = entry.path
+        if pathname.endswith('.bdio'):
+            print("Uploading {}".format(pathname), end = ". ")
+            response = hub.upload_scan(pathname)
+            print ("Response {}".format(response))
 
 def main(argv=None): # IGNORE:C0111
     '''Command line options.'''
