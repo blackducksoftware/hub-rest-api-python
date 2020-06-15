@@ -25,14 +25,15 @@ else:
 with open(args.output_file, 'w') as csv_file:
     columns = [
         'component',
-        'component modified',
         'file path', 
         'file name',
         'archive context',
         'usage(s)', 
         'license(s)',
-        'match type(s)',
-        'scan (code location)'
+        'source',
+        'origin(s)',
+        'origin_id(s)',
+        'copyright'
     ]
     writer = csv.DictWriter(csv_file, fieldnames=columns)
     writer.writeheader()
@@ -45,16 +46,51 @@ with open(args.output_file, 'w') as csv_file:
         for matched_file_info in component_info.get('matched_files', []):
             row = {
                 'component': component,
-                'component modified': component_info['bom_component_info'].get('componentModified', None),
                 'file path': matched_file_info['filePath']['path'],
                 'file name': matched_file_info['filePath']['fileName'],
                 'archive context': matched_file_info['filePath']['archiveContext'],
                 'usage(s)': ",".join(matched_file_info['usages']),
                 'license(s)': ",".join([l['licenseDisplay'] for l in component_info['bom_component_info']['licenses']]),
-                'match type(s)': ",".join(component_info['bom_component_info']['matchTypes']),
-                'scan (code location)': matched_file_info.get('scan', {}).get('name', 'unknown')
+                'source': 'customers source',
+                'origin(s)': ",".join([o['externalNamespace'] for o in component_info['bom_component_info']['origins']]),
+                'origin_id(s)': ",".join([o.get('externalId', "") for o in component_info['bom_component_info']['origins']]),
+                'copyright': None,
             }
             writer.writerow(row)
+
+        for origin in component_info.get('all_origin_details', []):
+            for license in origin.get('file_licenses_fuzzy', []):
+                # import pdb; pdb.set_trace()
+                row = {
+                    'component': component,
+                    'file path': license['path'],
+                    'file name': os.path.basename(license['path']),
+                    'archive context': None,
+                    'usage(s)': None,
+                    'license(s)': license['licenseGroupName'],
+                    'source': 'KB',
+                    'origin(s)': origin.get('originName'),
+                    'origin_id(s)': origin.get('originId'),
+                    'copyright': None
+                }
+                writer.writerow(row)
+
+            for copyright in origin.get('file_copyrights', []):
+                # import pdb; pdb.set_trace()
+                row = {
+                    'component': component,
+                    'file path': copyright['path'],
+                    'file name': os.path.basename(copyright['path']),
+                    'archive context': None,
+                    'usage(s)': None,
+                    'license(s)': None,
+                    'source': 'KB',
+                    'origin(s)': origin.get('originName'),
+                    'origin_id(s)': origin.get('originId'),
+                    'copyright': copyright['matchData'].replace('\n', ''),
+                }
+                writer.writerow(row)
+
 
     if args.un_matched_files:
         for un_matched_file in origin_info.get('un_matched_files'):
