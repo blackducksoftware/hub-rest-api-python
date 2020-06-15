@@ -9,6 +9,8 @@ import urllib.parse
 parser = argparse.ArgumentParser("Process the JSON output from get_bom_component_origin_info.py to create CSV output format")
 parser.add_argument("-f", "--origin_info", help="By default, program reads JSON doc from stdin, but you can alternatively give a file name")
 parser.add_argument("-u", "--un_matched_files", action="store_true", help="Include un-matched files in the output")
+parser.add_argument("-l", "--file_level_license", action="store_true", help="Include file level license data, if present")
+parser.add_argument("-c", "--file_level_copyright", action="store_true", help="Include file level copyright data, if present")
 parser.add_argument("output_file")
 
 args = parser.parse_args()
@@ -58,39 +60,41 @@ with open(args.output_file, 'w') as csv_file:
             }
             writer.writerow(row)
 
-        for origin in component_info.get('all_origin_details', []):
-            for license in origin.get('file_licenses_fuzzy', []):
-                # import pdb; pdb.set_trace()
-                row = {
-                    'component': component,
-                    'file path': license['path'],
-                    'file name': os.path.basename(license['path']),
-                    'archive context': None,
-                    'usage(s)': None,
-                    'license(s)': license['licenseGroupName'],
-                    'source': 'KB',
-                    'origin(s)': origin.get('originName'),
-                    'origin_id(s)': origin.get('originId'),
-                    'copyright': None
-                }
-                writer.writerow(row)
+        if args.file_level_license or args.file_level_copyright:
+            for origin in component_info.get('all_origin_details', []):
+                if args.file_level_license:
+                    for license in origin.get('file_licenses_fuzzy', []):
+                        # import pdb; pdb.set_trace()
+                        row = {
+                            'component': component,
+                            'file path': license['path'],
+                            'file name': os.path.basename(license['path']),
+                            'archive context': None,
+                            'usage(s)': None,
+                            'license(s)': license['licenseGroupName'],
+                            'source': 'KB',
+                            'origin(s)': origin.get('originName'),
+                            'origin_id(s)': origin.get('originId'),
+                            'copyright': None
+                        }
+                        writer.writerow(row)
 
-            for copyright in origin.get('file_copyrights', []):
-                # import pdb; pdb.set_trace()
-                row = {
-                    'component': component,
-                    'file path': copyright['path'],
-                    'file name': os.path.basename(copyright['path']),
-                    'archive context': None,
-                    'usage(s)': None,
-                    'license(s)': None,
-                    'source': 'KB',
-                    'origin(s)': origin.get('originName'),
-                    'origin_id(s)': origin.get('originId'),
-                    'copyright': copyright['matchData'].replace('\n', ''),
-                }
-                writer.writerow(row)
-
+                if args.file_level_copyright:
+                    for copyright in origin.get('file_copyrights', []):
+                        # import pdb; pdb.set_trace()
+                        row = {
+                            'component': component,
+                            'file path': copyright['path'],
+                            'file name': os.path.basename(copyright['path']),
+                            'archive context': None,
+                            'usage(s)': None,
+                            'license(s)': None,
+                            'source': 'KB',
+                            'origin(s)': origin.get('originName'),
+                            'origin_id(s)': origin.get('originId'),
+                            'copyright': copyright['matchData'].replace('\n', ''),
+                        }
+                        writer.writerow(row)
 
     if args.un_matched_files:
         for un_matched_file in origin_info.get('un_matched_files'):
