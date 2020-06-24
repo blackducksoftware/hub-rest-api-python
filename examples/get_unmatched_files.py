@@ -21,7 +21,7 @@ hub = HubInstance()
 
 version = hub.get_project_version_by_name(args.project_name, args.version)
 
-matched_files_url = version['_meta']['href'] + "/matched-files?limit=9999&filter=bomMatchType:unmatched"
+matched_files_url = version['_meta']['href'] + "/matched-files?limit=99999&filter=bomMatchType:unmatched"
 
 unmatched_files = hub.execute_get(matched_files_url).json().get('items', [])
 
