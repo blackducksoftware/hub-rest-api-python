@@ -369,8 +369,8 @@ class HubInstance(object):
         return response.json()
 
     def get_user_group_by_name(self, group_name):
-        groups = self.get_user_groups()
-        for group in groups['items']:
+        group_list = self.get_user_groups({"q": f"name:{group_name}"})
+        for group in group_list['items']:
             if group['name'] == group_name:
                 return group
 
@@ -1022,7 +1022,7 @@ class HubInstance(object):
             project_url = project['_meta']['href']
             assignable_user_groups_link = self.get_link(project, 'assignable-usergroups')
             if assignable_user_groups_link:
-                assignable_user_groups_response = self.execute_get(assignable_user_groups_link)
+                assignable_user_groups_response = self.execute_get(f"{assignable_user_groups_link}?q=name:{user_group_name}")
                 assignable_user_groups = assignable_user_groups_response.json()
 
                 # TODO: What to do if the user group is already assigned to the project, and therefore
@@ -1060,7 +1060,7 @@ class HubInstance(object):
                 else:
                     assignable_groups = [u['name'] for u in assignable_user_groups['items']]
                     logging.warning("The user group {} was not found in the assignable user groups ({}) for this project {}. Is the group already assigned to this project?".format(
-                        user_group_name, assignable_groups, project_name))
+                        user_group_name['name'], assignable_groups, project_name))
             else:
                 logging.warning("This project {} has no assignable user groups".format(project_name))
         else:
