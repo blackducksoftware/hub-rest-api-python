@@ -848,7 +848,7 @@ class HubInstance(object):
     def get_version_by_id(self, project_id, version_id, limit=100):
         headers = self.get_headers()
         paramstring = self.get_limit_paramstring(limit)
-        url = self._get_projects_url() + project_id + "/versions/" + version_id
+        url = self._get_projects_url() + "/" + project_id + "/versions/" + version_id
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
