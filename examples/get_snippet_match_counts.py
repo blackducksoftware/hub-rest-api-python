@@ -24,7 +24,12 @@ version = hub.get_project_version_by_name(args.project_name, args.version)
 
 snippet_counts_url = version['_meta']['href'] + "/snippet-counts"
 
-snippet_counts = hub.execute_get(snippet_counts_url).json()
+#
+# As of v2020.6.0 the Content-Type returned is application/vnd.blackducksoftware.internal-1+json;charset=UTF-8
+# so I'm accepting any content type to allow the GET to work flexibly
+#
+custom_headers = {'Accept': '*/*'}
+snippet_counts = hub.execute_get(snippet_counts_url, custom_headers=custom_headers).json()
 
 del snippet_counts['_meta']
 
