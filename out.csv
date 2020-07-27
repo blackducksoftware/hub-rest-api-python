@@ -1,4 +1,0 @@
-Project Name,Version Name,Version URL,Has Snippets,Un-confirmed,Confirmed,Ignored,Total
-protex,snippets,"=hyperlink(""https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2871cddb-01b9-4bad-a5e5-38884ab3b6da/versions/ce2832c0-371b-4689-94d8-1c88faeed038/components"")",True,25,22,0,47
-protex,snippets-diff-path,"=hyperlink(""https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2871cddb-01b9-4bad-a5e5-38884ab3b6da/versions/6c5a2d92-d6bd-4d88-8697-a68d29284fae/components"")",True,47,0,0,47
-protex,snippets2,"=hyperlink(""https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2871cddb-01b9-4bad-a5e5-38884ab3b6da/versions/d940b4f7-7e24-43a1-88c2-5f4d89d7bf7e/components"")",True,25,22,0,47
