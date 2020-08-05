@@ -238,8 +238,8 @@ class HubInstance(object):
     def get_roles(self, parameters={}):
         url = self._get_role_url() + self._get_parameter_string(parameters)
         response = self.execute_get(url)
-        return response.json()
-
+        return response.json()  
+    
     def get_roles_url_from_user_or_group(self, user_or_group):
         # Given a user or user group object, return the 'roles' url
         roles_url = None
@@ -1066,6 +1066,20 @@ class HubInstance(object):
         else:
             logging.warning("Did not find a project by the name {}".format(project_name))
 
+    def delete_user_group_from_project(self, project_name, user_group_name):
+        project = self.get_project_by_name(project_name)
+        
+        if project:
+            project_url = project['_meta']['href']
+            
+            user_group = self.get_user_group_by_name(user_group_name)
+            if user_group:
+                user_group_url = user_group['_meta']['href']
+                user_group_id = user_group_url.rsplit('/', 1)[-1]
+            
+                project_user_group_url = f"{project_url}/usergroups/{user_group_id}"
+                self.execute_delete(project_user_group_url)    
+    
     def assign_user_to_project(self, user_name, project_name, project_roles, limit=1000):
         # Assign users to projects
         project = self.get_project_by_name(project_name)
