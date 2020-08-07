@@ -27,11 +27,12 @@ group.add_argument('--project_file', '-f', type=argparse.FileType(), help='Add a
 
 parser.add_argument('--group', '-g', type=str, required=True, help='Default group to use (normally SAML). Optionally overridden when using a file.' )
 
-parser.add_argument('--prefix', default='', type=str, help='String to add to the start of the project name')
+parser.add_argument('--prefix', '-x', default='', type=str, help='String to add to the start of the project name')
 parser.add_argument('--version', '-v', default='master', type=str, help='Version to use if not specified in the file')
 parser.add_argument('--description', '-d', default='', type=str, help='Default description for all projects')
 parser.add_argument('--project_roles', '-r', default='all', type=str, help=f"List of Project Roles to apply (default 'all'), or 'none' from {const_project_roles}")
 parser.add_argument('--update', '-u', action="store_true", help="Existing project(s) are updated rather than skipped")
+parser.add_argument('--log', '-l', action="store_true", help="Debug log output")
 
 args = parser.parse_args()
 
@@ -40,7 +41,8 @@ args = parser.parse_args()
 # Functions
    
 def get_user_groups(names=[]):
-    #print(f"Getting groups: {names}")
+    if args.log:
+        print(f"Getting groups: {names}")
     groups = []
     for name in names:
         if name == args.group:
@@ -55,9 +57,12 @@ def get_user_groups(names=[]):
     return groups
 
 def parse_project_roles(project_roles_str=str):
+    if args.log:
+        print(f"parsing project roles: {project_roles_str}")
+    
     if project_roles_str == 'none':
         project_roles = []   
-    elif project_roles_str == 'all':
+    elif project_roles_str == 'all' or project_roles_str == '':
         project_roles = const_project_roles
     else:
         role_names = project_roles_str.split(",")
@@ -68,15 +73,19 @@ def parse_project_roles(project_roles_str=str):
     
     return True, project_roles
 
-def attach_groups_to_project(name, groups, projecct_roles):
+def attach_groups_to_project(name, groups, project_roles):
     # Attach the user group(s) to the new project
     for group in groups:
+        if args.log:
+            print(f">>>> Attaching group: {group}")
         response = hub.assign_user_group_to_project(name, group, project_roles)
         if not response or response.status_code != 201:
             print(f"WARNING: Failed to assign group {group} to project {name}")
                     
 def create_project_with_groups(name=str, version=str, description=str, groups=[], project_roles=[]):
-    #print(f"create_project_with_groups({name}, {version}, {description}, {groups})")
+    if args.log:
+        print(f"create_project_with_groups({name}, {version}, {description}, {groups})")
+        
     if not groups:
         groups = [args.group]
     else:
@@ -86,22 +95,22 @@ def create_project_with_groups(name=str, version=str, description=str, groups=[]
 
     if args.prefix:
         name = f"{args.prefix} {name}"
-        
-    #print(f"Creating project: {name}")        
+
+    if args.log:
+        print(f"Creating project: {name}")        
     response = hub.create_project(name, version, parameters = {
 		'description': description
 	})
     
     if response is not None:
         if response.status_code == 201:
-            attach_groups_to_project(name, groups, projecct_roles)
+            attach_groups_to_project(name, groups, project_roles)
             return True, f"Created project: {name}"
         elif response.status_code == 412:
             if args.update:
                 project = hub.get_project_by_name(name)
                 if project:
                     project_updated = project
-                    project_updated['description'] = description
                     
                     # Delete all the current project's user groups
                     project_url = project['_meta']['href']
@@ -110,13 +119,25 @@ def create_project_with_groups(name=str, version=str, description=str, groups=[]
                     if response:
                         project_user_groups = response.json()
                         for group in project_user_groups['items']:
+                            if args.log:
+                                print(f">>>> Removing user group '{group['name']}'")        
                             hub.delete_user_group_from_project(name, group['name'])
                         
-                        # Attach the new list of user groups
-                        attach_groups_to_project(name, groups, project_roles)
-                        hub.update_project_settings(project, project_updated)
-                        return True, f"Updated project: {name}"
-                    return False, f"Project does not exist: {name}"
+                    # Attach the new list of user groups
+                    attach_groups_to_project(name, groups, project_roles)
+                    
+                    # Add new versions to the project. Unlike groups we leave old versions alone
+                    existing_version = hub.get_version_by_name(project, version)
+                    if existing_version is None:
+                        if args.log:
+                            print(f">>>> Adding version: {version}")
+                        hub.create_project_version(project, version)                        
+                        
+                    project_updated['description'] = description
+                    # Note: Could also update the name and owner here
+                    hub.update_project_settings(project, project_updated)                    
+                    
+                    return True, f"Updated project: {name}"
                 else:
                     return False, f"Project does not exist: {name}"
             else:
@@ -136,14 +157,16 @@ hub = HubInstance()
 default_group = hub.get_user_group_by_name(args.group)
 if default_group is None:
     raise SystemExit(f"Unable to find default group: ${args.group}")
-#print(f"default_group: {default_group}")    
+
+if args.log:
+    print(f"default_group: {default_group}")    
 
 status, project_roles = parse_project_roles(args.project_roles)
 if status == False:
     raise SystemExit(project_roles)
 
 if args.project_name is not None:
-    print(f"Adding the single project: {args.project_name}")
+    print(f"Processing single project: {args.project_name}")
     status, response = create_project_with_groups(args.project_name, args.version, args.description, args.group.split(","), project_roles)
     if status == False:
         raise SystemExit(f"FATAL: {response}")
@@ -156,8 +179,10 @@ else:
         line = line.strip()
         if not line or line[0] == "#":
             continue
-        
-        print(f">> {line}")
+            
+        if args.log:
+            print(f">> {line}")
+            
         params = line.split(";")
         options = {
             'project_name':'',
@@ -173,7 +198,9 @@ else:
             if index >= len(option_names):
                 break
 
-            print(f">>> param: {param}")
+            if args.log:
+                print(f">>> param ({option_names[index]}): {param}")
+            
             if option_names[index] == "groups":
                 param = param.split(",")
                 if len(param) == 1 and not param[0]:
@@ -191,9 +218,14 @@ else:
             index += 1
 
         if status:
-            print(options)
+            if args.log:
+                print(f"options: {options}")
+                
             status, response = create_project_with_groups(options['project_name'], options['version'], options['description'], options['groups'], options['project_roles'])
             if status == False:
                 print(f"ERROR: {response}")
             else:
                 print(response)
+                if args.log:
+                    print('--------------------------------------------------')
+
