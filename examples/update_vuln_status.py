@@ -64,7 +64,7 @@ for i, vuln in enumerate(vulnerable_bom_components):
     if vuln_name == args.vulnerability:
         vuln['remediationStatus'] = status
         vuln['comment'] = comment
-        logging.debug(f"Updating vuln {args.vulnerability} in project {project['name']}, version {version['versionName']} with status {status} and comment {comment}")
+        logging.debug(f"Updating vuln {args.vulnerability} in project {project['name']}, version {version['versionName']} using URL {vuln['_meta']['href']} with status {status} and comment {comment}")
         result = hub.execute_put(vuln['_meta']['href'], data=vuln)
         if result.status_code == 202:
             logging.info(f"Successfully updated vuln {args.vulnerability} in project {project['name']}, version {version['versionName']} with status {status} and comment {comment}")
