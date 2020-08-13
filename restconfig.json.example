@@ -1,5 +1,5 @@
 # Edit this file to match your environment and
-# copy it to .restconfig.json
+# copy it to .restconfig.json, and delete these two (comment) lines
 {
  "username": "",
  "password": "",
