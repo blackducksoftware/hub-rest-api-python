@@ -158,7 +158,7 @@ def test_get_policy_url(mock_hub_instance):
 
 def test_get_parameter_string(mock_hub_instance):
     assert mock_hub_instance._get_parameter_string({"limit":"100"}) == "?limit=100"
-    assert mock_hub_instance._get_parameter_string({"limit":"100", "q":"name:my-name"}) == "?limit=100&q=name:my-name"
+    assert mock_hub_instance._get_parameter_string({"limit":"100", "q":"name:my-name"}) == "?limit=100&q=name%3Amy-name"
     assert mock_hub_instance._get_parameter_string({"limit":"100", "sort":"updatedAt"}) == "?limit=100&sort=updatedAt"
 
 def test_hub_instance_username_password_for_auth(mock_hub_instance):
