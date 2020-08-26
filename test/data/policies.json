@@ -1,1 +1,390 @@
-{"totalCount": 8, "items": [{"name": "No External Projects With Reciprocal Licenses", "description": "Disallow External Projects With Reciprocal Licenses", "enabled": false, "overridable": true, "expression": {"operator": "AND", "expressions": [{"name": "LICENSE_FAMILY", "operation": "EQ", "values": [{"label": "Reciprocal", "value": "RECIPROCAL"}]}, {"name": "VERSION_DISTRIBUTION", "operation": "EQ", "values": [{"label": "External", "value": "EXTERNAL"}]}]}, "createdAt": "2018-10-14T20:59:46.566Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-10-14T20:59:46.566Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/00000000-0000-0000-0000-000000000001", "links": []}}, {"name": "No External Tier 1 or Tier 2 Projects With More Than 1 High Vulnerability", "description": "Disallow External Projects With More Than 1 High Vulnerability at Tier 1 or 2", "enabled": false, "overridable": true, "expression": {"operator": "AND", "expressions": [{"name": "HIGH_SEVERITY_VULN_COUNT", "operation": "GT", "values": [{"label": "1", "value": "1"}]}, {"name": "VERSION_DISTRIBUTION", "operation": "EQ", "values": [{"label": "External", "value": "EXTERNAL"}]}, {"name": "PROJECT_TIER", "operation": "LT", "values": [{"label": "3", "value": "3"}]}]}, "createdAt": "2018-10-14T20:59:46.566Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-10-14T20:59:46.566Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/00000000-0000-0000-0000-000000000002", "links": []}}, {"name": "No External Tier 1 or Tier 2 Projects With More Than 3 Medium Vulnerabilities", "description": "Disallow External Projects With More Than 3 Medium Vulnerabilities at Tier 1 or 2", "enabled": false, "overridable": true, "expression": {"operator": "AND", "expressions": [{"name": "MEDIUM_SEVERITY_VULN_COUNT", "operation": "GT", "values": [{"label": "3", "value": "3"}]}, {"name": "VERSION_DISTRIBUTION", "operation": "EQ", "values": [{"label": "External", "value": "EXTERNAL"}]}, {"name": "PROJECT_TIER", "operation": "LT", "values": [{"label": "3", "value": "3"}]}]}, "createdAt": "2018-10-14T20:59:46.566Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-10-14T20:59:46.566Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/00000000-0000-0000-0000-000000000003", "links": []}}, {"name": "new-policy-2", "description": "new2", "enabled": true, "overridable": true, "severity": "BLOCKER", "expression": {"operator": "AND", "expressions": [{"name": "MEDIUM_SEVERITY_VULN_COUNT", "operation": "EQ", "values": [{"label": "0", "value": "0"}]}]}, "createdAt": "2018-10-27T21:28:16.013Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-10-27T21:28:16.013Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/c7d26c20-0da8-4ae8-b9e3-40dc9d334c52", "links": []}}, {"name": "new-policy-3", "description": "new3", "enabled": true, "overridable": true, "severity": "CRITICAL", "expression": {"operator": "AND", "expressions": [{"name": "LOW_SEVERITY_VULN_COUNT", "operation": "EQ", "values": [{"label": "0", "value": "0"}]}]}, "createdAt": "2018-10-27T21:29:46.144Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-10-27T21:29:46.144Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/7da48bdb-c8de-47ff-8860-8817b40e08d7", "links": []}}, {"name": "new-policy1", "description": "new policy 1", "enabled": true, "overridable": true, "severity": "BLOCKER", "expression": {"operator": "AND", "expressions": [{"name": "HIGH_SEVERITY_VULN_COUNT", "operation": "GT", "values": [{"label": "0", "value": "0"}]}]}, "createdAt": "2018-10-27T21:22:36.831Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-10-27T21:22:36.831Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/295d4b7a-3cc1-431d-aa63-faa346307e4d", "links": []}}, {"name": "no-reciprocal-licenses-if-component-not-APPROVED", "description": "Reject the use of a component if it is governed by a reciprocal license and the component is not marked as APPROVED", "enabled": false, "overridable": true, "severity": "BLOCKER", "expression": {"operator": "AND", "expressions": [{"name": "LICENSE_FAMILY", "operation": "IN", "values": [{"label": "WEAK_RECIPROCAL", "value": "WEAK_RECIPROCAL"}, {"label": "RECIPROCAL", "value": "RECIPROCAL"}]}, {"name": "COMPONENT_APPROVAL_STATUS", "operation": "NE", "values": [{"label": "APPROVED", "value": "APPROVED"}]}]}, "createdAt": "2018-10-18T19:41:19.393Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-10-19T12:19:22.236Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/6448aae5-7943-42c8-86bd-a15cf7e56438", "links": []}}, {"name": "no-reciprocal-that-is-not-APPROVED", "enabled": false, "overridable": true, "severity": "BLOCKER", "expression": {"operator": "AND", "expressions": [{"name": "LICENSE_FAMILY", "operation": "IN", "values": [{"label": "WEAK_RECIPROCAL", "value": "WEAK_RECIPROCAL"}, {"label": "RECIPROCAL", "value": "RECIPROCAL"}]}, {"name": "COMPONENT_APPROVAL_STATUS", "operation": "NE", "values": [{"label": "APPROVED", "value": "APPROVED"}]}]}, "createdAt": "2018-10-19T18:49:32.383Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-10-22T08:32:13.757Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/5f095743-b386-4655-a814-0c18cdb64631", "links": []}}], "appliedFilters": [], "_meta": {"allow": ["GET"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules", "links": [{"rel": "static-filter", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rule-enabled-filters", "name": "policyRuleEnabled", "label": "Enabled"}]}}
+{
+  "totalCount": 8,
+  "items": [
+    {
+      "name": "No External Projects With Reciprocal Licenses",
+      "description": "Disallow External Projects With Reciprocal Licenses",
+      "enabled": false,
+      "overridable": true,
+      "expression": {
+        "operator": "AND",
+        "expressions": [
+          {
+            "name": "LICENSE_FAMILY",
+            "operation": "EQ",
+            "values": [
+              {
+                "label": "Reciprocal",
+                "value": "RECIPROCAL"
+              }
+            ]
+          },
+          {
+            "name": "VERSION_DISTRIBUTION",
+            "operation": "EQ",
+            "values": [
+              {
+                "label": "External",
+                "value": "EXTERNAL"
+              }
+            ]
+          }
+        ]
+      },
+      "createdAt": "2018-10-14T20:59:46.566Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-10-14T20:59:46.566Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/00000000-0000-0000-0000-000000000001",
+        "links": []
+      }
+    },
+    {
+      "name": "No External Tier 1 or Tier 2 Projects With More Than 1 High Vulnerability",
+      "description": "Disallow External Projects With More Than 1 High Vulnerability at Tier 1 or 2",
+      "enabled": false,
+      "overridable": true,
+      "expression": {
+        "operator": "AND",
+        "expressions": [
+          {
+            "name": "HIGH_SEVERITY_VULN_COUNT",
+            "operation": "GT",
+            "values": [
+              {
+                "label": "1",
+                "value": "1"
+              }
+            ]
+          },
+          {
+            "name": "VERSION_DISTRIBUTION",
+            "operation": "EQ",
+            "values": [
+              {
+                "label": "External",
+                "value": "EXTERNAL"
+              }
+            ]
+          },
+          {
+            "name": "PROJECT_TIER",
+            "operation": "LT",
+            "values": [
+              {
+                "label": "3",
+                "value": "3"
+              }
+            ]
+          }
+        ]
+      },
+      "createdAt": "2018-10-14T20:59:46.566Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-10-14T20:59:46.566Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/00000000-0000-0000-0000-000000000002",
+        "links": []
+      }
+    },
+    {
+      "name": "No External Tier 1 or Tier 2 Projects With More Than 3 Medium Vulnerabilities",
+      "description": "Disallow External Projects With More Than 3 Medium Vulnerabilities at Tier 1 or 2",
+      "enabled": false,
+      "overridable": true,
+      "expression": {
+        "operator": "AND",
+        "expressions": [
+          {
+            "name": "MEDIUM_SEVERITY_VULN_COUNT",
+            "operation": "GT",
+            "values": [
+              {
+                "label": "3",
+                "value": "3"
+              }
+            ]
+          },
+          {
+            "name": "VERSION_DISTRIBUTION",
+            "operation": "EQ",
+            "values": [
+              {
+                "label": "External",
+                "value": "EXTERNAL"
+              }
+            ]
+          },
+          {
+            "name": "PROJECT_TIER",
+            "operation": "LT",
+            "values": [
+              {
+                "label": "3",
+                "value": "3"
+              }
+            ]
+          }
+        ]
+      },
+      "createdAt": "2018-10-14T20:59:46.566Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-10-14T20:59:46.566Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/00000000-0000-0000-0000-000000000003",
+        "links": []
+      }
+    },
+    {
+      "name": "new-policy-2",
+      "description": "new2",
+      "enabled": true,
+      "overridable": true,
+      "severity": "BLOCKER",
+      "expression": {
+        "operator": "AND",
+        "expressions": [
+          {
+            "name": "MEDIUM_SEVERITY_VULN_COUNT",
+            "operation": "EQ",
+            "values": [
+              {
+                "label": "0",
+                "value": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "createdAt": "2018-10-27T21:28:16.013Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-10-27T21:28:16.013Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/c7d26c20-0da8-4ae8-b9e3-40dc9d334c52",
+        "links": []
+      }
+    },
+    {
+      "name": "new-policy-3",
+      "description": "new3",
+      "enabled": true,
+      "overridable": true,
+      "severity": "CRITICAL",
+      "expression": {
+        "operator": "AND",
+        "expressions": [
+          {
+            "name": "LOW_SEVERITY_VULN_COUNT",
+            "operation": "EQ",
+            "values": [
+              {
+                "label": "0",
+                "value": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "createdAt": "2018-10-27T21:29:46.144Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-10-27T21:29:46.144Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/7da48bdb-c8de-47ff-8860-8817b40e08d7",
+        "links": []
+      }
+    },
+    {
+      "name": "new-policy1",
+      "description": "new policy 1",
+      "enabled": true,
+      "overridable": true,
+      "severity": "BLOCKER",
+      "expression": {
+        "operator": "AND",
+        "expressions": [
+          {
+            "name": "HIGH_SEVERITY_VULN_COUNT",
+            "operation": "GT",
+            "values": [
+              {
+                "label": "0",
+                "value": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "createdAt": "2018-10-27T21:22:36.831Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-10-27T21:22:36.831Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/295d4b7a-3cc1-431d-aa63-faa346307e4d",
+        "links": []
+      }
+    },
+    {
+      "name": "no-reciprocal-licenses-if-component-not-APPROVED",
+      "description": "Reject the use of a component if it is governed by a reciprocal license and the component is not marked as APPROVED",
+      "enabled": false,
+      "overridable": true,
+      "severity": "BLOCKER",
+      "expression": {
+        "operator": "AND",
+        "expressions": [
+          {
+            "name": "LICENSE_FAMILY",
+            "operation": "IN",
+            "values": [
+              {
+                "label": "WEAK_RECIPROCAL",
+                "value": "WEAK_RECIPROCAL"
+              },
+              {
+                "label": "RECIPROCAL",
+                "value": "RECIPROCAL"
+              }
+            ]
+          },
+          {
+            "name": "COMPONENT_APPROVAL_STATUS",
+            "operation": "NE",
+            "values": [
+              {
+                "label": "APPROVED",
+                "value": "APPROVED"
+              }
+            ]
+          }
+        ]
+      },
+      "createdAt": "2018-10-18T19:41:19.393Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-10-19T12:19:22.236Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/6448aae5-7943-42c8-86bd-a15cf7e56438",
+        "links": []
+      }
+    },
+    {
+      "name": "no-reciprocal-that-is-not-APPROVED",
+      "enabled": false,
+      "overridable": true,
+      "severity": "BLOCKER",
+      "expression": {
+        "operator": "AND",
+        "expressions": [
+          {
+            "name": "LICENSE_FAMILY",
+            "operation": "IN",
+            "values": [
+              {
+                "label": "WEAK_RECIPROCAL",
+                "value": "WEAK_RECIPROCAL"
+              },
+              {
+                "label": "RECIPROCAL",
+                "value": "RECIPROCAL"
+              }
+            ]
+          },
+          {
+            "name": "COMPONENT_APPROVAL_STATUS",
+            "operation": "NE",
+            "values": [
+              {
+                "label": "APPROVED",
+                "value": "APPROVED"
+              }
+            ]
+          }
+        ]
+      },
+      "createdAt": "2018-10-19T18:49:32.383Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-10-22T08:32:13.757Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules/5f095743-b386-4655-a814-0c18cdb64631",
+        "links": []
+      }
+    }
+  ],
+  "appliedFilters": [],
+  "_meta": {
+    "allow": [
+      "GET"
+    ],
+    "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rules",
+    "links": [
+      {
+        "rel": "static-filter",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/policy-rule-enabled-filters",
+        "name": "policyRuleEnabled",
+        "label": "Enabled"
+      }
+    ]
+  }
+}
