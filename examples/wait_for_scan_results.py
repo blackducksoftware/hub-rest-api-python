@@ -11,7 +11,6 @@ process the scan results to complete
 
 import argparse
 import arrow
-from datetime import datetime
 import json
 import logging
 import sys
@@ -20,25 +19,26 @@ import time
 from blackduck.HubRestApi import HubInstance, object_id
 
 class ScanMonitor(object):
-    def __init__(self, hub, scan_location_name, max_checks=10, check_delay=5, snippet_scan=False):
+    def __init__(self, hub, scan_location_name, max_checks=10, check_delay=5, snippet_scan=False, start_time = None):
         self.hub = hub
         self.scan_location_name = scan_location_name
         self.max_checks = max_checks
         self.check_delay = check_delay
         self.snippet_scan = snippet_scan
+        if not start_time:
+            self.start_time = arrow.now()
+        else:
+            self.start_time = start_time
 
     def wait_for_scan_completion(self):
-        now = arrow.now()
-
-        scan_locations = self.hub.get_codelocations(parameters={'q':f'name:{args.scan_location_name}'}).get('items', [])
+        scan_locations = self.hub.get_codelocations(parameters={'q':f'name:{self.scan_location_name}'}).get('items', [])
 
         scan_location = scan_locations[0]
 
         remaining_checks = self.max_checks
         scans_url = self.hub.get_link(scan_location, "scans")
-        latest_scan_url = self.hub.get_link(scan_location, "latest-scan")
 
-        if args.snippet_scan:
+        if self.snippet_scan:
             logging.debug("Looking for snippet scan which means there will be 2 expected scans")
             number_expected_newer_scans = 2
         else:
@@ -48,7 +48,7 @@ class ScanMonitor(object):
         while remaining_checks > 0:
             scans = self.hub.execute_get(scans_url).json().get('items', [])
 
-            newer_scans = list(filter(lambda s: arrow.get(s['createdAt']) > now, scans))
+            newer_scans = list(filter(lambda s: arrow.get(s['createdAt']) > self.start_time, scans))
             logging.debug(f"Found {len(newer_scans)} newer scans")
             
             expected_scans_seen = len(newer_scans) == number_expected_newer_scans
@@ -59,9 +59,10 @@ class ScanMonitor(object):
                 break
             else:
                 remaining_checks -= 1
-                logging.debug(f"Sleeping for {args.time_between_checks} seconds before checking again. {remaining_checks} remaining")
-                time.sleep(args.time_between_checks)
+                logging.debug(f"Sleeping for {self.check_delay} seconds before checking again. {remaining_checks} remaining")
+                time.sleep(self.check_delay)
 
+        # TODO: Check for success/failure and return appropriate exit status?
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Wait for scan processing to complete for a given code (scan) location/name")
