@@ -41,7 +41,7 @@ read_file(args.file)
 hub = HubInstance()
 user_groups = hub.get_user_groups(parameters = {"limit":"50000"})
 for group in user_groups['items']:
-    if group.get('externalName') and group['name'] == group['externalName']:
+    if group['createdFrom'] == 'SAML' and group.get('externalName') and group['name'] == group['externalName']:
         new_name = azure_map.get(group['name'])
         usergroup_url = group['_meta']['href']
         if new_name:

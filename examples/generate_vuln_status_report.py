@@ -57,7 +57,7 @@ def download_report(location, report_format, filename, retries=args.tries):
 						download_filename, report_id))
 			else:
 				print("Failed to retrieve report {}".format(report_id))
-				print("Probably not ready yet, waiting 5 seconds then retrying...")
+				print(f"Probably not ready yet, waiting {args.sleep_time} seconds then retrying...")
 				time.sleep(args.sleep_time)
 				retries -= 1
 				download_report(location, report_format, filename, retries)

@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 '''
 Created on Dec 19, 2018
 
@@ -12,13 +14,26 @@ import argparse
 import json
 import time
 
+version_name_map = {
+	'version': 'VERSION',
+	'scans': 'CODE_LOCATIONS',
+	'components': 'COMPONENTS',
+	'vulnerabilities': 'SECURITY',
+	'source':'FILES',
+    'attachments':'ATTACHMENTS',
+    'crypto':'CRYPTO_ALGORITHMS',
+    'project_custom':'PROJECT_VERSION_CUSTOM_FIELDS',
+    'bom_custom':'BOM_COMPONENT_CUSTOM_FIELDS',
+    'license':'LICENSE_TERM_FULFILLMENT',
+}
+
 parser = argparse.ArgumentParser("A program to create reports for a given project-version")
 parser.add_argument("project_name")
 parser.add_argument("version_name")
 parser.add_argument("-z", "--zip_file_name", default="reports.zip")
 parser.add_argument("-r", "--reports",
-	default="version,scans,components,vulnerabilities,source", 
-	help="Comma separated list (no spaces) of the reports to generate - version, scans, components, vulnerabilities, source, and cryptography reports (default: all, except cryptography")
+	default="version,scans,components,vulnerabilities,source,attachments,project_custom,bom_custom,license", 
+	help=f"Comma separated list (no spaces) of the reports to generate - {version_name_map.keys()} (default: all, except cryptography")
 parser.add_argument('--format', default='CSV', choices=["CSV"], help="Report format - only CSV available for now")
 parser.add_argument('-t', '--tries', default=4, type=int, help="How many times to retry downloading the report, i.e. wait for the report to be generated")
 parser.add_argument('-s', '--sleep_time', default=5, type=int, help="The amount of time to sleep in-between (re-)tries to download the report")
@@ -26,14 +41,6 @@ parser.add_argument('-s', '--sleep_time', default=5, type=int, help="The amount 
 args = parser.parse_args()
 
 hub = HubInstance()
-
-version_name_map = {
-	'version': 'VERSION',
-	'scans': 'CODE_LOCATIONS',
-	'components': 'COMPONENTS',
-	'vulnerabilities': 'SECURITY',
-	'source':'FILES'
-}
 
 class FailedReportDownload(Exception):
 	pass
@@ -50,7 +57,7 @@ def download_report(location, filename, retries=args.tries):
 			print("Successfully downloaded zip file to {} for report {}".format(filename, report_id))
 		else:
 			print("Failed to retrieve report {}".format(report_id))
-			print("Probably not ready yet, waiting 5 seconds then retrying...")
+			print(f"Probably not ready yet, waiting {args.sleep_time} seconds then retrying...")
 			time.sleep(args.sleep_time)
 			retries -= 1
 			download_report(location, filename, retries)

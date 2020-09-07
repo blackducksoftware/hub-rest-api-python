@@ -530,7 +530,7 @@ class HubInstance(object):
     #
     ##
 
-    valid_categories = ['VERSION','CODE_LOCATIONS','COMPONENTS','SECURITY','FILES']
+    valid_categories = ['VERSION','CODE_LOCATIONS','COMPONENTS','SECURITY','FILES', 'ATTACHMENTS', 'CRYPTO_ALGORITHMS', 'PROJECT_VERSION_CUSTOM_FIELDS', 'BOM_COMPONENT_CUSTOM_FIELDS', 'LICENSE_TERM_FULFILLMENT']
     valid_report_formats = ["CSV"]
     def create_version_reports(self, version, report_list, format="CSV"):
         assert all(list(map(lambda k: k in HubInstance.valid_categories, report_list))), "One or more selected report categories in {} are not valid ({})".format(
