@@ -218,9 +218,9 @@ class ProjectVersion:
         csv = None
         for field in (self.SUMMARY_SHORT if args.summary == 'short' else self.SUMMARY_LONG):
             if csv:
-                csv = f"{csv},{str(self.summary.get(field, ''))}"
+                csv = f"{csv},{str(self.summary.get(field, 'n/a'))}"
             else:
-                csv = str(self.summary.get(field,''))
+                csv = str(self.summary.get(field,'n/a'))
                 
         return csv
 
