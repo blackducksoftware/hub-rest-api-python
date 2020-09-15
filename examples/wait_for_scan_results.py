@@ -19,6 +19,10 @@ import time
 from blackduck.HubRestApi import HubInstance, object_id
 
 class ScanMonitor(object):
+    SUCCESS = 0
+    FAILURE = 1
+    TIMED_OUT = 2
+
     def __init__(self, hub, scan_location_name, max_checks=10, check_delay=5, snippet_scan=False, start_time = None):
         self.hub = hub
         self.scan_location_name = scan_location_name
@@ -48,24 +52,28 @@ class ScanMonitor(object):
         while remaining_checks > 0:
             scans = self.hub.execute_get(scans_url).json().get('items', [])
 
-            newer_scans = list(filter(lambda s: arrow.get(s['createdAt']) > self.start_time, scans))
+            newer_scans = list(filter(lambda s: arrow.get(s['updatedAt']) > self.start_time, scans))
             logging.debug(f"Found {len(newer_scans)} newer scans")
             
             expected_scans_seen = len(newer_scans) == number_expected_newer_scans
             logging.debug(f"expected_scans_seen: {expected_scans_seen}")
 
-            if expected_scans_seen and all([s['status'] == 'COMPLETE' for s in newer_scans]):
+            if expected_scans_seen and all([s['status'] in ['COMPLETE', 'FAILURE'] for s in newer_scans]):
                 logging.info("Scans have finished processing")
-                break
+                if all([s['status'] == 'COMPLETE' for s in newer_scans]):
+                    return ScanMonitor.SUCCESS
+                else:
+                    return ScanMonitor.FAILURE
             else:
                 remaining_checks -= 1
                 logging.debug(f"Sleeping for {self.check_delay} seconds before checking again. {remaining_checks} remaining")
                 time.sleep(self.check_delay)
 
-        # TODO: Check for success/failure and return appropriate exit status?
+        return ScanMonitor.TIMED_OUT
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("Wait for scan processing to complete for a given code (scan) location/name")
+    parser = argparse.ArgumentParser("Wait for scan processing to complete for a given code (scan) location/name and provide an exit status - 0 successful, 1 failed, and 2 timed-out")
     parser.add_argument("scan_location_name", help="The scan location name")
     parser.add_argument('-m', '--max_checks', type=int, default=10, help="Set the maximum number of checks before quitting")
     parser.add_argument('-t', '--time_between_checks', type=int, default=5, help="Set the number of seconds to wait in-between checks")
