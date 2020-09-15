@@ -26,33 +26,10 @@ from terminaltables import AsciiTable
 
 from blackduck.HubRestApi import HubInstance, object_id
 
-#
-# Example usage:
-#
-#   To get all the vulnerability notices,
-#       python examples/get_vulnerability_notifications.py > all_vuln_notifications.json
-#
-#   To get all the vulnerability notices and save the date/time of the last run,
-#       python examples/get_vulnerability_notifications.py -s > all_vuln_notifications.json
-#
-#   To get all the vulnerability notices since the last run,
-#       python examples/get_vulnerability_notifications.py -n `cat .last_run` > all_vuln_notifications.json
-#
-#   To get all the vulnerability notices since a date/time,
-#       python examples/get_vulnerability_notifications.py -n "March 29, 2019 12:00" > since_mar_29_at_noon_vuln_notifications.json
-#
-#   To get all the vulnerability notices for a given project,
-#       python examples/get_vulnerability_notifications.py -p my-project > all_vuln_notifications_for_my_project.json
-#
-#   To get all the vulnerability notices for a given project and version,
-#       python examples/get_vulnerability_notifications.py -p my-project -v 1.0 > all_vuln_notifications_for_my_project_v1.0.json
-#
-#
-
 
 parser = argparse.ArgumentParser("Retreive BOM computed notifications")
-parser.add_argument("-p", "--project", help="If supplied, filter the notifications to this project")
-parser.add_argument("-v", "--version", help="If supplied, filter the notifications to this version (requires a project)")
+parser.add_argument("project", help="The name of the project")
+parser.add_argument("version", help="The name of the version")
 parser.add_argument("-n", "--newer_than", 
     default=None, 
     type=str,
@@ -81,9 +58,11 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 hub = HubInstance()
 current_user = hub.get_current_user()
+version = hub.get_project_version_by_name(args.project, args.version)
+version_url = version['_meta']['href']
 
 # Construct the URL to either pull from the system or user account scope,
-# and then narrow the search to only include BOM computed
+# and then narrow the search to only include BOM computed notifications
 if args.system:
     notifications_url = "{}/api/notifications".format(hub.get_urlbase())
 else:
@@ -93,21 +72,15 @@ notifications_url = "{}?limit={}&filter=notificationType:VERSION_BOM_CODE_LOCATI
     notifications_url, args.limit)
 
 if newer_than:
+    # add to the URL to include startDate
     start_date = newer_than.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
     notifications_url += "&startDate=" + start_date
 
+logging.debug(f"Retrieving BOM computed notifications using {notifications_url}")
 bom_computed_notifications = hub.execute_get(notifications_url).json().get('items', [])
 
-# if newer_than:
-#     bom_computed_notifications = list(
-#         filter(lambda n: timestring.Date(n['createdAt']) > newer_than, bom_computed_notifications))
-if args.project:
-    bom_computed_notifications = list(
-        filter(lambda n: args.project in [apv['projectName'] for apv in n['content']['affectedProjectVersions']], 
-            bom_computed_notifications))
-    if args.version:
-        bom_computed_notifications = list(
-            filter(lambda n: args.version in [apv['projectVersionName'] for apv in n['content']['affectedProjectVersions']], 
-                bom_computed_notifications))
+# filter to include only those notification pertaining to the specified project, version
+bom_computed_notifications = list(
+    filter(lambda n: version_url == n['content']['projectVersion'], bom_computed_notifications))
 
 print(json.dumps(bom_computed_notifications))
