@@ -27,7 +27,7 @@ version_id = version['_meta']['href'].split("/")[-1]
 all_info = dict()
 
 for bom_component in bom_components['items']:
-    component_remediation = get_component_remediation(vul_bom_comp)
+    component_remediation = get_component_remediation(bom_component)
     component_version_with_no_vulnerability = component_remediation['noVulnerabilities']['name'] \
         if 'noVulnerabilities' in component_remediation else "No Solution Found"
     latest_component_version = component_remediation['latestAfterCurrent']['name'] \
