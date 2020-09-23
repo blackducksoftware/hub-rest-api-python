@@ -52,6 +52,8 @@ import json
 from operator import itemgetter
 import urllib.parse
 
+logger = logging.getLogger(__name__)
+
 # TODO: Create some kind of Black Duck exception grouping/hierarchy?
 
 class CreateFailedAlreadyExists(Exception):
@@ -109,7 +111,7 @@ class HubInstance(object):
             requests.packages.urllib3.disable_warnings()
         
         if self.config['debug']:
-            print(self.configfile)
+            logger.debug(f"Reading connection and authentication info from {self.configfile}")
         
         self.token, self.csrf_token, self.cookie = self.get_auth_token()
         try:
@@ -120,8 +122,12 @@ class HubInstance(object):
         self.bd_major_version = self._get_major_version()
         
     def read_config(self):
-        with open('.restconfig.json','r') as f:
-            self.config = json.load(f)
+        try:
+            with open('.restconfig.json','r') as f:
+                self.config = json.load(f)
+        except:
+            logging.error(f"Unable to load configuration from '.restconfig.json'. Make sure you create one with proper connection and authentication values for your Black Duck server")
+            raise
             
     def write_config(self):
         with open(self.configfile,'w') as f:
@@ -143,9 +149,8 @@ class HubInstance(object):
             try:
               bearer_token = json.loads(response.content.decode('utf-8'))['bearerToken']
             except json.decoder.JSONDecodeError as e:
-              import traceback
-              traceback.print_exc()
-              raise Exception("Failed to obtain bearer token, check for valid authentucation token")
+              logger.exception("Authentication failure, could not obtain bearer token")
+              raise Exception("Failed to obtain bearer token, check for valid authentication token")
             return (bearer_token, csrf_token, None)
         else:
             authendpoint="/j_spring_security_check"
@@ -219,7 +224,7 @@ class HubInstance(object):
                 if 'rel' in link_obj and link_obj['rel'] == link_name:
                     return link_obj.get('href', None)
         else:
-            logging.debug("This does not appear to be a BD REST object. It should have ['_meta']['links']")
+            logger.warning("This does not appear to be a BD REST object. It should have ['_meta']['links']")
 
     def get_limit_paramstring(self, limit):
         return "?limit={}".format(limit)
@@ -273,7 +278,7 @@ class HubInstance(object):
             # A hack to get the assignment to work on v3
             role_url = role_url.replace("api", "api/internal")
         data = {"name": role_name, "role": role_url}
-        logging.debug("executing POST to {} with {}".format(
+        logger.debug("executing POST to {} with {}".format(
             user_or_group_role_assignment_url, data))
         return self.execute_post(user_or_group_role_assignment_url, data = data)
 
@@ -495,7 +500,7 @@ class HubInstance(object):
     # TODO: Remove or refactor this
     def get_component_remediation(self, bom_component):
         url = "{}/remediating".format(bom_component['componentVersion'])
-        logging.debug("Url for getting remediation info is : {}".format(url))
+        logger.debug("Url for getting remediation info is : {}".format(url))
         response = self.execute_get(url)
         return response.json()
 
@@ -515,10 +520,10 @@ class HubInstance(object):
         else:
             query = "?q=bdsuite:{}&limit=9999".format(protex_component_id)
         with_query = url + query
-        logging.debug("Finding the Hub componet for Protex component id {}, release id {} using query/url {}".format(
+        logger.debug("Finding the Hub componet for Protex component id {}, release id {} using query/url {}".format(
             protex_component_id, protex_component_release_id, with_query))
         response = self.execute_get(with_query)
-        logging.debug("query results in status code {}, json data: {}".format(response.status_code, response.json()))
+        logger.debug("query results in status code {}, json data: {}".format(response.status_code, response.json()))
         # TODO: Error checking and retry? For now, as POC just assuming it worked
         component_list_d = response.json()
         return response.json()
@@ -573,12 +578,12 @@ class HubInstance(object):
 
         if report_obj['reportFormat'] == 'TEXT':
             download_url = self.get_link(report_obj, "download") + ".json"
-            logging.debug("downloading report from {}".format(download_url))
+            logger.debug("downloading report from {}".format(download_url))
             response = self.execute_get(download_url, {'Accept': 'application/zip'})
         else:
             # JSON
             contents_url = self.get_link(report_obj, "content")
-            logging.debug("retrieving report contents from {}".format(contents_url))
+            logger.debug("retrieving report contents from {}".format(contents_url))
             response = self.execute_get(contents_url, {'Accept': 'application/json'})
         return response, report_obj['reportFormat']
 
@@ -611,7 +616,7 @@ class HubInstance(object):
         if 'license' in license_obj:
             license_info = {}
             text_json = {}
-            logging.debug("license: {}".format(license_obj))
+            logger.debug("license: {}".format(license_obj))
             response = self.execute_get(license_obj['license'])
             if response.status_code == 200:
                 license_info = response.json()
@@ -628,7 +633,7 @@ class HubInstance(object):
     def get_license_info_for_bom_component(self, bom_component, limit=1000):
         self._check_version_compatibility()
         all_licenses = {}
-        logging.debug("gathering license info for bom component {}, version {}".format(
+        logger.debug("gathering license info for bom component {}, version {}".format(
             bom_component['componentName'], bom_component['componentVersionName']))
         for license in bom_component.get('licenses', []):
             for license_info_obj in self._get_license_info(license):
@@ -650,7 +655,7 @@ class HubInstance(object):
         self._check_version_compatibility()
         url = self.get_link(bom_component, "matched-files")
         paramstring = self.get_limit_paramstring(limit)
-        logging.debug("GET {}".format(url))
+        logger.debug("GET {}".format(url))
         response = self.execute_get(url)
         jsondata = response.json()
         return jsondata
@@ -671,6 +676,7 @@ class HubInstance(object):
             parameters.update({'limit': limit})
         url = self._get_projects_url() + self._get_parameter_string(parameters)
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
+        logger.debug(f"Retrieving projects using url {url}")
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
@@ -737,7 +743,7 @@ class HubInstance(object):
         headers = self.get_headers()
         projects = self.get_projects(limit=9999).get('items',[])
         if len(projects) == 0:
-            logging.error('No projects found')
+            logger.error('No projects found')
         else:
             jsondata = {'items':[]}
             for project in projects:
@@ -762,11 +768,11 @@ class HubInstance(object):
         if project:
             version = self.get_version_by_name(project, version_name)
             if version == None:
-                logging.debug("Did not find any project version matching {}".format(version_name))
+                logger.debug("Did not find any project version matching {}".format(version_name))
             else:
                 return version
         else:
-            logging.debug("Did not find a project with name {}".format(project_name))
+            logger.debug("Did not find a project with name {}".format(project_name))
 
     def get_or_create_project_version(self, project_name, version_name, parameters = {}):
         project = self.get_project_by_name(project_name)
@@ -824,11 +830,11 @@ class HubInstance(object):
         if version:
             for k,v in new_settings.items():
                 if k in HubInstance.PROJECT_VERSION_SETTINGS:
-                    logging.debug("updating setting {} in version {} with value {}".format(
+                    logger.debug("updating setting {} in version {} with value {}".format(
                         k, version['versionName'], v))
                     version[k] = v
                 else:
-                    logging.warn("Setting {} is not in the list of project version settings ({})".format(
+                    logger.warn("Setting {} is not in the list of project version settings ({})".format(
                         k, HubInstance.PROJECT_VERSION_SETTINGS))
 
             url = version['_meta']['href']
@@ -836,13 +842,13 @@ class HubInstance(object):
             response = self.execute_put(url, version)
 
             if response.status_code == 200:
-                logging.info("Successfully updated version {} with new settings {}".format(
+                logger.info("Successfully updated version {} with new settings {}".format(
                     version['versionName'], new_settings))
             else:
-                logging.error("Failed to update version {} with new settings {}; status code: {}".format(
+                logger.error("Failed to update version {} with new settings {}; status code: {}".format(
                     version['versionName'], new_settings, response.status_code))
         else:
-            logging.debug("Did not find a matching project-version in project {}, version name {}".format(
+            logger.debug("Did not find a matching project-version in project {}, version name {}".format(
                 project_name, version_name))
 
     def get_version_by_id(self, project_id, version_id, limit=100):
@@ -877,7 +883,7 @@ class HubInstance(object):
     def delete_project_version_by_name(self, project_name, version_name, save_scans=False):
         project = self.get_project_by_name(project_name)
         if project:
-            logging.debug("found project {}".format(project))
+            logger.debug("found project {}".format(project))
             project_versions = self.get_project_versions(
                 project, 
                 parameters={'q':"versionName:{}".format(version_name)}
@@ -886,23 +892,23 @@ class HubInstance(object):
             project_version_codelocations = None
             if 'totalCount' in project_versions and project_versions['totalCount'] == 1:
                 project_version = project_versions['items'][0]
-                logging.debug("found the project version: {}".format(project_version))
+                logger.debug("found the project version: {}".format(project_version))
 
                 delete_scans = not save_scans
-                logging.debug("delete_scans was {}".format(delete_scans))
+                logger.debug("delete_scans was {}".format(delete_scans))
 
                 if delete_scans:
                     self.delete_project_version_codelocations(project_version)
                 else:
-                    logging.debug("Delete scans was false, or we did not find any codelocations (scans) in version {} of project {}".format(version_name, project_name))
+                    logger.debug("Delete scans was false, or we did not find any codelocations (scans) in version {} of project {}".format(version_name, project_name))
                 # TODO: Check if the project will be "empty" once we delete this version and
                 # delete the project accordingly?
-                logging.info("Deleting project-version at: {}".format(project_version['_meta']['href']))
+                logger.info("Deleting project-version at: {}".format(project_version['_meta']['href']))
                 self.execute_delete(project_version['_meta']['href'])
             else:
-                logging.debug("Did not find version with name {} in project {}".format(version_name, project_name))
+                logger.debug("Did not find version with name {} in project {}".format(version_name, project_name))
         else:
-            logging.debug("Did not find project with name {}".format(project_name))
+            logger.debug("Did not find project with name {}".format(project_name))
     
     def delete_project_by_name(self, project_name, save_scans=False, backup_scans=False):
         project = self.get_project_by_name(project_name)
@@ -910,41 +916,41 @@ class HubInstance(object):
             # get project versions
             project_versions = self.get_project_versions(project)
             versions = project_versions.get('items', [])
-            logging.debug("Retrieved {} versions for project {}".format(len(versions), project_name))
+            logger.debug("Retrieved {} versions for project {}".format(len(versions), project_name))
             
             delete_scans = not save_scans
-            logging.debug("delete_scans was {}".format(delete_scans))
+            logger.debug("delete_scans was {}".format(delete_scans))
                 
             if delete_scans:
                 # delete all code locations associated with each version
                 for version in versions:
                     if backup_scans:
-                        logging.debug("Backup code locations (aka scans) for version {}".format(version['versionName']))
+                        logger.debug("Backup code locations (aka scans) for version {}".format(version['versionName']))
                         self.download_project_scans(project_name, version['versionName'])
-                    logging.debug("Deleting code locations (aka scans) for version {}".format(version['versionName']))
+                    logger.debug("Deleting code locations (aka scans) for version {}".format(version['versionName']))
                     self.delete_project_version_codelocations(version)
                         
             # delete the project itself
             project_url = project['_meta']['href']
-            logging.info("Deleting project {}".format(project_name))
+            logger.info("Deleting project {}".format(project_name))
             self.execute_delete(project_url)
         else:
-            logging.debug("Did not find project with name {}".format(project_name))
+            logger.debug("Did not find project with name {}".format(project_name))
             
     def delete_project_version_codelocations(self, version):
         version_name = version['versionName']
         try:
-            logging.debug("Retrieving code locations (aka scans) for version {}".format(version_name))
+            logger.debug("Retrieving code locations (aka scans) for version {}".format(version_name))
             version_code_locations = self.get_version_codelocations(version)
         except:
-            logging.error("Failed to get codelocations (aka scans) for version {}".format(version_name), exc_info=True)
+            logger.error("Failed to get codelocations (aka scans) for version {}".format(version_name), exc_info=True)
             version_code_locations = []
         else:
             version_code_locations = version_code_locations.get('items', []) if version_code_locations else []
-        logging.debug("Found {} code locations (aka scans) for version {}".format(len(version_code_locations), version_name))
+        logger.debug("Found {} code locations (aka scans) for version {}".format(len(version_code_locations), version_name))
         code_location_urls = [c['_meta']['href'] for c in version_code_locations]
         for code_location_url in code_location_urls:
-            logging.info("Deleting code location at: {}".format(code_location_url))
+            logger.info("Deleting code location at: {}".format(code_location_url))
             self.execute_delete(code_location_url)
 
     def delete_empty_projects(self):
@@ -958,11 +964,11 @@ class HubInstance(object):
                 codelocations = self.get_version_codelocations(v)
                 if codelocations['totalCount'] != 0:
                     p_empty = False
-                    logging.debug("Found a non-empty version in project {}, skipping...".format(
+                    logger.debug("Found a non-empty version in project {}, skipping...".format(
                         p['name']))
                     break
             if p_empty:
-                logging.info("Project {} is empty, deleting".format(p['name']))
+                logger.info("Project {} is empty, deleting".format(p['name']))
                 self.execute_delete(p['_meta']['href'])
                 deleted_projects.append(p['name'])
         return deleted_projects
@@ -970,17 +976,17 @@ class HubInstance(object):
     def delete_empty_versions(self, project):
         # delete versions within a given project if there are no mapped code locations (scans)
         versions = self.get_project_versions(project).get('items', [])
-        logging.debug("Deleting empty versions for project {}".format(project['name']))
+        logger.debug("Deleting empty versions for project {}".format(project['name']))
         deleted_versions = list()
         for v in versions:
             codelocations = self.get_version_codelocations(v).get('items', [])
             if not codelocations:
-                logging.info("Deleting empty version {} from project {}".format(
+                logger.info("Deleting empty version {} from project {}".format(
                     v['versionName'], project['name']))
                 self.execute_delete(v['_meta']['href'])
                 deleted_versions.append((project['name'], v['versionName']))
             else:
-                logging.debug("Version {} within project {} has scans (i.e. not empty), skipping".format(
+                logger.debug("Version {} within project {} has scans (i.e. not empty), skipping".format(
                     v['versionName'], project['name']))
         return deleted_versions
 
@@ -988,7 +994,7 @@ class HubInstance(object):
         # delete versions if there are no mapped code locations (scans) across all projects
         projects = self.get_projects().get('items', [])
         deleted_versions = list()
-        logging.info("Deleting empty versions for all {} projects on this server".format(
+        logger.info("Deleting empty versions for all {} projects on this server".format(
             len(projects)))
         for p in projects:
             deleted_versions.extend(self.delete_empty_versions(p))
@@ -1059,12 +1065,12 @@ class HubInstance(object):
                     return response
                 else:
                     assignable_groups = [u['name'] for u in assignable_user_groups['items']]
-                    logging.warning("The user group {} was not found in the assignable user groups ({}) for this project {}. Is the group already assigned to this project?".format(
-                        user_group_name['name'], assignable_groups, project_name))
+                    logger.warning("The user group {} was not found in the assignable user groups ({}) for this project {}. Is the group already assigned to this project?".format(
+                        user_group_name, assignable_groups, project_name))
             else:
-                logging.warning("This project {} has no assignable user groups".format(project_name))
+                logger.warning("This project {} has no assignable user groups".format(project_name))
         else:
-            logging.warning("Did not find a project by the name {}".format(project_name))
+            logger.warning("Did not find a project by the name {}".format(project_name))
 
     def delete_user_group_from_project(self, project_name, user_group_name):
         project = self.get_project_by_name(project_name)
@@ -1089,7 +1095,7 @@ class HubInstance(object):
             assignable_users_link = self.get_link(project, 'assignable-users')
             paramstring = self.get_limit_paramstring(limit)
             url = assignable_users_link + paramstring
-            logging.debug("GET {}".format(url))
+            logger.debug("GET {}".format(url))
             if assignable_users_link:
                 assignable_users_response = self.execute_get(url)
                 assignable_users = assignable_users_response.json()
@@ -1128,30 +1134,30 @@ class HubInstance(object):
                     return response
                 else:
                     assignable_username = [u['name'] for u in assignable_users['items']]
-                    logging.warning(
+                    logger.warning(
                         "The user {} was not found in the assignable user ({}) for this project {}. Is the user already assigned to this project?".format(
                             user_name, assignable_username, project_name))
             else:
-                logging.warning("This project {} has no assignable users".format(project_name))
+                logger.warning("This project {} has no assignable users".format(project_name))
         else:
-            logging.warning("Did not find a project by the name {}".format(project_name))
+            logger.warning("Did not find a project by the name {}".format(project_name))
 
     def assign_project_application_id(self, project_name, application_id, overwrite=False):
-        logging.debug("Assigning application_id {} to project_name {}, overwrite={}".format(
+        logger.debug("Assigning application_id {} to project_name {}, overwrite={}".format(
             application_id, project_name, overwrite))
 
         existing_application_id, application_id_url = self.get_project_application_id(project_name)
 
         if existing_application_id:
             if overwrite:
-                logging.debug("Found an existing application id {} for project {} and overwrite was True. Updating it to {}".format(
+                logger.debug("Found an existing application id {} for project {} and overwrite was True. Updating it to {}".format(
                     existing_application_id, project_name, application_id))
                 return self.update_project_application_id(project_name, application_id)
             else:
-                logging.debug("Found an existing application id {} for project {} and overwrite was False so not updating it".format(
+                logger.debug("Found an existing application id {} for project {} and overwrite was False so not updating it".format(
                     existing_application_id, project_name))
         else:
-            logging.debug("No application id exists for project {}, assigning {} to it".format(
+            logger.debug("No application id exists for project {}, assigning {} to it".format(
                 project_name, application_id))
             project = self.get_project_by_name(project_name)
             if project:
@@ -1161,9 +1167,9 @@ class HubInstance(object):
                     response = self.execute_post(project_mappings_url, data=post_data)
                     return response
                 else:
-                    logging.warning("Did not find project-mappings URL for project {}".format(project))
+                    logger.warning("Did not find project-mappings URL for project {}".format(project))
             else:
-                logging.warning("Did not find project by name {}".format(project_name))
+                logger.warning("Did not find project by name {}".format(project_name))
 
     def update_project_application_id(self, project_name, new_application_id):
         application_id, application_id_url = self.get_project_application_id(project_name)
@@ -1184,7 +1190,7 @@ class HubInstance(object):
             response = self.execute_put(application_id_url, data=put_data)
             return response
         else:
-            logging.debug("Did not find application id for project name {}".format(project_name))
+            logger.debug("Did not find application id for project name {}".format(project_name))
 
     def delete_application_id(self, project_name):
         application_id, application_id_url = self.get_project_application_id(project_name)
@@ -1201,10 +1207,10 @@ class HubInstance(object):
                     application_id_url = project_mapping['_meta']['href']
 
                     return (application_id, application_id_url)
-            logging.debug("Did not find any project-mappings with 'applicationId' in them")
+            logger.debug("Did not find any project-mappings with 'applicationId' in them")
             return (None, None)
         else:
-            logging.debug("did not find any project-mappings for project {}".format(project_name))
+            logger.debug("did not find any project-mappings for project {}".format(project_name))
             return (None, None)
 
     def get_project_info(self, project_name, link_name):
@@ -1254,13 +1260,13 @@ class HubInstance(object):
         main_data = main_project_release['_meta']['href'].split('/')
         sub_data = sub_project_release['_meta']['href'].split('/')
         url = self.get_apibase() + "/v1/releases/" + main_data[7] + "/component-bom-entries"
-        print (url)
+        logger.debug(url)
         payload = {}
         payload['producerProject'] = {}
         payload['producerProject']['id'] = sub_data[5]
         payload['producerRelease'] = {} 
         payload['producerRelease']['id'] = sub_data[7]
-        print (json.dumps(payload))
+        logger.debug(json.dumps(payload))
         response = requests.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
         jsondata = response.json()
         return jsondata
@@ -1270,14 +1276,14 @@ class HubInstance(object):
         main_data = main_project_release['_meta']['href'].split('/')
         sub_data = sub_project_release['_meta']['href'].split('/')
         url = self.get_apibase() + "/v1/releases/" + main_data[7] + "/component-bom-entries"
-        print (url)
+        logger.debug(url)
         payload = []
         entity = {}
         entity['entityKey'] = {}
         entity['entityKey']['entityId'] = sub_data[7]
         entity['entityKey']['entityType'] = 'RL'
         payload.append(entity)
-        print (json.dumps(payload))
+        logger.debug(json.dumps(payload))
         response = requests.delete(url, headers=headers, verify = not self.config['insecure'], json=payload)
         return response
 
@@ -1448,7 +1454,7 @@ class HubInstance(object):
     def supported_cf_object_types(self):
         '''Get the types and cache them since they are static (on a per-release basis)'''
         if not hasattr(self, "_cf_object_types"):
-            logging.debug("retrieving object types")
+            logger.debug("retrieving object types")
             self._cf_object_types = [cfo['name'] for cfo in self.get_cf_objects().get('items', [])]
         return self._cf_object_types
 
@@ -1456,7 +1462,7 @@ class HubInstance(object):
         '''Get CF objects and cache them since these are static (on a per-release basis)'''
         url = self._get_cf_url()
         if not hasattr(self, "_cf_objects"):
-            logging.debug("retrieving objects")
+            logger.debug("retrieving objects")
             response = self.execute_get(url)
             self._cf_objects = response.json()
         return self._cf_objects
@@ -1684,7 +1690,7 @@ class HubInstance(object):
                 try:
                     response_json = response.json()
                 except json.decoder.JSONDecodeError:
-                    logging.warning('did not receive any json data back')
+                    logger.warning('did not receive any json data back')
                 else:
                     if '_meta' in response_json and 'href' in response_json['_meta']:
                         return response_json['_meta']['href']

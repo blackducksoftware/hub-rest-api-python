@@ -35,8 +35,11 @@ with open(filename, 'r+') as f:
 print("Projects in maintain json file: ", d['clean_project'])
 for proj in d['clean_project']:
     now = arrow.now()
-    clean_time = now.to('local').shift(days=-args.age)
+    clean_time = now.to('local').shift(days=-int(args.age))
     project = hub.get_project_by_name(proj)
+    if not project:
+        print("Project", proj, "doesn't exist in server. Skip.")
+        continue
 
     if clean_time > arrow.get(project['createdAt']).to('local'):
         print("Project ", project['name'], ' last for more than 3 days. Will be backup abd deleted.')

@@ -1,1 +1,1042 @@
-{"totalCount": 18, "items": [{"name": "accelerator-initializer-ui", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-12T15:25:44.851Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-12T15:25:44.908Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/project-mappings"}]}}, {"name": "app1", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-08T21:36:20.674Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-08T21:36:20.678Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/versions/31ca82f2-7c1e-4257-9a8f-77085c59673f"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/project-mappings"}]}}, {"name": "app2", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-08T21:36:45.776Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-08T21:36:45.779Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/versions/c4eb7317-bc0b-46ef-bda5-1324c2f599bc"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/project-mappings"}]}}, {"name": "business-credit-monitoring-DIV2", "projectLevelAdjustments": true, "cloneCategories": [], "createdAt": "2018-11-02T18:31:10.494Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-02T18:31:10.498Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/versions/36be3625-46fa-4d23-a535-88d87e488531"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/project-mappings"}]}}, {"name": "business-credit-scoring-DIV2", "projectLevelAdjustments": true, "cloneCategories": [], "createdAt": "2018-11-02T18:29:29.731Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-02T18:31:42.771Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/versions/caa13c75-e290-451a-bd8a-1651174c5734"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/project-mappings"}]}}, {"name": "combined1", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-08T21:38:28.801Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-08T21:38:28.805Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/versions/fd79254c-0acf-42ed-a006-171172b27643"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/project-mappings"}]}}, {"name": "combined2", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-08T21:39:52.675Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-08T21:39:52.678Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/versions/f7783dbb-1794-4845-9a96-313d49bf6a11"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/project-mappings"}]}}, {"name": "consumer-credit-monitoring-DIV1", "projectLevelAdjustments": true, "cloneCategories": [], "createdAt": "2018-11-02T18:30:52.041Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-02T18:31:21.641Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/versions/5a433d1f-ace3-44eb-aeca-da91aaa9ec3d"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/project-mappings"}]}}, {"name": "consumer-credit-scoring-DIV1", "projectLevelAdjustments": true, "cloneCategories": [], "createdAt": "2018-11-02T18:29:10.948Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-02T19:29:37.603Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/versions/8fc65a57-395f-4ead-82e8-c8068f7a2ade"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/project-mappings"}]}}, {"name": "lib", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-08T21:35:55.114Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-08T21:35:55.118Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/versions/2b9a6b3d-dcc1-4931-8c73-9b688aa7e1b3"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/project-mappings"}]}}, {"name": "struts-showcase-no-options-thread0", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-09T17:55:07.072Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-09T17:55:07.079Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/versions/0e9aa76d-2017-4cd2-9681-ac9b46059e7c"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/project-mappings"}]}}, {"name": "struts-showcase-no-sig-scanner-thread0", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-09T18:01:30.582Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-09T18:01:30.586Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/versions/88d69bf3-bde5-477f-904a-6586f9ea1236"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/project-mappings"}]}}, {"name": "struts-showcase-policy-and-risk-no-sig-scanner-thread0", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-09T18:02:36.020Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-09T18:02:36.023Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/versions/97e9cd2d-783a-419e-9d57-43177ef18197"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/project-mappings"}]}}, {"name": "struts-showcase-policy-and-risk-thread0", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-09T17:59:57.078Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-09T17:59:57.082Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/versions/6b3d8e98-3a9f-442b-b7bd-75030fe9931f"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/project-mappings"}]}}, {"name": "struts-showcase-policy-check-no-sig-scanner-thread0", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-09T18:01:40.463Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-09T18:01:40.467Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/versions/c27d4703-8d4b-4dba-bc9f-0d4b11d500f1"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/project-mappings"}]}}, {"name": "struts-showcase-policy-check-thread0", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-09T17:56:37.183Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-09T17:56:37.187Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/versions/7fa1b72c-5f64-418d-8140-70b78345b647"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/project-mappings"}]}}, {"name": "struts-showcase-risk-report-thread0", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-09T17:58:06.103Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-09T17:58:06.107Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/versions/1cf25812-1f07-4a71-a753-6d76cbe13d07"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/project-mappings"}]}}, {"name": "struts2-showcase", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-08T21:24:54.944Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-13T22:41:06.889Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/versions/9b2fd89c-9e8e-427f-a36a-296fc380c856"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/project-mappings"}]}}], "appliedFilters": [], "_meta": {"allow": ["POST", "GET"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects", "links": []}}
+{
+  "totalCount": 18,
+  "items": [
+    {
+      "name": "accelerator-initializer-ui",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-12T15:25:44.851Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-12T15:25:44.908Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "app1",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-08T21:36:20.674Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-08T21:36:20.678Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/versions/31ca82f2-7c1e-4257-9a8f-77085c59673f"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/5e291539-9c59-43d9-9c0f-bf0be1ffd477/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "app2",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-08T21:36:45.776Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-08T21:36:45.779Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/versions/c4eb7317-bc0b-46ef-bda5-1324c2f599bc"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/1e0f81ef-7e20-475d-b166-357efa3bbc4e/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "business-credit-monitoring-DIV2",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [],
+      "createdAt": "2018-11-02T18:31:10.494Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-02T18:31:10.498Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/versions/36be3625-46fa-4d23-a535-88d87e488531"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/b1a467a2-3c77-4f67-9c44-d14f79e2229f/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "business-credit-scoring-DIV2",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [],
+      "createdAt": "2018-11-02T18:29:29.731Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-02T18:31:42.771Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/versions/caa13c75-e290-451a-bd8a-1651174c5734"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2ffe6a09-b51e-480f-a79a-6905ddc656af/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "combined1",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-08T21:38:28.801Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-08T21:38:28.805Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/versions/fd79254c-0acf-42ed-a006-171172b27643"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/079e691e-fa16-42d7-bfad-a2f807af95b5/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "combined2",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-08T21:39:52.675Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-08T21:39:52.678Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/versions/f7783dbb-1794-4845-9a96-313d49bf6a11"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/755b4119-b3d6-43bd-9586-f5a36af19c6b/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "consumer-credit-monitoring-DIV1",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [],
+      "createdAt": "2018-11-02T18:30:52.041Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-02T18:31:21.641Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/versions/5a433d1f-ace3-44eb-aeca-da91aaa9ec3d"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/79bf8154-6008-40a9-9929-4c800ddac455/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "consumer-credit-scoring-DIV1",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [],
+      "createdAt": "2018-11-02T18:29:10.948Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-02T19:29:37.603Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/versions/8fc65a57-395f-4ead-82e8-c8068f7a2ade"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/189db678-de6a-4eb8-b214-4f57de503e23/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "lib",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-08T21:35:55.114Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-08T21:35:55.118Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/versions/2b9a6b3d-dcc1-4931-8c73-9b688aa7e1b3"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0c35bfcb-f3ee-4669-b79e-1a9dd1eca2aa/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "struts-showcase-no-options-thread0",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-09T17:55:07.072Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-09T17:55:07.079Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/versions/0e9aa76d-2017-4cd2-9681-ac9b46059e7c"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f8b1c2fc-e7ac-49f7-a884-c4f9d8db0e19/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "struts-showcase-no-sig-scanner-thread0",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-09T18:01:30.582Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-09T18:01:30.586Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/versions/88d69bf3-bde5-477f-904a-6586f9ea1236"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/2f1371a5-d3de-4524-a0f0-71aafc401c69/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "struts-showcase-policy-and-risk-no-sig-scanner-thread0",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-09T18:02:36.020Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-09T18:02:36.023Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/versions/97e9cd2d-783a-419e-9d57-43177ef18197"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/585fa1b3-73e8-4657-8b70-954bc41a180b/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "struts-showcase-policy-and-risk-thread0",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-09T17:59:57.078Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-09T17:59:57.082Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/versions/6b3d8e98-3a9f-442b-b7bd-75030fe9931f"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/7148f733-1119-403c-926a-28ae1c4a140c/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "struts-showcase-policy-check-no-sig-scanner-thread0",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-09T18:01:40.463Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-09T18:01:40.467Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/versions/c27d4703-8d4b-4dba-bc9f-0d4b11d500f1"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/a7d5fe9b-61e0-4a39-b11d-8cdf60d9038d/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "struts-showcase-policy-check-thread0",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-09T17:56:37.183Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-09T17:56:37.187Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/versions/7fa1b72c-5f64-418d-8140-70b78345b647"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/f0b39daa-e62c-43a4-8a87-f32d0fd3317e/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "struts-showcase-risk-report-thread0",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-09T17:58:06.103Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-09T17:58:06.107Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/versions/1cf25812-1f07-4a71-a753-6d76cbe13d07"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/06812072-37de-42b9-846d-bd92fe29f721/project-mappings"
+          }
+        ]
+      }
+    },
+    {
+      "name": "struts2-showcase",
+      "description": "",
+      "projectLevelAdjustments": true,
+      "cloneCategories": [
+        "COMPONENT_DATA",
+        "VULN_DATA"
+      ],
+      "createdAt": "2018-11-08T21:24:54.944Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "updatedAt": "2018-11-13T22:41:06.889Z",
+      "updatedBy": "sysadmin",
+      "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "source": "CUSTOM",
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4",
+        "links": [
+          {
+            "rel": "versions",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/versions"
+          },
+          {
+            "rel": "canonicalVersion",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/versions/9b2fd89c-9e8e-427f-a36a-296fc380c856"
+          },
+          {
+            "rel": "assignable-users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/assignable-users"
+          },
+          {
+            "rel": "assignable-usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/assignable-usergroups"
+          },
+          {
+            "rel": "users",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/users"
+          },
+          {
+            "rel": "usergroups",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/usergroups"
+          },
+          {
+            "rel": "tags",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/tags"
+          },
+          {
+            "rel": "project-mappings",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/0a5f6122-e48e-4427-99af-40d749536cb4/project-mappings"
+          }
+        ]
+      }
+    }
+  ],
+  "appliedFilters": [],
+  "_meta": {
+    "allow": [
+      "POST",
+      "GET"
+    ],
+    "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects",
+    "links": []
+  }
+}

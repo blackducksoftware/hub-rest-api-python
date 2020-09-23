@@ -1,1 +1,156 @@
-{"totalCount": 1, "items": [{"createdAt": "2018-11-12T15:25:44.886Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "settingUpdatedAt": "2018-11-15T15:00:26.041Z", "settingUpdatedBy": "sysadmin", "settingUpdatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "versionName": "1.0", "releaseComments": "", "source": "CUSTOM", "phase": "DEVELOPMENT", "distribution": "EXTERNAL", "license": {"license": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/licenses/00000000-0010-0000-0000-000000000000", "licenses": [], "name": "Unknown License", "ownership": "UNKNOWN", "codeSharing": "UNKNOWN", "licenseDisplay": "Unknown License"}, "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c", "links": [{"rel": "versionReport", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/reports"}, {"rel": "licenseReports", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/license-reports"}, {"rel": "riskProfile", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/risk-profile"}, {"rel": "components", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/components"}, {"rel": "vulnerable-components", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/vulnerable-bom-components"}, {"rel": "comparison", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/comparison"}, {"rel": "project", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52"}, {"rel": "policy-status", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/policy-status"}, {"rel": "codelocations", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/codelocations"}]}, "securityRiskProfile": {"counts": [{"countType": "HIGH", "count": 0}, {"countType": "MEDIUM", "count": 13}, {"countType": "LOW", "count": 10}, {"countType": "OK", "count": 1101}, {"countType": "UNKNOWN", "count": 0}]}, "licenseRiskProfile": {"counts": [{"countType": "HIGH", "count": 1}, {"countType": "MEDIUM", "count": 0}, {"countType": "LOW", "count": 0}, {"countType": "OK", "count": 1114}, {"countType": "UNKNOWN", "count": 0}]}, "operationalRiskProfile": {"counts": [{"countType": "HIGH", "count": 159}, {"countType": "MEDIUM", "count": 122}, {"countType": "LOW", "count": 309}, {"countType": "OK", "count": 525}, {"countType": "UNKNOWN", "count": 0}]}, "policyStatus": "NOT_IN_VIOLATION", "policyStatusSummaries": [], "lastBomUpdateDate": "2018-11-15T15:00:26.010Z", "lastScanDate": "2018-11-12T15:33:09.556Z"}], "appliedFilters": [], "_meta": {"allow": ["POST"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions", "links": []}}
+{
+  "totalCount": 1,
+  "items": [
+    {
+      "createdAt": "2018-11-12T15:25:44.886Z",
+      "createdBy": "sysadmin",
+      "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "settingUpdatedAt": "2018-11-15T15:00:26.041Z",
+      "settingUpdatedBy": "sysadmin",
+      "settingUpdatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+      "versionName": "1.0",
+      "releaseComments": "",
+      "source": "CUSTOM",
+      "phase": "DEVELOPMENT",
+      "distribution": "EXTERNAL",
+      "license": {
+        "license": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/licenses/00000000-0010-0000-0000-000000000000",
+        "licenses": [],
+        "name": "Unknown License",
+        "ownership": "UNKNOWN",
+        "codeSharing": "UNKNOWN",
+        "licenseDisplay": "Unknown License"
+      },
+      "_meta": {
+        "allow": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c",
+        "links": [
+          {
+            "rel": "versionReport",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/reports"
+          },
+          {
+            "rel": "licenseReports",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/license-reports"
+          },
+          {
+            "rel": "riskProfile",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/risk-profile"
+          },
+          {
+            "rel": "components",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/components"
+          },
+          {
+            "rel": "vulnerable-components",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/vulnerable-bom-components"
+          },
+          {
+            "rel": "comparison",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/comparison"
+          },
+          {
+            "rel": "project",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52"
+          },
+          {
+            "rel": "policy-status",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/policy-status"
+          },
+          {
+            "rel": "codelocations",
+            "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c/codelocations"
+          }
+        ]
+      },
+      "securityRiskProfile": {
+        "counts": [
+          {
+            "countType": "HIGH",
+            "count": 0
+          },
+          {
+            "countType": "MEDIUM",
+            "count": 13
+          },
+          {
+            "countType": "LOW",
+            "count": 10
+          },
+          {
+            "countType": "OK",
+            "count": 1101
+          },
+          {
+            "countType": "UNKNOWN",
+            "count": 0
+          }
+        ]
+      },
+      "licenseRiskProfile": {
+        "counts": [
+          {
+            "countType": "HIGH",
+            "count": 1
+          },
+          {
+            "countType": "MEDIUM",
+            "count": 0
+          },
+          {
+            "countType": "LOW",
+            "count": 0
+          },
+          {
+            "countType": "OK",
+            "count": 1114
+          },
+          {
+            "countType": "UNKNOWN",
+            "count": 0
+          }
+        ]
+      },
+      "operationalRiskProfile": {
+        "counts": [
+          {
+            "countType": "HIGH",
+            "count": 159
+          },
+          {
+            "countType": "MEDIUM",
+            "count": 122
+          },
+          {
+            "countType": "LOW",
+            "count": 309
+          },
+          {
+            "countType": "OK",
+            "count": 525
+          },
+          {
+            "countType": "UNKNOWN",
+            "count": 0
+          }
+        ]
+      },
+      "policyStatus": "NOT_IN_VIOLATION",
+      "policyStatusSummaries": [],
+      "lastBomUpdateDate": "2018-11-15T15:00:26.010Z",
+      "lastScanDate": "2018-11-12T15:33:09.556Z"
+    }
+  ],
+  "appliedFilters": [],
+  "_meta": {
+    "allow": [
+      "POST"
+    ],
+    "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions",
+    "links": []
+  }
+}
