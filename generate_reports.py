@@ -155,16 +155,15 @@ class ProjectVersion:
         if not args.summary:
             return
             
-        log.debug(f"Generating summary for: {self.name()}")
+        print(f"Generating summary for: {self.name()}")
         
         self.summary = { 'Project Name': self.project_name, 'Version': self.version_name }
         
-        log.debug(self.links.keys())
+        #log.debug(self.links.keys())
         for key, link in self.links.items():
             func_name = f"_parse_{key.replace('-','_')}"
             func = getattr(self, func_name, None)
             if func:
-                log.debug(f"Fetching {key}")
                 response = hub.execute_get(link)
                 if response and response.status_code == 200:
                     data = response.json()
@@ -233,7 +232,7 @@ class ProjectVersion:
         if not self.version_object:
             return
         
-        log.debug(f"Generating report for: {self.name()}")
+        print(f"Generating report for: {self.name()}")
         response = hub.create_version_reports(self.version_object, self.reports, args.format)
         
         if response.status_code == 201:
@@ -267,7 +266,7 @@ class ProjectVersion:
                 with open(dest, "wb") as f:
                     f.write(response.content)
                     
-                log.debug(f"Completed download to: {dest}")
+                print(f"Completed download to: {dest}")
             else:
                 self.error = f"Unable to download report ({response.status_code})"
             
