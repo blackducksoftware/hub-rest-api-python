@@ -24,7 +24,10 @@ parser = argparse.ArgumentParser(
 Note: When using the --project_file option the file format per line MUST be:
 
 # Lines starting # are ignored, so are empty lines
-project name[;version][;destination]
+project name[;version][;filename]
+
+# The default version is master but can be overridden with --version
+# The default filenema is the project-version name with .zip e.g. "my proj-master.zip"
 '''
 )
 
@@ -33,18 +36,21 @@ group.add_argument('--project_name', '-p', type=str, help='Add a single project'
 group.add_argument('--project_file', '-f', type=argparse.FileType(), help='Add all projects listed in the file')
 parser.add_argument('--version', '-v', default='master', type=str, help='Version to use if not specified in the file. Default: master')
 
+group_reports = parser.add_argument_group('reports', description='Select 1 or more to generate')
+group_reports.add_argument('--summary', '-s', default=None, choices=["short", "full"], help='Create a summary report csv file of the project(s). short option only lists the CRITICAL and HIGH issues.')
+group_reports.add_argument('--detailed', '-d', action="store_true", help='Generate and fetch the detailed reports.')
+group_reports.add_argument('--licence', '-l', action="store_true", help='Generate and fetch the licence report (aka Notices file).')
+
 parser.add_argument('--output', '-o', default='.', type=str, help='Output folder to download the reports into. Default: .')
-parser.add_argument('--summary', '-s', default=None, choices=["short", "full"], help='Create a summary csv file of the project(s). short option only lists the CRITICAL and HIGH issues.')
-parser.add_argument('--format', '-m', default='CSV', choices=["CSV", "JSON"], help="Report format. 1 JSON file or multiple CSV files")
-parser.add_argument('--no_reports', '-r', action="store_false", help='Do not call generate or fetch the reports. Implies -c, only relevant with --summary')
-parser.add_argument('--no_cleanup', '-c', action="store_false", help='Do not remove the report generated on BlackDuck')
+parser.add_argument('--format', '-m', default='JSON', choices=["CSV", "JSON"], help="Report format. 1 JSON file or multiple CSV files")
+parser.add_argument('--skip_cleanup', '-c', action="store_true", help='Do not remove reports generated on BlackDuck')
 parser.add_argument('--prefix', '-x', default='', type=str, help='String to add to the start of all project names')
 parser.add_argument('--sleep_time', '-t', default=5, type=int, help="Time in seconds to sleep between download attempts")
-parser.add_argument('--log', '-l', action="store_true", help="Debug log output")
+parser.add_argument('--log', action="store_true", help="Debug log output")
 
 args = parser.parse_args()
 # create logger
-log = logging.getLogger('debug')
+log = logging.getLogger('log')
 if args.log:
     log.setLevel(logging.DEBUG)
 else:
@@ -65,11 +71,12 @@ ch.setFormatter(formatter)
 log.addHandler(ch)
 
 
-if args.no_reports:
-    args.no_cleanup = True
+if not (args.summary or args.detailed or args.licence):
+    print(f"ERROR: Must specify at least 1 report to generate")
+    sys.exit()
 
 if not path.isdir(args.output):
-    log.fatal(f"Invalid output folder: {args.output}")
+    print(f"ERROR: Invalid output folder: {args.output}")
     sys.exit()
 
 
@@ -128,7 +135,8 @@ class ProjectVersion:
         self.filename = filename
         
         self.error = None
-        self.report_complete = False
+        self.detailed_complete = False
+        self.licence_complete = False
         self.links = {}
         
         project_object = hub.get_project_by_name(self.project_name)
@@ -153,7 +161,7 @@ class ProjectVersion:
             
     def generate_summary(self):
         if not args.summary:
-            return
+            return False
             
         print(f"Generating summary for: {self.name()}")
         
@@ -224,15 +232,15 @@ class ProjectVersion:
         return csv
 
 
-    def generate_report(self):
-        if not args.no_reports:
-            self.report_complete = True
-            return
+    def generate_detailed_report(self):
+        if not args.detailed:
+            self.detailed_complete = True
+            return False
             
         if not self.version_object:
             return
         
-        print(f"Generating report for: {self.name()}")
+        print(f"Generating detailed report for: {self.name()}")
         response = hub.create_version_reports(self.version_object, self.reports, args.format)
         
         if response.status_code == 201:
@@ -242,13 +250,13 @@ class ProjectVersion:
             self.error(f"Failed to request for: {self.name()}")
 
    
-    def fetch_report(self):
-        if not args.no_reports or self.report_complete:
+    def fetch_detailed_report(self):
+        if self.detailed_complete:
             return
             
         if not self.links.get('downloadMeta'):
             log.debug(f"No download link for: {self.name()}")
-            self.report_complete = True
+            self.detailed_complete = True
             return
  
         log.debug(f"Fetching report for: {self.name()}") 
@@ -270,7 +278,62 @@ class ProjectVersion:
             else:
                 self.error = f"Unable to download report ({response.status_code})"
             
-            self.report_complete = True
+            self.detailed_complete = True
+               
+        else:
+            log.debug(f"Report not ready for: {self.name()}")
+            
+    def generate_licence_report(self):
+        if not args.licence:
+            self.licence_complete = True
+            return False
+            
+        if not self.version_object:
+            return
+        
+        print(f"Generating licence report for: {self.name()}")
+        fmt = args.format
+        if fmt == 'CSV':
+            fmt = 'TEXT'
+            
+        response = hub.create_version_notices_report(self.version_object, fmt)
+        
+        if response.status_code == 201:
+            log.debug(f"Reports requested for: {self.name()}")
+            self.links['downloadMeta2'] = response.headers['Location']
+        else:
+            self.error(f"Failed to request for: {self.name()}")
+            
+    def fetch_licence_report(self):
+        if self.licence_complete:
+            return
+            
+        if not self.links.get('downloadMeta2'):
+            log.debug(f"No download link for: {self.name()}")
+            self.licence_complete = True
+            return
+ 
+        log.debug(f"Fetching licence report for: {self.name()}") 
+        if not self.filename:
+            self.filename = f"{pv.name()}.zip"
+        
+        filename = f"licence.{self.filename}"
+        response = hub.execute_get(self.links['downloadMeta2'])
+        data = response.json() 
+        
+        if response.status_code == 200 and data['status'] == 'COMPLETED':
+            self.links['download-href2'] = data['_meta']['links'][1]['href']
+            response = hub.execute_get(self.links['download-href2'])
+            if response.status_code == 200:
+                dest = path.join(args.output, filename)
+                with open(dest, "wb") as f:
+                    f.write(response.content)
+                    
+                print(f"Completed download to: {dest}")
+            else:
+                self.error = f"Unable to download report ({response.status_code})"
+            
+            self.licence_complete = True
                
         else:
             log.debug(f"Report not ready for: {self.name()}")
@@ -279,11 +342,16 @@ class ProjectVersion:
         if self.error:
             log.critical(f"'{self.name()}' generated error: {self.error}")
             
-        if args.no_cleanup:
+        if args.skip_cleanup:
             log.debug(f"Skipping clean up of online report for: {self.name()}")
-        elif self.links.get('download-href'):
-            log.debug(f"Cleaning up online report for: {self.name()}")
-            hub.execute_delete(self.links.get('download-href'))
+        else:
+            if self.links.get('download-href'):
+                log.debug(f"Cleaning up online detailed report for: {self.name()}")
+                hub.execute_delete(self.links.get('download-href'))
+                
+            if self.links.get('download-href2'):
+                log.debug(f"Cleaning up online licence report for: {self.name()}")
+                hub.execute_delete(self.links.get('download-href2'))
             
         self.version_object = None
             
@@ -297,24 +365,34 @@ if args.project_name:
     pv = None
     try:
         pv = ProjectVersion(f"{args.prefix}{args.project_name}", args.version)
-        pv.generate_report()
-        log.info(pv.links.get('downloadMeta'))
-        while not pv.report_complete:
-            time.sleep(args.sleep_time)
-            pv.fetch_report()
+
+        if pv.generate_detailed_report() != False:
+            log.info(pv.links.get('downloadMeta'))
+            while not pv.detailed_complete:
+                time.sleep(args.sleep_time)
+                pv.fetch_detailed_report()
+                
+            print(f"{pv.name()} download complete")
+            
+        if pv.generate_licence_report() != False:
+            log.info(pv.links.get('downloadMeta2'))
+            while not pv.licence_complete:
+                time.sleep(args.sleep_time)
+                pv.fetch_licence_report()
+                
+            print(f"{pv.name()} download complete")
+            
+        if args.summary:
+            print("Writing summary")
+            dest = path.join(args.output, 'summary.csv')
+            with open(dest, "w") as f:
+                f.write(pv.get_summary_header() + "\n")
+                f.write(pv.get_summary() + "\n")
 
     finally:
         if pv:
             pv.clean_up()
-        
-    print(f"{pv.name()} download complete")
-    if args.summary:
-        print("Writing summary")
-        dest = path.join(args.output, 'summary.csv')
-        with open(dest, "w") as f:
-            f.write(pv.get_summary_header() + "\n")
-            f.write(pv.get_summary() + "\n")
-        
+
 else:
     print('Generating reports...')
     all_pv = []
@@ -347,34 +425,51 @@ else:
         pv = None
         try:
             pv = ProjectVersion(project_name, version_name, destination)
-            pv.generate_report()
+            pv.generate_detailed_report()
+            pv.generate_licence_report()
             all_pv.append(pv)
         except:
             log.critical(f"Unable to generate report for: {project_name} - {version_name}")
-        finally:
             if pv:
                 pv.clean_up()
-        
-    while True:
-        all_complete = True
-        count = 0
-        for pv in all_pv:
-            pv.fetch_report()
-            if pv.report_complete:
-                count += 1
+                
+    if args.detailed:
+        while True:
+            all_complete = True
+            count = 0
+            for pv in all_pv:
+                pv.fetch_detailed_report()
+                if pv.detailed_complete:
+                    count += 1
+                else:
+                    all_complete = False
+           
+            if all_complete:
+                break
             else:
-                all_complete = False
-       
-        if all_complete:
-            break
-        else:
-            print(f"{count}/{len(all_pv)} reports downloaded")
-            time.sleep(args.sleep_time)
+                print(f"{count}/{len(all_pv)} detailed reports downloaded")
+                time.sleep(args.sleep_time)
         
-    for pv in all_pv:
-        pv.clean_up()
+        print(f"All detailed report downloads complete")
 
-    print(f"All downloads complete")
+    if args.licence:
+        while True:
+            all_complete = True
+            count = 0
+            for pv in all_pv:
+                pv.fetch_licence_report()
+                if pv.licence_complete:
+                    count += 1
+                else:
+                    all_complete = False
+           
+            if all_complete:
+                break
+            else:
+                print(f"{count}/{len(all_pv)} licence reports downloaded")
+                time.sleep(args.sleep_time)
+        
+        print(f"All licence report downloads complete")
     
     if args.summary:
         print("Writing summary")
@@ -384,4 +479,5 @@ else:
             for pv in all_pv:
                 f.write(pv.get_summary() + "\n")
 
-   
+    for pv in all_pv:
+        pv.clean_up()
