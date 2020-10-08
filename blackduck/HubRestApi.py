@@ -552,15 +552,18 @@ class HubInstance(object):
         return self.execute_post(version_reports_url, post_data)
 
     valid_notices_formats = ["TEXT", "JSON"]
-    def create_version_notices_report(self, version, format="TEXT"):
+    def create_version_notices_report(self, version, format="TEXT", copyright_text=False):
         assert format in HubInstance.valid_notices_formats, "Format must be one of {}".format(HubInstance.valid_notices_formats)
 
         post_data = {
-            'categories': ["COPYRIGHT_TEXT"],
             'versionId': version['_meta']['href'].split("/")[-1],
             'reportType': 'VERSION_LICENSE',
             'reportFormat': format
         }
+        
+        if copyright_text:
+            post_data['categories'] = ["COPYRIGHT_TEXT"]
+            
         notices_report_url = self.get_link(version, 'licenseReports')
         return self.execute_post(notices_report_url, post_data)
 

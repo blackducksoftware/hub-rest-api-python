@@ -45,7 +45,7 @@ parser.add_argument('--output', '-o', default='.', type=str, help='Output folder
 parser.add_argument('--format', '-m', default='JSON', choices=["CSV", "JSON"], help="Report format. 1 JSON file or multiple CSV files")
 parser.add_argument('--skip_cleanup', '-c', action="store_true", help='Do not remove reports generated on BlackDuck')
 parser.add_argument('--prefix', '-x', default='', type=str, help='String to add to the start of all project names')
-parser.add_argument('--sleep_time', '-t', default=5, type=int, help="Time in seconds to sleep between download attempts")
+parser.add_argument('--sleep_time', '-t', default=30, type=int, help="Time in seconds to sleep between download attempts")
 parser.add_argument('--log', action="store_true", help="Debug log output")
 
 args = parser.parse_args()
