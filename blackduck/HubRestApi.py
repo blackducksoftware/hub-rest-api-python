@@ -358,6 +358,14 @@ class HubInstance(object):
         headers = {'Content-Type':'application/vnd.blackducksoftware.user-1+json', 'Accept': 'application/json'}
         data = {'password': new_password}
         return self.execute_put(url, data, headers)
+    
+    def get_last_login(self,sinceDays=60):
+        url = self.config['baseurl'] + "/api/dormant-users"
+        param_string = self._get_parameter_string({'sinceDays': sinceDays})
+        url = "{}{}".format(url, param_string)
+        headers = {'Accept': 'application/vnd.blackducksoftware.user-4+json'}
+        response = self.execute_get(url, custom_headers=headers)
+        return response.json()
 
     ###
     #
