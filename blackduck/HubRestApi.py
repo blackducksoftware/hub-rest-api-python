@@ -818,7 +818,7 @@ class HubInstance(object):
         paramstring = self.get_limit_paramstring(limit)
         url = projectversion['_meta']['href'] + "/components" + paramstring
         headers = self.get_headers()
-        headers['Accept'] = 'application/vnd.blackducksoftware.bill-of-materials-4+json'
+        headers['Accept'] = 'application/vnd.blackducksoftware.bill-of-materials-6+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
