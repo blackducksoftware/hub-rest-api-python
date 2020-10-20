@@ -18,6 +18,9 @@ import zipfile
 parser = argparse.ArgumentParser("A program to generate the notices file for a given project-version")
 parser.add_argument("project_name")
 parser.add_argument("version_name")
+
+# TODO: Add the copyright checkbox option
+
 parser.add_argument('-f', "--file_name_base", default="notices_report", help="Base file name to write the report data into. If the report format is TEXT a .zip file will be created, otherwise a .json file")
 parser.add_argument('-r', '--report_format', default='TEXT', choices=["JSON", "TEXT"], help="Report format - choices are TEXT or HTML")
 

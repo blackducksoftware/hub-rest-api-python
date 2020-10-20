@@ -19,7 +19,8 @@ hub = HubInstance()
 project = hub.get_project_by_name(args.project_name)
 version = hub.get_version_by_name(project, args.version)
 
-result = hub.get_matched_components(version)
-print(json.dumps(result))
+matches = hub.get_matched_components(version).get('items', [])
+matches = list(filter(lambda f: 'SNIPPET' not in [m['matchType'] for m in f['matches']], matches))
+print(json.dumps(matches))
 
 
