@@ -37,7 +37,7 @@ group.add_argument('--project_file', '-f', type=argparse.FileType(), help='Add a
 parser.add_argument('--version', '-v', default='master', type=str, help='Version to use if not specified in the file. Default: master')
 
 group_reports = parser.add_argument_group('reports', description='Select 1 or more to generate')
-group_reports.add_argument('--summary', '-s', default=None, choices=["short", "full"], help='Create a summary report csv file of the project(s). short option only lists the CRITICAL and HIGH issues.')
+group_reports.add_argument('--summary', '-s', default=None, choices=["short", "full"], help='Create a summary report json file of the project(s). short option only lists the CRITICAL and HIGH issues.')
 group_reports.add_argument('--detailed', '-d', action="store_true", help='Generate and fetch the detailed reports.')
 group_reports.add_argument('--licence', '-l', action="store_true", help='Generate and fetch the licence report (aka Notices file).')
 
@@ -89,7 +89,7 @@ class ProjectVersion:
         'COMPONENTS',
         'SECURITY',
         'FILES',
-        'ATTACHMENTS',
+        #'ATTACHMENTS',
         # 'CRYPTO_ALGORITHMS',
         'PROJECT_VERSION_CUSTOM_FIELDS',
         'BOM_COMPONENT_CUSTOM_FIELDS',
@@ -212,7 +212,7 @@ class ProjectVersion:
             self.summary['Last Scan'] = self.summary['Last Scan'].date().isoformat()
 
     def get_summary_header(self):
-        if not args.summary:
+        if not args.summary or args.format == 'JSON':
             return ""
 
         fields = (self.SUMMARY_SHORT if args.summary == 'short' else self.SUMMARY_LONG)
@@ -222,14 +222,24 @@ class ProjectVersion:
         if not args.summary:
             return ""
 
-        csv = None
-        for field in (self.SUMMARY_SHORT if args.summary == 'short' else self.SUMMARY_LONG):
-            if csv:
-                csv = f"{csv},{str(self.summary.get(field, 'n/a'))}"
-            else:
-                csv = str(self.summary.get(field,'n/a'))
-                
-        return csv
+        if args.format == "CSV":
+            csv = None
+            for field in (self.SUMMARY_SHORT if args.summary == 'short' else self.SUMMARY_LONG):
+                if csv:
+                    csv = f"{csv},{str(self.summary.get(field, 'n/a'))}"
+                else:
+                    csv = str(self.summary.get(field,'n/a'))
+                    
+            return csv
+        else:
+            json = None
+            for field in (self.SUMMARY_SHORT if args.summary == 'short' else self.SUMMARY_LONG):
+                if json:
+                    json = f"{json},\"{field}\":\"{str(self.summary.get(field, 'n/a'))}\""
+                else:
+                    json = f"\"{field}\":\"{str(self.summary.get(field, 'n/a'))}\""
+                    
+            return f"{{{json}}}"
 
 
     def generate_detailed_report(self):
@@ -247,7 +257,8 @@ class ProjectVersion:
             log.debug(f"Reports requested for: {self.name()}")
             self.links['downloadMeta'] = response.headers['Location']
         else:
-            self.error(f"Failed to request for: {self.name()}")
+            self.error = f"Failed to request: {self.name()} ({response.status_code})"
+            return False
 
    
     def fetch_detailed_report(self):
@@ -279,9 +290,9 @@ class ProjectVersion:
                 self.error = f"Unable to download report ({response.status_code})"
             
             self.detailed_complete = True
-               
         else:
             log.debug(f"Report not ready for: {self.name()}")
+
             
     def generate_licence_report(self):
         if not args.licence:
@@ -302,7 +313,9 @@ class ProjectVersion:
             log.debug(f"Reports requested for: {self.name()}")
             self.links['downloadMeta2'] = response.headers['Location']
         else:
-            self.error(f"Failed to request for: {self.name()}")
+            self.error = f"Failed to request for: {self.name()}  ({response.status_code})"
+            return False
+            
             
     def fetch_licence_report(self):
         if self.licence_complete:
@@ -475,9 +488,25 @@ else:
         print("Writing summary")
         dest = path.join(args.output, 'summary.csv')
         with open(dest, "w") as f:
-            f.write(pv.get_summary_header() + "\n")
+            first = True
+            if args.format == 'CSV':
+                f.write(pv.get_summary_header() + "\n")
+            else:
+                f.write("{\"Projects\":[")
+                
             for pv in all_pv:
-                f.write(pv.get_summary() + "\n")
+                if args.format == 'CSV':
+                    f.write(pv.get_summary() + "\n")
+                else:
+                    if first:
+                        first = False
+                        f.write(pv.get_summary())
+                    else:
+                        f.write("," + pv.get_summary())
+            
+            if args.format == 'JSON':
+                f.write("]}\n")
+                
 
     for pv in all_pv:
         pv.clean_up()
