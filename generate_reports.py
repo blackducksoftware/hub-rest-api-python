@@ -37,7 +37,7 @@ group.add_argument('--project_file', '-f', type=argparse.FileType(), help='Add a
 parser.add_argument('--version', '-v', default='master', type=str, help='Version to use if not specified in the file. Default: master')
 
 group_reports = parser.add_argument_group('reports', description='Select 1 or more to generate')
-group_reports.add_argument('--summary', '-s', default=None, choices=["short", "full"], help='Create a summary report json file of the project(s). short option only lists the CRITICAL and HIGH issues.')
+group_reports.add_argument('--summary', '-s', default=None, choices=["short", "full"], help='Create a summary report json (default) or csv file of the project(s). short option only lists the CRITICAL and HIGH issues.')
 group_reports.add_argument('--detailed', '-d', action="store_true", help='Generate and fetch the detailed reports.')
 group_reports.add_argument('--licence', '-l', action="store_true", help='Generate and fetch the licence report (aka Notices file).')
 
@@ -397,7 +397,11 @@ if args.project_name:
             
         if args.summary:
             print("Writing summary")
-            dest = path.join(args.output, 'summary.csv')
+            if args.format == 'CSV':
+                dest = path.join(args.output, 'summary.csv')
+            else:
+                dest = path.join(args.output, 'summary.json')
+            
             with open(dest, "w") as f:
                 f.write(pv.get_summary_header() + "\n")
                 f.write(pv.get_summary() + "\n")
@@ -486,7 +490,11 @@ else:
     
     if args.summary:
         print("Writing summary")
-        dest = path.join(args.output, 'summary.csv')
+        if args.format == 'CSV':
+            dest = path.join(args.output, 'summary.csv')
+        else:
+            dest = path.join(args.output, 'summary.json')
+            
         with open(dest, "w") as f:
             first = True
             if args.format == 'CSV':
