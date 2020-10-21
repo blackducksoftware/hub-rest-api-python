@@ -9,6 +9,13 @@ cd hub-rest-api-python
 pip3 install -r requirements.txt
 pip3 install .
 ```
+### Configure your connection
+Create a token in BlackDuck for your user (generica account)
+
+`cp restconfig.json.api_token.example restconfig.json`
+
+Update restconfig.json with your credentials
+
 ## Generate reports
 ### Common usage example
 `python3 generate_reports.py --project_name <your project> --summary short --detailed --licence --output <path>`
