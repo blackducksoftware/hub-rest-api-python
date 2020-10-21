@@ -10,7 +10,7 @@ pip3 install -r requirements.txt
 pip3 install .
 ```
 ### Configure your connection
-Create a token in BlackDuck for your user (generica account)
+Create a token in BlackDuck for your user or generic account
 
 `cp restconfig.json.api_token.example restconfig.json`
 
