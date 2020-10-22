@@ -1307,11 +1307,11 @@ class HubInstance(object):
         if filename.endswith('.json') or filename.endswith('.jsonld'):
             headers['Content-Type'] = 'application/ld+json'
             with open(filename,"r") as f:
-                response = requests.post(url, headers=headers, data=f, verify=False)
+                response = requests.post(url, headers=headers, data=f, verify=not self.config['insecure'])
         elif filename.endswith('.bdio'):
             headers['Content-Type'] = 'application/vnd.blackducksoftware.bdio+zip'
             with open(filename,"rb") as f:
-                response = requests.post(url, headers=headers, data=f, verify=False)
+                response = requests.post(url, headers=headers, data=f, verify=not self.config['insecure'])
         else:
             raise Exception("Unkown file type")
         return response
@@ -1338,7 +1338,7 @@ class HubInstance(object):
                     if not os.path.exists(project_name):
                         os.mkdir(project_name)
                     pathname = os.path.join(project_name, filename)
-                responce = requests.get(url, headers=self.get_headers(), stream=True, verify=False)
+                responce = requests.get(url, headers=self.get_headers(), stream=True, verify=not self.config['insecure'])
                 with open(pathname, "wb") as f:
                     for data in responce.iter_content():
                         f.write(data)
