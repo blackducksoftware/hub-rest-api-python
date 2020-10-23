@@ -23,6 +23,7 @@ parser.add_argument("version_name")
 
 parser.add_argument('-f', "--file_name_base", default="notices_report", help="Base file name to write the report data into. If the report format is TEXT a .zip file will be created, otherwise a .json file")
 parser.add_argument('-r', '--report_format', default='TEXT', choices=["JSON", "TEXT"], help="Report format - choices are TEXT or HTML")
+parser.add_argument('-c', '--include_copyright_info', action='store_true', help="Set this option to have additional copyright information from the Black Duck KB included in the notices file report.")
 
 args = parser.parse_args()
 
@@ -66,7 +67,7 @@ project = hub.get_project_by_name(args.project_name)
 if project:
 	version = hub.get_version_by_name(project, args.version_name)
 
-	response = hub.create_version_notices_report(version, args.report_format)
+	response = hub.create_version_notices_report(version, args.report_format, include_copyright_info=args.include_copyright_info)
 
 	if response.status_code == 201:
 		logging.info("Successfully created notices report in {} format for project {} and version {}".format(
