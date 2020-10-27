@@ -497,13 +497,15 @@ else:
             
         with open(dest, "w") as f:
             first = True
-            if args.format == 'CSV':
-                f.write(pv.get_summary_header() + "\n")
-            else:
+            if args.format == 'JSON':
                 f.write("{\"Projects\":[")
                 
             for pv in all_pv:
                 if args.format == 'CSV':
+                    if first:
+                        first = False
+                        f.write(pv.get_summary_header() + "\n")
+                    
                     f.write(pv.get_summary() + "\n")
                 else:
                     if first:
