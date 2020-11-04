@@ -4,7 +4,8 @@ Created on Jul 6, 2018
 @author: kumykov
 
 Wrapper for common HUB API queries. 
-Upon initialization Bearer tocken is obtained and used for all subsequent calls
+Upon initialization Bearer token is obtained and used for all subsequent calls
+If use_session is true, a persistent HTTP connection will be used for the lifetime of the HubInstance
 
 Usage: 
 
@@ -15,7 +16,8 @@ credentials and hub URL could be placed in the .restconfig.json file
       "username": "<username goes here>",
       "password": "<password goes here>",
       "insecure": true,
-      "debug": false
+      "debug": false,
+      "use_session": false
     }
 
     OR, using API Token
@@ -24,7 +26,8 @@ credentials and hub URL could be placed in the .restconfig.json file
       "baseurl": "https://hub-hostname",
       "api_token": "<API token goes here>",
       "insecure": true,
-      "debug": false
+      "debug": false,
+      "use_session": false
     }
 
     .restconfig.json should be present in the current directory.
@@ -101,6 +104,7 @@ class HubInstance(object):
                 self.config['password'] = args[2]
             self.config['insecure'] = kwargs.get('insecure', False)
             self.config['debug'] = kwargs.get('debug', False)
+            self.config['use_session'] = kwargs.get('use_session', False)
 
             if kwargs.get('write_config_flag', True):
                 self.write_config()
@@ -112,6 +116,8 @@ class HubInstance(object):
         
         if self.config['debug']:
             logger.debug(f"Reading connection and authentication info from {self.configfile}")
+
+        self.requester = requests.session() if self.config.get('use_session', False) else requests
         
         self.token, self.csrf_token, self.cookie = self.get_auth_token()
         try:
@@ -138,8 +144,7 @@ class HubInstance(object):
         if api_token:
             authendpoint = "/api/tokens/authenticate"
             url = self.config['baseurl'] + authendpoint
-            session = requests.session()
-            response = session.post(
+            response = self.requester.post(
                 url, 
                 data={}, 
                 headers={'Authorization': 'token {}'.format(api_token)}, 
@@ -155,11 +160,10 @@ class HubInstance(object):
         else:
             authendpoint="/j_spring_security_check"
             url = self.config['baseurl'] + authendpoint
-            session=requests.session()
             credentials = dict()
             credentials['j_username'] = self.config['username']
             credentials['j_password'] = self.config['password']
-            response = session.post(url, credentials, verify= not self.config['insecure'])
+            response = self.requester.post(url, credentials, verify= not self.config['insecure'])
             cookie = response.headers['Set-Cookie']
             token = cookie[cookie.index('=')+1:cookie.index(';')]
         return (token, None, cookie)
@@ -167,9 +171,8 @@ class HubInstance(object):
     def _get_hub_rest_api_version_info(self):
         '''Get the version info from the server, if available
         '''
-        session = requests.session()
         url = self.config['baseurl'] + "/api/current-version"
-        response = session.get(url, verify = not self.config['insecure'])
+        response = self.requester.get(url, verify = not self.config['insecure'])
 
         if response.status_code == 200:
             version_info = response.json()
@@ -680,7 +683,7 @@ class HubInstance(object):
         url = self._get_projects_url() + self._get_parameter_string(parameters)
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
         logger.debug(f"Retrieving projects using url {url}")
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
 
@@ -795,7 +798,7 @@ class HubInstance(object):
         paramstring = self.get_limit_paramstring(limit)
         url = self._get_projects_url() + "/" + project_id + paramstring
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
 
@@ -805,7 +808,7 @@ class HubInstance(object):
         url = project['_meta']['href'] + "/versions" + self._get_parameter_string(parameters)
         headers = self.get_headers()
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
 
@@ -814,7 +817,7 @@ class HubInstance(object):
         url = projectversion['_meta']['href'] + "/components" + paramstring
         headers = self.get_headers()
         headers['Accept'] = 'application/vnd.blackducksoftware.bill-of-materials-4+json'
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
     
@@ -857,9 +860,9 @@ class HubInstance(object):
     def get_version_by_id(self, project_id, version_id, limit=100):
         headers = self.get_headers()
         paramstring = self.get_limit_paramstring(limit)
-        url = self._get_projects_url() + project_id + "/versions/" + version_id
+        url = self._get_projects_url() + "/" + project_id + "/versions/" + version_id
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
         
@@ -870,7 +873,7 @@ class HubInstance(object):
         cto = compareTo['_meta']['href'].replace(apibase, '')
         url = apibase + cwhat + "/compare" + cto + "/components" + paramstring
         headers = self.get_headers()
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
     
@@ -1060,7 +1063,7 @@ class HubInstance(object):
                         post_data = {"group": user_group_url}
                         headers['Content-Type'] = 'application/json'
 
-                    response = requests.post(
+                    response = self.requester.post(
                         url, 
                         headers=headers, 
                         data=json.dumps(post_data), 
@@ -1129,7 +1132,7 @@ class HubInstance(object):
                         post_data = {"user": user_url}
                         headers['Content-Type'] = 'application/json'
 
-                    response = requests.post(
+                    response = self.requester.post(
                         url,
                         headers=headers,
                         data=json.dumps(post_data),
@@ -1270,7 +1273,7 @@ class HubInstance(object):
         payload['producerRelease'] = {} 
         payload['producerRelease']['id'] = sub_data[7]
         logger.debug(json.dumps(payload))
-        response = requests.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
+        response = self.requester.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
         jsondata = response.json()
         return jsondata
 
@@ -1287,7 +1290,7 @@ class HubInstance(object):
         entity['entityKey']['entityType'] = 'RL'
         payload.append(entity)
         logger.debug(json.dumps(payload))
-        response = requests.delete(url, headers=headers, verify = not self.config['insecure'], json=payload)
+        response = self.requester.delete(url, headers=headers, verify = not self.config['insecure'], json=payload)
         return response
 
     ###
@@ -1302,11 +1305,11 @@ class HubInstance(object):
         if filename.endswith('.json') or filename.endswith('.jsonld'):
             headers['Content-Type'] = 'application/ld+json'
             with open(filename,"r") as f:
-                response = requests.post(url, headers=headers, data=f, verify=False)
+                response = self.requester.post(url, headers=headers, data=f, verify=False)
         elif filename.endswith('.bdio'):
             headers['Content-Type'] = 'application/vnd.blackducksoftware.bdio+zip'
             with open(filename,"rb") as f:
-                response = requests.post(url, headers=headers, data=f, verify=False)
+                response = self.requester.post(url, headers=headers, data=f, verify=False)
         else:
             raise Exception("Unkown file type")
         return response
@@ -1333,7 +1336,7 @@ class HubInstance(object):
                     if not os.path.exists(project_name):
                         os.mkdir(project_name)
                     pathname = os.path.join(project_name, filename)
-                responce = requests.get(url, headers=self.get_headers(), stream=True, verify=False)
+                responce = self.requester.get(url, headers=self.get_headers(), stream=True, verify=False)
                 with open(pathname, "wb") as f:
                     for data in responce.iter_content():
                         f.write(data)
@@ -1346,7 +1349,7 @@ class HubInstance(object):
         headers = self.get_headers()
         url = self.get_apibase() + "/codelocations" + paramstring
         headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         if unmapped:
             jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
@@ -1367,7 +1370,7 @@ class HubInstance(object):
         else:
             url = self.get_apibase() + \
                 "/codelocations/{}/scan-summaries".format(code_location_id)
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
     
@@ -1383,14 +1386,14 @@ class HubInstance(object):
     def delete_codelocation(self, locationid):
         url = self.config['baseurl'] + "/api/codelocations/" + locationid
         headers = self.get_headers()
-        response = requests.delete(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.delete(url, headers=headers, verify = not self.config['insecure'])
         return response
         
     def get_scan_locations(self, code_location_id):
         headers = self.get_headers()
         headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
         url = self.get_apibase() + "/codelocations/{}".format(code_location_id)
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
 
@@ -1564,13 +1567,13 @@ class HubInstance(object):
 
     def execute_delete(self, url):
         headers = self.get_headers()
-        response = requests.delete(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.delete(url, headers=headers, verify = not self.config['insecure'])
         return response
 
     def get_ldap_state(self):
         url = self.config['baseurl'] + "/api/v1/ldap/state"
         headers = self.get_headers()
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
 
@@ -1579,7 +1582,7 @@ class HubInstance(object):
         headers = self.get_headers()
         payload = {}
         payload['ldapEnabled'] = True
-        response = requests.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
+        response = self.requester.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
         jsondata = response.json()
         return jsondata
         
@@ -1588,7 +1591,7 @@ class HubInstance(object):
         headers = self.get_headers()
         payload = {}
         payload['ldapEnabled'] = False
-        response = requests.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
+        response = self.requester.post(url, headers=headers, verify = not self.config['insecure'], json=payload)
         jsondata = response.json()
         return jsondata
         
@@ -1596,7 +1599,7 @@ class HubInstance(object):
         url = self.config['baseurl'] + "/api/v1/ldap/configs"
         headers = self.get_headers()
         headers['Content-Type']  = "application/json"
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
 
@@ -1670,7 +1673,7 @@ class HubInstance(object):
     def execute_get(self, url, custom_headers={}):
         headers = self.get_headers()
         headers.update(custom_headers)
-        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        response = self.requester.get(url, headers=headers, verify = not self.config['insecure'])
         return response
         
     def execute_put(self, url, data, custom_headers={}):
@@ -1678,7 +1681,7 @@ class HubInstance(object):
         headers = self.get_headers()
         headers["Content-Type"] = "application/json"
         headers.update(custom_headers)
-        response = requests.put(url, headers=headers, data=json_data, verify = not self.config['insecure'])
+        response = self.requester.put(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
 
     def _create(self, url, json_body):
@@ -1709,7 +1712,7 @@ class HubInstance(object):
         headers = self.get_headers()
         headers["Content-Type"] = "application/json"
         headers.update(custom_headers)
-        response = requests.post(url, headers=headers, data=json_data, verify = not self.config['insecure'])
+        response = self.requester.post(url, headers=headers, data=json_data, verify = not self.config['insecure'])
         return response
 
     def get_matched_components(self, version_obj, limit=9999):
