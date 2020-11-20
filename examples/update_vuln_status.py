@@ -48,9 +48,19 @@ custom_headers = {'Accept':'application/vnd.blackducksoftware.bill-of-materials-
 response = hub.execute_get(vulnerable_components_url, custom_headers=custom_headers)
 vulnerable_bom_components = response.json().get('items', [])
 
+status_keyword_lookup = {
+    "review": "NEEDS_REVIEW",
+    "required": "REMEDIATION_REQUIRED",
+    "complete": "REMEDIATION_COMPLETE",
+    "mitigated": "MITIGATED",
+    "patched": "PATCHED",
+    "ignored": "IGNORED",
+    "duplicate": "DUPLICATE",
+}
+
 if hasattr(args, "status"):
     # user supplied status
-    status = args.status.upper()
+    status = status_keyword_lookup[args.status]
     comment = args.comment
 else:
     default_remediation_status_url = hub.get_apibase() + f"/vulnerabilities/{args.vulnerability}/default-remediation-status"
@@ -66,8 +76,9 @@ for i, vuln in enumerate(vulnerable_bom_components):
         vuln['comment'] = comment
         logging.debug(f"Updating vuln {args.vulnerability} in project {project['name']}, version {version['versionName']} using URL {vuln['_meta']['href']} with status {status} and comment {comment}")
         result = hub.execute_put(vuln['_meta']['href'], data=vuln)
+        
         if result.status_code == 202:
             logging.info(f"Successfully updated vuln {args.vulnerability} in project {project['name']}, version {version['versionName']} with status {status} and comment {comment}")
         else:
-            logging.error(f"Failed to update vuln {args.vulnerability} in project {project['name']}, version {version['versionName']}; http status code: {response.status_code}")
+            logging.error(f"Failed to update vuln {args.vulnerability} in project {project['name']}, version {version['versionName']}; http status code: {result.status_code}")
 
