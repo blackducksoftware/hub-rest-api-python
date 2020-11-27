@@ -37,37 +37,58 @@ class ScanMonitor(object):
     def wait_for_scan_completion(self):
         scan_locations = self.hub.get_codelocations(parameters={'q':f'name:{self.scan_location_name}'}).get('items', [])
 
-        scan_location = scan_locations[0]
+        logging.debug(f"Scan locations found: {len(scan_locations)}")
 
         remaining_checks = self.max_checks
-        scans_url = self.hub.get_link(scan_location, "scans")
-
-        if self.snippet_scan:
-            logging.debug("Looking for snippet scan which means there will be 2 expected scans")
-            number_expected_newer_scans = 2
-        else:
-            logging.debug("Not looking for snippet scan which means there will be 1 expected scans")
-            number_expected_newer_scans = 1
 
         while remaining_checks > 0:
-            scans = self.hub.execute_get(scans_url).json().get('items', [])
 
-            newer_scans = list(filter(lambda s: arrow.get(s['updatedAt']) > self.start_time, scans))
-            logging.debug(f"Found {len(newer_scans)} newer scans")
+            for scan_location in scan_locations:
             
-            expected_scans_seen = len(newer_scans) == number_expected_newer_scans
-            logging.debug(f"expected_scans_seen: {expected_scans_seen}")
+                scans_url = self.hub.get_link(scan_location, "scans")
+                
+                scans = self.hub.execute_get(scans_url).json().get('items', [])
+                
+                newer_scans = list(filter(lambda s: arrow.get(s['updatedAt']) > self.start_time, scans))
 
-            if expected_scans_seen and all([s['status'] in ['COMPLETE', 'FAILURE'] for s in newer_scans]):
-                logging.info("Scans have finished processing")
-                if all([s['status'] == 'COMPLETE' for s in newer_scans]):
-                    return ScanMonitor.SUCCESS
+                if (len(newer_scans) > 0):
+                    if len(newer_scans) > 0 and self.snippet_scan:
+                        # We are snippet scanning, we need to check if we should be waiting for another scan.  Only the case if one of them is FS or if one is SNIPPET.  If one is BDIO then it will not have snippet.
+                        fs_scans = list(filter(lambda s: s['scanType'] == 'FS', newer_scans))
+                        snippet_scans = list(filter(lambda s: s['scanType'] == 'SNIPPET', newer_scans))
+                        if len(fs_scans) > 0 or len(snippet_scans) > 0:
+                            # This is a candicate for snippet scan
+                            expected_scans_seen = len(fs_scans) > 0 and len(snippet_scans) > 0
+                            logging.debug(f"Snippet scanning - candidate code location - newer scans {len(newer_scans)}, expected_scans_seen: {expected_scans_seen} for {scan_location['name']}")
+                        else:
+                            # This is another type of scan. 
+                            expected_scans_seen = True
+                            logging.debug(f"Snippet scanning - non snippet code location - newer scans {len(newer_scans)}, expected_scans_seen: {expected_scans_seen} for {scan_location['name']}")
+
+                    else:
+                        # We have one or more newer scans
+                        expected_scans_seen = True
+                        logging.debug(f"Not Snippet scanning - newer scans {len(newer_scans)}, expected_scans_seen: {expected_scans_seen} for {scan_location['name']}")
                 else:
-                    return ScanMonitor.FAILURE
-            else:
-                remaining_checks -= 1
-                logging.debug(f"Sleeping for {self.check_delay} seconds before checking again. {remaining_checks} remaining")
-                time.sleep(self.check_delay)
+                    logging.debug(f"No newer scans found for {scan_location['name']}")
+                    expected_scans_seen = False
+
+                if expected_scans_seen and all([s['status'] in ['COMPLETE', 'FAILURE'] for s in newer_scans]):
+                    logging.info(f"Scans have finished processing for {scan_location['name']}")
+                    if all([s['status'] == 'COMPLETE' for s in newer_scans]):
+                        # All scans for this code location are complete, remove from the list we are waiting on.
+                        scan_locations.remove(scan_location)
+                    else:
+                        return ScanMonitor.FAILURE
+            
+            if len(scan_locations) == 0:
+                # All code locations are complete.
+                return ScanMonitor.SUCCESS
+
+            remaining_checks -= 1
+            logging.info(f"Waiting for {len(scan_locations)} code locations.  Sleeping for {self.check_delay} seconds before checking again. {remaining_checks} remaining")
+            time.sleep(self.check_delay)
+
 
         return ScanMonitor.TIMED_OUT
 
