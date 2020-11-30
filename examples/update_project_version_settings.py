@@ -15,7 +15,7 @@ class InvalidSetting(Exception):
 	pass
 
 def validate_setting(setting):
-	setting_choices = ["nickname", "notes", "version", "phase", "distribution", "releasedOn"]
+	setting_choices = HubInstance.PROJECT_VERSION_SETTINGS
 
 	if setting not in setting_choices:
 		raise InvalidSetting("Setting {} is not in the list of valid Settings ({})".format(
@@ -40,7 +40,8 @@ def create_setting_d_from_setting_l(settings_l):
 parser = argparse.ArgumentParser("Update one or more settings on a project version in Black Duck")
 parser.add_argument("project_name")
 parser.add_argument("version_name")
-parser.add_argument("-s", "--setting", action="append", nargs=2,metavar=('setting', 'value'))
+parser.add_argument("-s", "--setting", action="append", nargs=2,metavar=('setting', 'value'), 
+	help=f"Settings you can change are {HubInstance.PROJECT_VERSION_SETTINGS}. Possible phases are {HubInstance.VERSION_PHASES}. Possible distribution values are {HubInstance.VERSION_DISTRIBUTION}")
 
 args = parser.parse_args()
 

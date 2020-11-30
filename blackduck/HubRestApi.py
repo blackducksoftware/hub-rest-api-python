@@ -81,8 +81,9 @@ class HubInstance(object):
     '''
     classdocs
     '''
+    VERSION_DISTRIBUTION=["EXTERNAL", "SAAS", "INTERNAL", "OPENSOURCE"]
     VERSION_PHASES = ["PLANNING", "DEVELOPMENT", "PRERELEASE", "RELEASED", "DEPRECATED", "ARCHIVED"]
-    PROJECT_VERSION_SETTINGS = ['nickname', 'releaseComments', 'version', 'phase', 'distribution', 'releasedOn']
+    PROJECT_VERSION_SETTINGS = ['nickname', 'releaseComments', 'versionName', 'phase', 'distribution', 'releasedOn']
 
     # TODO: What to do about the config file for thread-safety, concurrency
     configfile = ".restconfig.json"
