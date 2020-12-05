@@ -26,6 +26,7 @@ import json
 from blackduck.HubRestApi import HubInstance, object_id
 
 parser = argparse.ArgumentParser("Add components from JSON output of get_bom_components to the selected project-version on the desired Black Duck host")
+parser.add_argument("-cp", "--create-project", action="store_true", help="Create project-version if they don't exist")
 parser.add_argument("project_name", help="Name of destination project ")
 parser.add_argument("version", help="Version of destination project")
 parser.add_argument("component_file",help="JSON file with component list from get_bom_components")
@@ -49,6 +50,22 @@ api_token = args.api_token
 hub = HubInstance(url_base, api_token=api_token, insecure=True, write_config_flag=False)
 
 project_version = hub.get_project_version_by_name(args.project_name, args.version)
+
+if (project_version is None):
+    if (args.create_project):
+        logging.debug(f"Creating project: {args.project_name}, {args.version}")
+        #Check if the project exists.  If it does, create the project version.
+        project = hub.get_project_by_name(args.project_name)
+        if (project):
+            #Create the version.
+            response = hub.create_project_version(project, args.version)
+        else:
+            #Create the project-version
+            response = hub.create_project(args.project_name, args.version)
+        project_version = hub.get_project_version_by_name(args.project_name, args.version)
+    else:
+        logging.error(f"Project: {args.project_name}, {args.version} does not exist. Create it using --create-project or login to Blackduck.")
+        exit(1)
 
 components_api_url = hub.get_link(project_version, "components")
 
