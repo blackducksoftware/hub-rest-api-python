@@ -1331,7 +1331,7 @@ class HubInstance(object):
         
         for item in codelocations['items']:
             links = item['_meta']['links']
-            matches = [x for x in links if x['rel'] == 'enclosure']
+            matches = [x for x in links if x['rel'] == 'enclosure' or x['rel'] == 'scan-data']
             for m in matches:
                 url = m['href']
                 filename = url.split('/')[6]
