@@ -513,7 +513,16 @@ class HubInstance(object):
         response = self.execute_get(url)
         return response.json()
 
-    ##
+    def set_vulnerablity_remediation (self, vuln, remediation_status, remediation_comment):
+        url = vuln['_meta']['href']
+        update={}
+        update['remediationStatus'] = remediation_status
+        update['comment'] = remediation_comment
+        response = self.execute_put(url, data=update)
+        return response
+
+
+    ##updat
     #
     # Lookup Black Duck (Hub) KB info given Protex KB info
     #
