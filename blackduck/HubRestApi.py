@@ -521,7 +521,6 @@ class HubInstance(object):
         response = self.execute_put(url, data=update)
         return response
 
-
     ##
     #
     # Lookup Black Duck (Hub) KB info given Protex KB info
