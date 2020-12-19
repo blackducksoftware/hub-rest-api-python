@@ -522,7 +522,7 @@ class HubInstance(object):
         return response
 
 
-    ##updat
+    ##
     #
     # Lookup Black Duck (Hub) KB info given Protex KB info
     #
