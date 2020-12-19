@@ -1,25 +1,15 @@
 #!/usr/bin/env python3
 
 """
-vuln_ignore.py
+This script finds CVEs for RedHat and CentOS origins and looks them up in RedHat's security data.
+If a match is found in RedHat's data, the Black Duck vulneralbity is updated with RedHat's stats
+and a link to the RedHat advisory.
 
-This python script is used to mark vulnerabilities in a "New" status on the BOM, by double checking (best pass effort) on the basis of the library being used. This script will work only for CentOS/ RedHat packages on a BOM.
+
+This python script is used to mark vulnerabilities in a "New" status on the BOM, by double
+checking (best pass effort) on the basis of the library being used. This script will work only for CentOS/ RedHat packages on a BOM.
 
 The aim of this script is to mark vulnerabilities as ignored, and give a RHSA reference wherever possible in the comments.
-
-Usage:
-    vuln_ignore.py 
-    
-    (--instance INSTANCE) (--token TOKEN) (--project=PROJECT) (--version VERSION)
-
-Arguments:
-    --instance=INSTANCE            Black Duck instance URL (without protocol)
-
-    --token=TOKEN              API token generated from the BD instance
-
-    --project=PROJECT              Project UUID
-
-    --version=VERSION              Version UUID
 
 """
 
@@ -28,11 +18,7 @@ import logging
 import sys
 import requests
 import json
-from requests_jwt import JWTAuth
 import re
-from docopt import docopt
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 from blackduck.HubRestApi import HubInstance, object_id
 
@@ -45,7 +31,7 @@ def update_hub_vuln(vuln, message):
     comment = ' / '
     resp = hub.set_vulnerablity_remediation (vuln, remediation_status, comment.join(message))
 
-    return resp.status_code
+    return (resp.status_code, remediation_status)
 
 def get_el_version(componentVersionOriginId):
 
@@ -99,22 +85,29 @@ def find_components(project_version, limit):
     count = 0
 
     items = hub.get_vulnerable_bom_components(project_version, limit)
-
+    
+    print ('Component Name Version, Component OriginID, CVE, RedHat State, Remediation Status, HTTP response code, update status')
     for vuln in items['items']:
-        if vuln['vulnerabilityWithRemediation']['source'] == "NVD" and vuln['vulnerabilityWithRemediation']['remediationStatus'] == "NEW" and vuln["componentVersionOriginName"] in ["centos","redhat"]:
-            #print(r['componentVersionOriginId'] + ',' + r['vulnerabilityWithRemediation']['vulnerabilityName'])
+        if vuln['vulnerabilityWithRemediation']['source'] == "NVD" \
+            and vuln['vulnerabilityWithRemediation']['remediationStatus'] == "NEW" \
+            and vuln["componentVersionOriginName"] in ["centos","redhat"]:
+
             count +=1
             cve_id = vuln['vulnerabilityWithRemediation']['vulnerabilityName']
             componentVersionOriginId = vuln['componentVersionOriginId']
             for i in vuln['_meta']['links']:
                 if i['rel'] == 'vulnerabilities':
                     message = get_rhsa_opinion(cve_id, componentVersionOriginId)
-                    response_code = update_hub_vuln(vuln, message)
-                                        
-                    print(componentVersionOriginId," --> ",response_code)
+                    response = update_hub_vuln(vuln, message)
+                    if response[0] == 202:
+                        response_text = 'succeded'
+                    else:
+                        response_text = 'failed'    
+                    print(f"{vuln['componentName']} {vuln['componentVersionName']}, {componentVersionOriginId}, {cve_id}, {message[0]}, {response[1]}, {response[0]}, {response_text}")
+        else:
+            print(f"{vuln['componentName']} {vuln['componentVersionName']}, {vuln['componentVersionOriginId']}, {vuln['vulnerabilityWithRemediation']['vulnerabilityName']}, N/A, {vuln['vulnerabilityWithRemediation']['remediationStatus']}, N/A, N/A")
 
     return count
-
 
 parser = argparse.ArgumentParser("Lookup vulnerabilities from RedHat or CentOS origins, update comments with RHSA reference when available, mark as ignored if RedHat indicates 'not affected.'")
 parser.add_argument("-l", "--limit",
