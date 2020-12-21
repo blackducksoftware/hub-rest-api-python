@@ -498,10 +498,10 @@ class HubInstance(object):
         return response.json()
 
     # TODO: Refactor this, i.e. use get_link method?
-    def get_vulnerable_bom_components(self, version_obj, limit=9999):
+    def get_vulnerable_bom_components(self, version_obj, limit=9999, offset=0):
         url = "{}/vulnerable-bom-components".format(version_obj['_meta']['href'])
         custom_headers = {'Accept': 'application/vnd.blackducksoftware.bill-of-materials-6+json'}
-        param_string = self._get_parameter_string({'limit': limit})
+        param_string = self._get_parameter_string({'limit': limit, 'offset': offset})
         url = "{}{}".format(url, param_string)
         response = self.execute_get(url, custom_headers=custom_headers)
         return response.json()
@@ -811,6 +811,13 @@ class HubInstance(object):
         paramstring = self.get_limit_paramstring(limit)
         url = self._get_projects_url() + "/" + project_id + paramstring
         headers['Accept'] = 'application/vnd.blackducksoftware.project-detail-4+json'
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
+    
+    def get_project_tags(self, project):
+        headers = self.get_headers()
+        url = self.get_tags_url(project)
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
         jsondata = response.json()
         return jsondata
