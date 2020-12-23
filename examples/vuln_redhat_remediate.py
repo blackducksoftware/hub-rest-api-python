@@ -5,11 +5,9 @@ This script finds CVEs for RedHat and CentOS origins and looks them up in RedHat
 If a match is found in RedHat's data, the Black Duck vulneralbity is updated with RedHat's stats
 and a link to the RedHat advisory.
 
-
-This python script is used to mark vulnerabilities in a "New" status on the BOM, by double
-checking (best pass effort) on the basis of the library being used. This script will work only for CentOS/ RedHat packages on a BOM.
-
-The aim of this script is to mark vulnerabilities as ignored, and give a RHSA reference wherever possible in the comments.
+This  script is used to find vulnerabilities from RedHat/Centos origins an update their remediation
+status on Black Duck with the status from RedHat.  Remdiation status will be NEW, IGNORED or PATCHED
+based on the RedHat security errta.  A link to the RedHat errata is added as a comment.
 
 """
 
@@ -25,6 +23,8 @@ from blackduck.HubRestApi import HubInstance, object_id
 def update_hub_vuln(vuln, message):
     if message[0] == 'Not affected':
         remediation_status = 'IGNORED'
+    elif message[0] == 'Released':
+        remediation_status = 'PATCHED'
     else:
         remediation_status = 'NEW'
 
@@ -65,19 +65,20 @@ def get_rhsa_opinion(cve_id, componentVersionOriginId):
                         fix_state = 'Released'
                         break
     
-    if "package_state" in redhat_resp.keys():
-        for item in redhat_resp['package_state']:
-            if item['product_name'] == el_version:
-                pkg_name = re.split(r'(-|/)',componentVersionOriginId)[0]
-                if pkg_name in item['package_name'] or item['package_name'] in pkg_name:
-                    fix_state = item['fix_state']
-                    break
+    if fix_state != 'Released':
+        if "package_state" in redhat_resp.keys():
+            for item in redhat_resp['package_state']:
+                if item['product_name'] == el_version:
+                    pkg_name = re.split(r'(-|/)',componentVersionOriginId)[0]
+                    if pkg_name in item['package_name'] or item['package_name'] in pkg_name:
+                        fix_state = item['fix_state']
+                        break
+                    else:
+                        fix_state = 'Uncertain'
                 else:
-                    fix_state = 'Uncertain'
-            else:
-                fix_state = "Not Listed"
-    else: 
-        fix_state = "Not Listed"
+                    fix_state = "Not Listed"
+        else: 
+            fix_state = "Not Listed"
 
     return (fix_state, redhat_errata) 
 
