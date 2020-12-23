@@ -14,6 +14,7 @@ It defines classes_and_methods
 import sys
 import os
 import json
+import csv
 import traceback
 
 from argparse import ArgumentParser
@@ -29,29 +30,30 @@ __updated__ = '2020-12-21'
 
 
 def load_remediation_input(remediation_file):
-    return {}
+    with open(remediation_file, mode='r') as infile:
+        reader = csv.reader(infile)
+        return {rows[0]:[rows[1],rows[2]] for rows in reader}
 
-def remediation_is_valid(vuln):
-    '''
-    This function provides Yes/No answer if we are to change remediation status
-    Currently it approves everything that is NEW (too inclusive)
-    TODO
-        - define criterias based on the input provided by the customer
-        
-    '''
+def remediation_is_valid(vuln, remediation_data):
+    vulnerability_name = vuln['vulnerabilityWithRemediation']['vulnerabilityName']
     remediation_status = vuln['vulnerabilityWithRemediation']['remediationStatus']
     remediation_comment = vuln['vulnerabilityWithRemediation'].get('remediationComment','')
-    return (remediation_status == 'NEW')
+    if vulnerability_name in remediation_data.keys():
+        return remediation_data[vulnerability_name]
+    else:
+        return None
 
-def process_vulnerabilities(vulnerable_components, remediation_input=None, tags=None):
+def process_vulnerabilities(vulnerable_components, remediation_data=None, tags=None):
     for vuln in vulnerable_components['items']:
-        if remediation_is_valid(vuln):
+        remediation_action = remediation_is_valid(vuln, remediation_data)
+        if remediation_action:
             print("located vulnerability {} with status {}".
                   format(vuln['vulnerabilityWithRemediation']['vulnerabilityName'],
                          vuln['vulnerabilityWithRemediation']['remediationStatus']))
-            print("      executing {}".format("hub.set_vulnerablity_remediation(vuln, 'IGNORED', 'TEST')"))
+            print("      executing hub.set_vulnerablity_remediation(vuln, '{}', '{}')"
+                  .format(remediation_action[0],remediation_action[1]))
             # action is commented out intil remediation_is_valid is properly defined
-            # hub.set_vulnerablity_remediation(vuln, 'IGNORED', 'TEST')
+            # hub.set_vulnerablity_remediation(vuln, remediation_action[0],remediation_action[1])
 
 def main(argv=None): # IGNORE:C0111
     '''Command line options.'''
@@ -106,10 +108,10 @@ USAGE
         project = hub.get_project_by_name(projectname)
         tags = hub.get_project_tags(project)
         if remediation_input:
-            remediation_data = load_remediation_input(remediation_file)
+            remediation_data = load_remediation_input(remediation_input)
         version = hub.get_project_version_by_name(projectname, projectversion)
         vulnerable_components = hub.get_vulnerable_bom_components(version)
-        process_vulnerabilities(vulnerable_components)
+        process_vulnerabilities(vulnerable_components, remediation_data)
         
         return 0
     except Exception:
