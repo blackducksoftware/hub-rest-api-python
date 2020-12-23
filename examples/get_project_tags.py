@@ -31,4 +31,4 @@ if 'totalCount' in projects and projects['totalCount'] == 1:
 else:
 	tags = {'info': 'project {} not found'.format(args.project_name)}
 
-print(json.dumps(project))
+print(json.dumps(tags))
