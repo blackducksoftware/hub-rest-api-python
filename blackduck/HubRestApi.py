@@ -815,6 +815,13 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
     
+    def get_project_custom_fields(self, project):
+        headers = self.get_headers()
+        url = self.get_link(project, "custom-fields")
+        response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+        jsondata = response.json()
+        return jsondata
+
     def get_project_tags(self, project):
         headers = self.get_headers()
         url = self.get_tags_url(project)
