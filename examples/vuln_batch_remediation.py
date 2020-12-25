@@ -36,14 +36,24 @@ def load_remediation_input(remediation_file):
 
 def remediation_is_valid(vuln, remediation_data):
     vulnerability_name = vuln['vulnerabilityWithRemediation']['vulnerabilityName']
-    remediation_status = vuln['vulnerabilityWithRemediation']['remediationStatus']
-    remediation_comment = vuln['vulnerabilityWithRemediation'].get('remediationComment','')
+    # remediation_status = vuln['vulnerabilityWithRemediation']['remediationStatus']
+    # remediation_comment = vuln['vulnerabilityWithRemediation'].get('remediationComment','')
     if vulnerability_name in remediation_data.keys():
         return remediation_data[vulnerability_name]
     else:
         return None
 
-def process_vulnerabilities(vulnerable_components, remediation_data=None, tags=None):
+def find_custom_field_value (custom_fields, custom_field_label):
+    for field in custom_fields['items']:
+        if field['label'] == custom_field_label:
+            if len(field['values']) > 0:
+                return field['values'][0]
+            else:
+                print (f'Error: Custom Field \"{custom_field_label}\" is empty on Black Duck instance.')
+                return None
+    return None
+
+def process_vulnerabilities(hub, vulnerable_components, remediation_data=None, exclusion_data=None):
     for vuln in vulnerable_components['items']:
         remediation_action = remediation_is_valid(vuln, remediation_data)
         if remediation_action:
@@ -53,7 +63,7 @@ def process_vulnerabilities(vulnerable_components, remediation_data=None, tags=N
             print("      executing hub.set_vulnerablity_remediation(vuln, '{}', '{}')"
                   .format(remediation_action[0],remediation_action[1]))
             # action is commented out intil remediation_is_valid is properly defined
-            # hub.set_vulnerablity_remediation(vuln, remediation_action[0],remediation_action[1])
+            hub.set_vulnerablity_remediation(vuln, remediation_action[0],remediation_action[1])
 
 def main(argv=None): # IGNORE:C0111
     '''Command line options.'''
@@ -87,8 +97,10 @@ USAGE
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument("projectname", help="Project nname")
         parser.add_argument("projectversion", help="Project vesrsion")
-        parser.add_argument("--remediation-input-file", dest="remediation_file", help="CSV file Vulns fro autom,atic remediation")
-        parser.add_argument("--process-tags", default=False, help="Process tags")
+        parser.add_argument("--process-cve-remediation-list", default=True, help="Process CVE-Remediation-list custom field")
+        parser.add_argument("--process-origin-exclusion-list", default=True, help="Process Origin-Exclusion-List custom field")
+        parser.add_argument("--cve-remediation-list-custom-field-label", default='CVE Remediation List', help='Label of Custom Field on Black Duck that contains remeidation list file name')
+        parser.add_argument("--origin-exclusion-list-custom-field-label", default='Origin Exclusion List', help='Label of Custom Field on Black Duck that containts origin exclusion list file name')
         parser.add_argument('-V', '--version', action='version', version=program_version_message)
 
         # Process arguments
@@ -96,22 +108,35 @@ USAGE
 
         projectname = args.projectname
         projectversion = args.projectversion
-        remediation_input = args.remediation_file
-        process_tags = args.process_tags
-        
-        message = "{}\n\n Project:{}\nVersion: {}\n CSV: {}\n Process tags: {}\n".format(program_version_message,projectname, projectversion, remediation_input, process_tags)
+        process_cve_remediation = args.process_cve_remediation_list
+        process_origin_exclulsion = args.process_origin_exclusion_list
+       
+        message = f"{program_version_message}\n\n Project:{projectname}\nVersion: {projectversion}\n Process origin exclusion list: {process_origin_exclulsion}\n  Process CVE remediation list: {process_cve_remediation}"
         
         print (message)
-        
-        hub = HubInstance()
 
+        # Connect to Black Duck instance, retrive project, project versin, and the project's custom fields.        
+        hub = HubInstance()
         project = hub.get_project_by_name(projectname)
-        tags = hub.get_project_tags(project)
-        if remediation_input:
-            remediation_data = load_remediation_input(remediation_input)
         version = hub.get_project_version_by_name(projectname, projectversion)
+        custom_fields = hub.get_project_custom_fields (project)
+
+        if (process_cve_remediation):
+            cve_remediation_file = find_custom_field_value (custom_fields, args.cve_remediation_list_custom_field_label)
+            remediation_data = load_remediation_input(cve_remediation_file)
+        else:
+            remediation_data = None
+
+        if (process_origin_exclulsion):
+            exclusion_list_file = find_custom_field_value (custom_fields, args.origin_exclusion_list_custom_field_label)
+            exclusion_data = None #temp unti open exclusion list written
+        else:
+            exclusion_data = None
+
+        # Retrieve the vulnerabiltites for the project version
         vulnerable_components = hub.get_vulnerable_bom_components(version)
-        process_vulnerabilities(vulnerable_components, remediation_data)
+
+        process_vulnerabilities(hub, vulnerable_components, remediation_data, exclusion_data)
         
         return 0
     except Exception:
