@@ -28,8 +28,8 @@ def update_hub_vuln(vuln, message):
     else:
         remediation_status = 'NEW'
 
-    comment = ' / '
-    resp = hub.set_vulnerablity_remediation (vuln, remediation_status, comment.join(message))
+    comment = 'RedHat State: ' + message[0] + '\n' + 'RedHat link: ' + message[1]
+    resp = hub.set_vulnerablity_remediation (vuln, remediation_status, comment)
 
     return (resp.status_code, remediation_status)
 
@@ -54,40 +54,45 @@ def get_rhsa_opinion(cve_id, componentVersionOriginId):
     redhat_resp = requests.get(redhat_api, headers={}, verify=False).json()
     fix_state = ''
 
-    el_version = get_el_version(componentVersionOriginId)
-    
-    if "affected_release" in redhat_resp.keys():
-        for item in redhat_resp['affected_release']:
-            if item['product_name'] == el_version:
-                if "package" in item.keys():  #Some RedHat data doesn’t have package field.  Not sure this is the best approach.
-                    pkg_name = item['package'].split('-')[0]
-                    if pkg_name in componentVersionOriginId:
-                        fix_state = 'Released'
-                        break
-    
-    if fix_state != 'Released':
-        if "package_state" in redhat_resp.keys():
-            for item in redhat_resp['package_state']:
+    #Check if RedHat returned an entry for this CVE
+    if 'message' not in redhat_resp.keys():
+        el_version = get_el_version(componentVersionOriginId)
+        
+        if "affected_release" in redhat_resp.keys():
+            for item in redhat_resp['affected_release']:
                 if item['product_name'] == el_version:
-                    pkg_name = re.split(r'(-|/)',componentVersionOriginId)[0]
-                    if pkg_name in item['package_name'] or item['package_name'] in pkg_name:
-                        fix_state = item['fix_state']
-                        break
+                    if "package" in item.keys():  #Some RedHat data doesn’t have package field.  Not sure this is the best approach.
+                        pkg_name = item['package'].split('-')[0]
+                        if pkg_name in componentVersionOriginId:
+                            fix_state = 'Released'
+                            break
+        
+        if fix_state != 'Released':
+            if "package_state" in redhat_resp.keys():
+                for item in redhat_resp['package_state']:
+                    if item['product_name'] == el_version:
+                        pkg_name = re.split(r'(-|/)',componentVersionOriginId)[0]
+                        if pkg_name in item['package_name'] or item['package_name'] in pkg_name:
+                            fix_state = item['fix_state']
+                            break
+                        else:
+                            fix_state = 'Uncertain'
                     else:
-                        fix_state = 'Uncertain'
-                else:
-                    fix_state = "Not Listed"
-        else: 
-            fix_state = "Not Listed"
+                        fix_state = 'Not Listed'
+            else: 
+                fix_state = 'Not Listed'
+    else:
+        fix_state = 'CVE Not Found'
+        redhat_errata = 'N/A'  # No RedHat security entry for this CVE.
 
     return (fix_state, redhat_errata) 
 
-def find_components(project_version, limit):
+def find_components(project_version, limit, all):
     count = 0
 
     items = hub.get_vulnerable_bom_components(project_version, limit)
     
-    print ('Component Name Version, Component OriginID, CVE, RedHat State, Remediation Status, HTTP response code, update status')
+    print ('"Component Name","Component Version","Component OriginID","CVE","RedHat State","Remediation Status","HTTP response code","update completed"')
     for vuln in items['items']:
         if vuln['vulnerabilityWithRemediation']['source'] == "NVD" \
             and vuln['vulnerabilityWithRemediation']['remediationStatus'] == "NEW" \
@@ -104,18 +109,32 @@ def find_components(project_version, limit):
                         response_text = 'succeded'
                     else:
                         response_text = 'failed'    
-                    print(f"{vuln['componentName']} {vuln['componentVersionName']}, {componentVersionOriginId}, {cve_id}, {message[0]}, {response[1]}, {response[0]}, {response_text}")
+                    print('"{}","{}","{}","{}","{}" "{}","{}","{}"'.
+                        format(vuln['componentName'], vuln['componentVersionName'],
+                        componentVersionOriginId, cve_id, message[0],
+                        response[1], response[0], response_text))
+
         else:
-            print(f"{vuln['componentName']} {vuln['componentVersionName']}, {vuln['componentVersionOriginId']}, {vuln['vulnerabilityWithRemediation']['vulnerabilityName']}, N/A, {vuln['vulnerabilityWithRemediation']['remediationStatus']}, N/A, N/A")
+            if (all):
+                if 'componentVersionOriginId' in vuln.keys():
+                    componentVersionOriginId=vuln['componentVersionOriginId']
+                else:
+                    componentVersionOriginId = 'unknown'
+                print('"{}","{}","{}","{}","N/A","{}","N/A","N/A"'.
+                    format (vuln['componentName'], vuln['componentVersionName'],
+                    componentVersionOriginId, vuln['vulnerabilityWithRemediation']['vulnerabilityName'],
+                    vuln['vulnerabilityWithRemediation']['remediationStatus']))
 
     return count
 
-parser = argparse.ArgumentParser("Lookup vulnerabilities from RedHat or CentOS origins, update comments with RHSA reference when available, mark as ignored if RedHat indicates 'not affected.'")
+parser = argparse.ArgumentParser(description="Update status and comments for vunls from RedHat/CentOS")
 parser.add_argument("-l", "--limit",
     default=9999,
     help="Set limit on number of vulnerabilitties to retrieve (default 9999)")
 parser.add_argument("project_name", help="Black Duck project name")
 parser.add_argument("version", help="Black Duck version")
+parser.add_argument("--all", action='store_true', help="Print unprocessed vulns (default is processed vulns)")
+  
 
 args = parser.parse_args()
  
@@ -135,5 +154,5 @@ if (project_version is None):
 else:
     print (f'Found {args.project_name} / {args.version}')
     print("Processing BOM Components...")
-    count = find_components(project_version, args.limit)
+    count = find_components(project_version, args.limit, args.all)
     print (f"Vulnerabilities Processed = {count}")
