@@ -332,7 +332,7 @@ class HubInstance(object):
     def get_user_by_id(self, user_id):
         url = self._get_user_url() + "/{}".format(user_id)
         headers = {'Accept': 'application/vnd.blackducksoftware.user-4+json'}
-        return self.get_user_by_url(url, custom_headers=headers)
+        return self.get_user_by_url(url)
 
     def get_user_by_url(self, user_url):
         headers = {'Accept': 'application/vnd.blackducksoftware.user-4+json'}
