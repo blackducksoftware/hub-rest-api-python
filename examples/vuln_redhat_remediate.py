@@ -21,10 +21,12 @@ import re
 from blackduck.HubRestApi import HubInstance, object_id
 
 def update_hub_vuln(vuln, message):
+    #update to skip "released" status.
+
     if message[0] == 'Not affected':
         remediation_status = 'IGNORED'
-    elif message[0] == 'Released':
-        remediation_status = 'PATCHED'
+    #elif message[0] == 'Released':
+    #    remediation_status = 'PATCHED'
     else:
         remediation_status = 'NEW'
 
@@ -58,29 +60,32 @@ def get_rhsa_opinion(cve_id, componentVersionOriginId):
     if 'message' not in redhat_resp.keys():
         el_version = get_el_version(componentVersionOriginId)
         
-        if "affected_release" in redhat_resp.keys():
-            for item in redhat_resp['affected_release']:
-                if item['product_name'] == el_version:
-                    if "package" in item.keys():  #Some RedHat data doesn’t have package field.  Not sure this is the best approach.
-                        pkg_name = item['package'].split('-')[0]
-                        if pkg_name in componentVersionOriginId:
-                            fix_state = 'Released'
-                            break
+        # Removing this logic as the KB has data on patched components tied to originID.
+        # If re-enabled, this needs to look at package version from the origin ID and compare it to the RedHat package version.
+        # if "affected_release" in redhat_resp.keys():
+        #     for item in redhat_resp['affected_release']:
+        #         if item['product_name'] == el_version:
+        #             if "package" in item.keys():  #Some RedHat data doesn’t have package field.  Not sure this is the best approach.
+        #                 pkg_name = item['package'].split('-')[0]
+        #                 if pkg_name in componentVersionOriginId:
+        #                     fix_state = 'Released'
+        #                     break
         
-        if fix_state != 'Released':
-            if "package_state" in redhat_resp.keys():
-                for item in redhat_resp['package_state']:
-                    if item['product_name'] == el_version:
-                        pkg_name = re.split(r'(-|/)',componentVersionOriginId)[0]
-                        if pkg_name in item['package_name'] or item['package_name'] in pkg_name:
-                            fix_state = item['fix_state']
-                            break
-                        else:
-                            fix_state = 'Uncertain'
+        # if fix_state != 'Released':
+        
+        if "package_state" in redhat_resp.keys():
+            for item in redhat_resp['package_state']:
+                if item['product_name'] == el_version:
+                    pkg_name = re.split(r'(-|/)',componentVersionOriginId)[0]
+                    if pkg_name in item['package_name'] or item['package_name'] in pkg_name:
+                        fix_state = item['fix_state']
+                        break
                     else:
-                        fix_state = 'Not Listed'
-            else: 
-                fix_state = 'Not Listed'
+                        fix_state = 'Uncertain'
+                else:
+                    fix_state = 'Not Listed'
+        #    else: 
+        #        fix_state = 'Not Listed'
     else:
         fix_state = 'CVE Not Found'
         redhat_errata = 'N/A'  # No RedHat security entry for this CVE.
