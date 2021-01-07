@@ -26,7 +26,7 @@ from blackduck.HubRestApi import HubInstance
 __all__ = []
 __version__ = 0.1
 __date__ = '2020-12-21'
-__updated__ = '2020-12-21'
+__updated__ = '2021-12-26'
 
 
 def load_remediation_input(remediation_file):
@@ -71,15 +71,9 @@ def process_vulnerabilities(hub, vulnerable_components, remediation_data=None, e
         if vuln['vulnerabilityWithRemediation']['remediationStatus'] == "NEW":
             if (remediation_data):
                 remediation_action = remediation_is_valid(vuln, remediation_data)
-                #if remediation_action:
-                #    print("located vulnerability {} with status {}".
-                #        format(vuln['vulnerabilityWithRemediation']['vulnerabilityName'],
-                #                vuln['vulnerabilityWithRemediation']['remediationStatus']))
 
             if (exclusion_data):
                 exclusion_action = origin_is_excluded(vuln, exclusion_data)
-                #if exclusion_action:
-                #    print(f"located vulnerablity {vuln['vulnerabilityWithRemediation']['vulnerabilityName']} with excluded origin {vuln['componentVersionOriginId']}")
 
             # If vuln has both a remdiation action and an origin exclusion action, set remdiation status
             # to the remdiation action.  Append the exclusion action's comment to the overall comment.
@@ -92,7 +86,6 @@ def process_vulnerabilities(hub, vulnerable_components, remediation_data=None, e
                 reason = 'origin-exclusion'
 
             if (remediation_action):
-                #print("      executing hub.set_vulnerablity_remediation(vuln, '{}', '{}')".format(remediation_action[0],remediation_action[1]))
                 resp = hub.set_vulnerablity_remediation(vuln, remediation_action[0],remediation_action[1])
                 count += 1
                 print ('\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"'.
