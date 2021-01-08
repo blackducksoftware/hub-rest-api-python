@@ -7,7 +7,7 @@ import sys
 
 from blackduck.HubRestApi import HubInstance, object_id
 
-parser = argparse.ArgumentParser("Program description")
+parser = argparse.ArgumentParser("Override (or undo) BOM component policy violations")
 parser.add_argument("project")
 parser.add_argument("-v", "--version", help="The version within the project to apply the override (or undo) to. If not supplied, the override (or undo) will be applied to all versions in the project")
 parser.add_argument("component", help="The name of the BOM component")
