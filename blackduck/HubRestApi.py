@@ -47,6 +47,7 @@ It is possible to generate generate_config file by initalizing API as following:
     
 '''
 import logging
+import requests
 
 logger = logging.getLogger(__name__)
 
