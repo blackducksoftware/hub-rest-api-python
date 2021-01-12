@@ -13,7 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def iso8061_to_date(iso_string, with_zone=False):
+def iso8601_to_date(iso_string, with_zone=False):
     """Utility function to convert iso_8061 formatted string to datetime object, optionally accounting for timezone
 
     Args:
@@ -30,6 +30,12 @@ def iso8061_to_date(iso_string, with_zone=False):
         minutes = (60*int(hours_minutes[0]) + int(hours_minutes[1] if len(hours_minutes) > 1 else 0))
         date = date + datetime.timedelta(minutes=minutes)
     return date
+
+def iso8601_timespan(days_ago, from_date=datetime.utcnow(), delta=timedelta(weeks=1)):
+    curr_date = from_date - timedelta(days=days_ago)
+    while curr_date < from_date:
+        yield curr_date.isoformat('T', 'seconds')
+        curr_date += delta
 
 def min_iso8061():
     """Utility wrapper for iso8061_to_date which provides minimum date (for comparison purposes).
@@ -50,7 +56,7 @@ def find_field(data_to_filter, field_name, field_value):
     Returns:
         object: object if found or None.
     """
-    return next(filter(lambda d: d.get(field) == field_value, data_to_filter), None)
+    return next(filter(lambda d: d.get(field_name) == field_value, data_to_filter), None)
 
 def safe_get(obj, *keys):
     """Utility function to safely perform multiple get's on a dict.
