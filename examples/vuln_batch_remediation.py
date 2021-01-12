@@ -11,6 +11,57 @@ It defines classes_and_methods
 @deffield    updated: Updated
 '''
 
+'''
+This script updates vulnerablity remedation status for specific CVEs
+or specific origins in a Black Duck projec/version.  The intent is to reduce the number of
+new vulnearblitites that need to be manually reviewed.  The script only process 
+vulnerablities that are currently have NEW remediation stautus.  The script looks for two
+types of matches for vulnerablitites.
+They are:
+
+o) Specific CVE - intended to apply remedation status for specific CVE
+o) Origin subtring - intended to apply remediation status for specific origins
+                     For example, origns for a particular processor architecture (PPC)
+
+Each processing step can be turned on or off.  At least one step must be run.  Default
+is to run both.
+
+The script get's it CVE and orign lists from CSV files.  The CSV filenames are loaded
+from Custom Fields in the Black Duck project.  This allows different groups of projects to
+use different remeidation settings.  If a CVE remediation status should apply globally
+to all projects, Black Duck's global remediation feature should be used.
+
+Here is an example of the CSV data for the CVE list:
+
+"CVE-2016-1840","IGNORED","Applies only to Apple OS"
+"CVE-2019-15847","IGNORED","Applies to Power9 architecture"
+"CVE-2016-4606","IGNORED","Applies only to Apple OS" 
+
+The 1st column is used for exact matches to CVE ids on vulnerablitites.
+The 2nd column is the new remediation status.  Thus must be a valid Black duck status.
+The 3rd column is a comment that will be added to the vulnerablity without change.
+
+Here is an example of the CSV data for the origin exclusion list:
+
+"ppc","IGNORED","Ignore PPC origins"
+"armv7hl","NEEDS_REVIEW","Review ARMV7HL origins"
+
+The 1st column is used for substring match to OriginID
+The 2nd column is the new remediation status.  Thus must be a valid Black duck status.
+The 3rd column is a comment that will be added to the vulnerablity without change.
+
+If a vulnerablity matches both CVE and origin exclusion, the CVE remeditation is applied.
+The comment will be updated the value from both files.
+
+Black Duck custom fields are used to hold the file names.  The files are opened
+relative to the directory where the script is run.  The default Custom Field labels
+the script looks for are:
+    CVE Remediation List
+    Origin Exclusion List
+The lables can be changed from the command line, if needed.
+
+'''
+
 import sys
 import os
 import json
@@ -111,7 +162,7 @@ def main(argv=None): # IGNORE:C0111
     program_license = '''%s
 
   Created by user_name on %s.
-  Copyright 2020 organization_name. All rights reserved.
+  Copyright 2020 Synopsys. All rights reserved.
 
   Licensed under the Apache License 2.0
   http://www.apache.org/licenses/LICENSE-2.0
