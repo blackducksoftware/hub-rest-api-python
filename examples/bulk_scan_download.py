@@ -5,7 +5,6 @@ Created on Jan 12, 2021
 '''
 
 from blackduck.HubRestApi import HubInstance
-import json
 import os
 import requests
 
