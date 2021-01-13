@@ -35,9 +35,9 @@ while offset < total_count:
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder)
             pathname = os.path.join(output_folder, filename)
-            responce = requests.get(url, headers=hub.get_headers(), stream=True, verify=not hub.config['insecure'])
+            response = requests.get(url, headers=hub.get_headers(), stream=True, verify=not hub.config['insecure'])
             with open(pathname, "wb") as f:
-                for data in responce.iter_content():
+                for data in response.iter_content():
                     f.write(data)
             print (pathname)
     offset += batch_size
