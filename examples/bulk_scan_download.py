@@ -22,6 +22,7 @@ print("{} codelocations in the database".format(total_count))
 offset=0
 output_location = 'scan_data/{:06d}'
 while offset < total_count:
+    hub = HubInstance()
     output_folder = output_location.format(offset)
     codelocations = hub.get_codelocations(limit=batch_size, offset=offset)
     for item in codelocations['items']:
