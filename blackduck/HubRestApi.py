@@ -1370,8 +1370,9 @@ class HubInstance(object):
                 result.append({filename, pathname})
         return result
                             
-    def get_codelocations(self, limit=100, unmapped=False, parameters={}):
+    def get_codelocations(self, limit=100, offset=0, unmapped=False, parameters={}):
         parameters['limit'] = limit
+        parameters['offset'] = offset
         paramstring = self._get_parameter_string(parameters)
         headers = self.get_headers()
         url = self.get_apibase() + "/codelocations" + paramstring
