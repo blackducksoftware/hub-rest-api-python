@@ -22,6 +22,6 @@ for i in status.keys():
     codelocations = hub.get_codelocations_internal(limit=1, offset=0, parameters={"filter": "codeLocationStatus:{}".format(i)})
     status[i] = codelocations['totalCount']
     
-print (status)
+print (total_count, status)
 
 
