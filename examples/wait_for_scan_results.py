@@ -89,6 +89,7 @@ class ScanMonitor(object):
             logging.info(f"Waiting for {len(scan_locations)} code locations.  Sleeping for {self.check_delay} seconds before checking again. {remaining_checks} remaining")
             time.sleep(self.check_delay)
 
+        logging.debug("We timed out, exiting")
 
         return ScanMonitor.TIMED_OUT
 
