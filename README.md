@@ -13,18 +13,18 @@ pip install blackduck
 ```
 
 ```python
-from blackduck.HubRestApi import HubInstance
+from blackduck import Client
 import json
 
-username = "sysadmin"
-password = "your-password"
-urlbase = "https://ec2-34-201-23-208.compute-1.amazonaws.com"
+bd = blackduck.Client(
+    token=os.environ.get('blackduck_token', 'YOUR TOKEN HERE'),
+    base_url='https://your.blackduck.url' #!important! no trailing slash
+    #, verify=False # if required
+)
 
-hub = HubInstance(urlbase, username, password, insecure=True)
+for project in bd.get_projects():
+  print(project.get('name')
 
-projects = hub.get_projects()
-
-print(json.dumps(projects.get('items', [])))
 ```
 
 ### Examples
