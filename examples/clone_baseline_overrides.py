@@ -12,15 +12,18 @@ def get_policy_status_comment(policy_status):
     '''Return the most recent policy status comment
     '''
     comments = list()
+
     for view in policy_status.get('policyRuleViolationViews', []):
         for record in view.get('updatedBy', []):
-            comments.append((record['comment'], arrow.get(record['updatedAt'])))
+            comments.append((
+                record['comment'], 
+                arrow.get(record['updatedAt']),
+                record['user'],
+                record['name']))
     comments = sorted(comments, key=lambda c: c[1])
     return comments[-1]
 
 def components_with_overrides(hub_instance, version):
-    # components_url = hub_instance.get_link(version, "components") + "?limit=999"
-    # components = hub_instance.execute_get(components_url).json().get('items', [])
     components = hub_instance.get_version_components(version, limit=999).get('items', [])
     have_overrides = [c for c in components if c['policyStatus'] == 'IN_VIOLATION_OVERRIDDEN']
     # need to retrieve override comments
@@ -37,9 +40,11 @@ def components_with_overrides(hub_instance, version):
         #   it will need to be reworked accordingly
         custom_headers = {'Accept':'application/vnd.blackducksoftware.internal-1+json'}
         policy_status = hub_instance.execute_get(policy_status_url, custom_headers=custom_headers).json()
-        comment, comment_dt = get_policy_status_comment(policy_status)
+        comment, comment_dt, user_url, user_name = get_policy_status_comment(policy_status)
         component['comment'] = comment
         component['comment_dt'] = comment_dt
+        component['comment_user_url'] = user_url
+        component['comment_user_name'] = user_name
     return have_overrides
 
 def clone_policy_status(hub_instance, version, component_overrides):
@@ -50,10 +55,10 @@ def clone_policy_status(hub_instance, version, component_overrides):
         override = overrides_by_name.get(cn)
         if override:
             policy_status_url = hub_instance.get_link(component, "policy-status")
-            # TODO: use comment_dt from override or accept the dt for when we cloned?
             data = {
                 'approvalStatus': override['policyStatus'],
                 'comment': override['comment'],
+                'updatedAt': override['comment_dt'].format("YYYY-MM-DDTHH:mm:ssZ")
             }
             response = hub_instance.execute_put(policy_status_url, data=data)
             if response.status_code == 202:
@@ -73,8 +78,11 @@ def clone_overrides(hub_instance, project, baseline_version_name):
     baseline_version = next(v for v in versions if v['versionName'] == baseline_version_name)
     overrides_to_clone = components_with_overrides(hub_instance, baseline_version)
     versions_to_clone_to = [v for v in versions if v['versionName'] != baseline_version_name]
-    for version in versions_to_clone_to:
-        clone_policy_status(hub_instance, version, overrides_to_clone)
+    if overrides_to_clone:
+        for version in versions_to_clone_to:
+            clone_policy_status(hub_instance, version, overrides_to_clone)
+    else:
+        logging.debug(f"No overrides to clone in {project['name']} from baseline version {baseline_version_name}")
 
 parser = argparse.ArgumentParser("Clone component everrides from a baseline version to all other versions in the project")
 parser.add_argument("-p", "--project", help="Specify a project to do the override cloning on (default is to clone overrides in all projects)")
