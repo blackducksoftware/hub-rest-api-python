@@ -85,7 +85,8 @@ def zip_create_archive(zip_file, dir_name):
 
 def jsonld_update_project_name(data, name):
     content_array = data['@graph']
-
+    if not content_array:
+        return
     for counter, array_entry in enumerate(content_array):
         if array_entry['@type'][0] == 'https://blackducksoftware.github.io/bdio#Project':
             logging.debug(counter)
@@ -94,10 +95,19 @@ def jsonld_update_project_name(data, name):
                 content_array[counter]["https://blackducksoftware.github.io/bdio#hasName"][0]['@value'] = name
                 logging.debug(content_array[counter])
 
+def jsonld_update_version_name_in_header(data, version):
+    scan_name_dict = {k:v[0].get('@value') for (k,v) in data.items() if k == 'https://blackducksoftware.github.io/bdio#hasName'}
+    if not scan_name_dict:
+        return
+    version_link = scan_name_dict.popitem()[1].split('/')
+    version_link[1] = version
+    version_list = [{'@value':'/'.join(version_link)}]
+    data.update({'https://blackducksoftware.github.io/bdio#hasName':version_list})
 
 def jsonld_update_project_version(data, version):
     content_array = data['@graph']
-
+    if not content_array:
+        return
     for counter, array_entry in enumerate(content_array):
         if array_entry['@type'][0] == 'https://blackducksoftware.github.io/bdio#Project':
             logging.debug(counter)
@@ -131,14 +141,17 @@ def bdio_update_project_version():
         zip_extract_files(os.path.join(bdio_dir, file), temp_dir)
         os.chdir(temp_dir)
         output_bdio = os.path.join(temp_dir, file)
-        jsonld_files = [y for y in os.listdir(temp_dir) if y.split('-').pop(1) == 'entry']
+        jsonld_files = [y for y in os.listdir(temp_dir) if y.endswith('.jsonld')]
         for jsonld_file in jsonld_files:
             jsonld_path = os.path.join(temp_dir, jsonld_file)
             data = read_json_object(jsonld_path)
             jsonld_update_project_name(data, project_name)
-            jsonld_update_project_version(data, target_version)
+            if jsonld_file.split('-')[1] == 'header.jsonld':
+                jsonld_update_version_name_in_header(data, target_version)
+            else:
+                jsonld_update_project_version(data,target_version)
             write_json_file(jsonld_path, data)
-            zip_create_archive(output_bdio, temp_dir)
+        zip_create_archive(output_bdio, temp_dir)
         shutil.copy(output_bdio, renamed_directory)
     print('Cleaning up temp directory ')
     do_refresh('temp')
