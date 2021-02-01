@@ -5,6 +5,7 @@ import shutil
 import sys
 import logging
 import zipfile
+import uuid
 from zipfile import ZIP_DEFLATED
 
 parser = argparse.ArgumentParser("Take a directory of bdio files, copy and unzip each file,"
@@ -95,14 +96,22 @@ def jsonld_update_project_name(data, name):
                 content_array[counter]["https://blackducksoftware.github.io/bdio#hasName"][0]['@value'] = name
                 logging.debug(content_array[counter])
 
+
+def jsonld_update_uuid(data, new_uuid):
+    logging.debug("Updating jsonld file to new UUID: {}".format(new_uuid))
+    data.update({'@id': new_uuid})
+
+
 def jsonld_update_version_name_in_header(data, version):
-    scan_name_dict = {k:v[0].get('@value') for (k,v) in data.items() if k == 'https://blackducksoftware.github.io/bdio#hasName'}
+    scan_name_dict = {k: v[0].get('@value') for (k, v) in data.items() if
+                      k == 'https://blackducksoftware.github.io/bdio#hasName'}
     if not scan_name_dict:
         return
     version_link = scan_name_dict.popitem()[1].split('/')
     version_link[1] = version
-    version_list = [{'@value':'/'.join(version_link)}]
-    data.update({'https://blackducksoftware.github.io/bdio#hasName':version_list})
+    version_list = [{'@value': '/'.join(version_link)}]
+    data.update({'https://blackducksoftware.github.io/bdio#hasName': version_list})
+
 
 def jsonld_update_project_version(data, version):
     content_array = data['@graph']
@@ -142,14 +151,16 @@ def bdio_update_project_version():
         os.chdir(temp_dir)
         output_bdio = os.path.join(temp_dir, file)
         jsonld_files = [y for y in os.listdir(temp_dir) if y.endswith('.jsonld')]
+        new_uuid = uuid.uuid1()
         for jsonld_file in jsonld_files:
             jsonld_path = os.path.join(temp_dir, jsonld_file)
             data = read_json_object(jsonld_path)
             jsonld_update_project_name(data, project_name)
+            jsonld_update_uuid(data, "urn:uuid:{}".format(new_uuid))
             if jsonld_file.split('-')[1] == 'header.jsonld':
                 jsonld_update_version_name_in_header(data, target_version)
             else:
-                jsonld_update_project_version(data,target_version)
+                jsonld_update_project_version(data, target_version)
             write_json_file(jsonld_path, data)
         zip_create_archive(output_bdio, temp_dir)
         shutil.copy(output_bdio, renamed_directory)
@@ -157,7 +168,6 @@ def bdio_update_project_version():
     do_refresh('temp')
     os.chdir(working_dir)
     shutil.rmtree('temp')
-
 
 
 def main():
