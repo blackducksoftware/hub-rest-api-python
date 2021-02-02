@@ -7,6 +7,7 @@ import logging
 import zipfile
 import uuid
 from zipfile import ZIP_DEFLATED
+from urllib.parse import quote
 
 parser = argparse.ArgumentParser("Take a directory of bdio files, copy and unzip each file,"
                                  "update the project and project version name to the name specified by the user,"
@@ -107,10 +108,16 @@ def jsonld_update_version_name_in_header(data, version):
                       k == 'https://blackducksoftware.github.io/bdio#hasName'}
     if not scan_name_dict:
         return
-    version_link = scan_name_dict.popitem()[1].split('/')
-    version_link[1] = version
-    version_list = [{'@value': '/'.join(version_link)}]
-    data.update({'https://blackducksoftware.github.io/bdio#hasName': version_list})
+    try:
+        version_link = scan_name_dict.popitem()[1].split('/')
+        version_link[1] = version
+    except IndexError as index_error:
+        logging.debug("Could not get version link for this header file {} with error {}, header files are not "
+                      "required for upload".format(scan_name_dict, index_error))
+        return
+    else:
+        version_list = [{'@value': '/'.join(version_link)}]
+        data.update({'https://blackducksoftware.github.io/bdio#hasName': version_list})
 
 
 def jsonld_update_project_version(data, version):
