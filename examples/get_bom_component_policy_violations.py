@@ -9,9 +9,11 @@ import sys
 from blackduck.HubRestApi import HubInstance
 
 
-parser = argparse.ArgumentParser("Retreive BOM components for the given project and version")
-parser.add_argument("project_name")
-parser.add_argument("version")
+parser = argparse.ArgumentParser("Retreive BOM components for the given project and version by giving project/version names OR using a version URL")
+mutually_xgroup = parser.add_mutually_exclusive_group()
+mutually_xgroup.add_argument("-p", "--project_name")
+mutually_xgroup.add_argument("-u", "--url")
+parser.add_argument("-v", "--version", required="-p" in sys.argv or "--project_name" in sys.argv)
 
 args = parser.parse_args()
 
@@ -21,12 +23,22 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 hub = HubInstance()
 
-project = hub.get_project_by_name(args.project_name)
-version = hub.get_version_by_name(project, args.version)
+if args.url:
+    project_url = "/".join(args.url.split("/")[:-2])
+    project = hub.execute_get(project_url).json()
+    version = hub.execute_get(args.url).json()
+else:
+    project = hub.get_project_by_name(args.project_name)
+    version = hub.get_version_by_name(project, args.version)
 
-bom_components = hub.get_version_components(version)
+if project and version:
+    bom_components = hub.get_version_components(version)
+else:
+    sys.exit()
 
 all_policy_violations = dict()
+
+all_policy_violations.update({'project': project, 'version': version})
 
 for bom_component in bom_components.get('items'):
     if bom_component.get('policyStatus') == "IN_VIOLATION":

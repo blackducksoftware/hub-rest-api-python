@@ -1,1 +1,58 @@
-{"name": "accelerator-initializer-ui", "description": "", "projectLevelAdjustments": true, "cloneCategories": ["COMPONENT_DATA", "VULN_DATA"], "createdAt": "2018-11-12T15:25:44.851Z", "createdBy": "sysadmin", "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "updatedAt": "2018-11-12T15:25:44.908Z", "updatedBy": "sysadmin", "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001", "source": "CUSTOM", "_meta": {"allow": ["DELETE", "GET", "PUT"], "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52", "links": [{"rel": "versions", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions"}, {"rel": "canonicalVersion", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c"}, {"rel": "assignable-users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/assignable-users"}, {"rel": "assignable-usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/assignable-usergroups"}, {"rel": "users", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/users"}, {"rel": "usergroups", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/usergroups"}, {"rel": "tags", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/tags"}, {"rel": "project-mappings", "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/project-mappings"}]}}
+{
+  "name": "accelerator-initializer-ui",
+  "description": "",
+  "projectLevelAdjustments": true,
+  "cloneCategories": [
+    "COMPONENT_DATA",
+    "VULN_DATA"
+  ],
+  "createdAt": "2018-11-12T15:25:44.851Z",
+  "createdBy": "sysadmin",
+  "createdByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+  "updatedAt": "2018-11-12T15:25:44.908Z",
+  "updatedBy": "sysadmin",
+  "updatedByUser": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/users/00000000-0000-0000-0001-000000000001",
+  "source": "CUSTOM",
+  "_meta": {
+    "allow": [
+      "DELETE",
+      "GET",
+      "PUT"
+    ],
+    "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52",
+    "links": [
+      {
+        "rel": "versions",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions"
+      },
+      {
+        "rel": "canonicalVersion",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/versions/b29642a7-d223-44a7-b0e2-56bed8da126c"
+      },
+      {
+        "rel": "assignable-users",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/assignable-users"
+      },
+      {
+        "rel": "assignable-usergroups",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/assignable-usergroups"
+      },
+      {
+        "rel": "users",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/users"
+      },
+      {
+        "rel": "usergroups",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/usergroups"
+      },
+      {
+        "rel": "tags",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/tags"
+      },
+      {
+        "rel": "project-mappings",
+        "href": "https://ec2-18-217-189-8.us-east-2.compute.amazonaws.com/api/projects/65f272df-3a2a-4022-8811-a57e05e82f52/project-mappings"
+      }
+    ]
+  }
+}

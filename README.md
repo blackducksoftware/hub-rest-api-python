@@ -1,7 +1,12 @@
 ## Overview ##
+
 The hub-rest-api-python provides Python bindings for Hub REST API.
 
-## To use
+:warning:Recently CVE-2020- 27589, a medium severity security defect, was discovered in the [blackduck PyPi](https://pypi.org/project/blackduck/) library which affects versions 0.0.25 – 0.0.52 that could suppress certificate validation if the calling code used either the upload_scan or download_project_scans methods. These methods did not enforce certificate validation. Other methods in the library are not affected. The defect was fixed in version 0.0.53.
+
+Customers using the [blackduck library](https://pypi.org/project/blackduck/) should upgrade to version 0.0.53, or later, to implement the fix.
+
+## To use ##
 
 ```
 pip install blackduck

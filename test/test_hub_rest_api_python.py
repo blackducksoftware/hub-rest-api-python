@@ -140,7 +140,8 @@ def test_get_headers(mock_hub_instance):
     assert mock_hub_instance.get_headers() == {
                 'X-CSRF-TOKEN': the_csrf_token, 
                 'Authorization': "Bearer {}".format(the_token),
-                'Content-Type': 'application/json'}
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'}
 
     del mock_hub_instance.config['api_token']
     for bd_major_version in ["2018", "5", "4", "3"]:
@@ -157,7 +158,7 @@ def test_get_policy_url(mock_hub_instance):
 
 def test_get_parameter_string(mock_hub_instance):
     assert mock_hub_instance._get_parameter_string({"limit":"100"}) == "?limit=100"
-    assert mock_hub_instance._get_parameter_string({"limit":"100", "q":"name:my-name"}) == "?limit=100&q=name:my-name"
+    assert mock_hub_instance._get_parameter_string({"limit":"100", "q":"name:my-name"}) == "?limit=100&q=name%3Amy-name"
     assert mock_hub_instance._get_parameter_string({"limit":"100", "sort":"updatedAt"}) == "?limit=100&sort=updatedAt"
 
 def test_hub_instance_username_password_for_auth(mock_hub_instance):
@@ -172,7 +173,8 @@ def test_hub_instance_api_token_for_auth(mock_hub_instance_using_api_token):
     assert mock_hub_instance_using_api_token.get_headers() == {
                 'X-CSRF-TOKEN': invalid_csrf_token, 
                 'Authorization': 'Bearer {}'.format(invalid_bearer_token), 
-                'Content-Type': 'application/json'}
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'}
 
     assert 'api_token' in mock_hub_instance_using_api_token.config
     assert 'baseurl' in mock_hub_instance_using_api_token.config
