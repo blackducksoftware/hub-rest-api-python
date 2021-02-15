@@ -16,7 +16,7 @@ pip install blackduck
 from blackduck import Client
 import json
 
-bd = blackduck.Client(
+bd = Client(
     token=os.environ.get('blackduck_token', 'YOUR TOKEN HERE'),
     base_url='https://your.blackduck.url' #!important! no trailing slash
     #, verify=False # if required
