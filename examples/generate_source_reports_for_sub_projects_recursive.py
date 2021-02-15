@@ -77,11 +77,10 @@ def genreportsforversion(projectname,versionname,reportlist):
     components = hub.get_version_components(projversion)
 
     subname = (projectname + '_' + versionname + '.zip')
-    ## CURRENTLY COMBINES ALL REPORTS TOGETHER.
-    ## SWITCH TO GENERATE COMPONENTS AND SECURITY AFTER SEPARATELY OR EXCLUDE NON SOURCE FROM CONCAT
+
+    # Generates reports in the main project for SECURITY, COMPONENTS and FILES (source) report and just FILES for subprojects.
     result = hub.create_version_reports(version=projversion, report_list=reportlist, format="CSV")
-    # Generates reports in the main project for SECURITY, COMPONENTS and FILES (source) report,
-    # Using the version object (line 21) to say which reports are needed
+    
     # prints out success/error code.
     if result.status_code == 201:
         print("Successfully created reports ({}) for project {} and version {}".format(
