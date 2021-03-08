@@ -135,10 +135,14 @@ def concat():
     consolidated.to_csv(file_out, index=False, encoding="utf-8")
     shutil.move(file_out, '../results/')
 
-    # If you do not want the original source reports for each project exclude this.
-    files = glob.iglob('**/*.csv')
-    for csv in files:
+    for csv in glob.iglob('**/components*.csv'):
         shutil.move(csv, '../results/')
+    for csv in glob.iglob('**/security*.csv'):
+        shutil.move(csv, '../results/')
+
+    # If you do not want the original source reports for each project exclude this loop.
+    #for csv in glob.iglob('**/source*.csv'):
+    #    shutil.move(csv, '../results/')
 
     # Clean up after    
     shutil.rmtree('../temp', ignore_errors=True)
