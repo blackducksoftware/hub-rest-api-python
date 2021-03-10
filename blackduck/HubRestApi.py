@@ -135,35 +135,81 @@ class HubInstance(object):
             json.dump(self.config, f, indent=3)
           
     def get_auth_token(self):
+        """
+        Authenticate with Hub.
+
+        Args: None
+            but uses self.config with following keys:
+                baseurl      begins with http:// or https://
+                api_token    OR
+                username
+                password
+                insecure     True to accept self-signed certificates etc.
+
+        Returns:
+            3-tuple containing (bearer_token, csrf_token, cookie)
+
+        Raises:
+            RuntimeException: if Unauthorized or unhandled HTTP response
+        """
+        assert('baseurl' in self.config)
+        assert(('api_token' in self.config) or ('username' in self.config and 'password' in self.config))
+        assert('insecure' in self.config)
+
         api_token = self.config.get('api_token', False)
-        if api_token:
+        if api_token:  # authenticate with access token generated from the UI
             authendpoint = "/api/tokens/authenticate"
             url = self.config['baseurl'] + authendpoint
             session = requests.session()
             response = session.post(
-                url, 
-                data={}, 
-                headers={'Authorization': 'token {}'.format(api_token)}, 
+                url,
+                data={},
+                headers={'Authorization': "token {}".format(api_token)},
                 verify=not self.config['insecure']
             )
-            csrf_token = response.headers['X-CSRF-TOKEN']
-            try:
-              bearer_token = json.loads(response.content.decode('utf-8'))['bearerToken']
-            except json.decoder.JSONDecodeError as e:
-              logger.exception("Authentication failure, could not obtain bearer token")
-              raise Exception("Failed to obtain bearer token, check for valid authentication token")
-            return (bearer_token, csrf_token, None)
-        else:
+
+            if response.status_code == 200:
+                csrf_token = response.headers['X-CSRF-TOKEN']
+                bearer_token = response.json()['bearerToken']
+                return (bearer_token, csrf_token, None)
+            elif response.status_code == 401:
+                logger.error("HTTP response status code = 401 (Unauthorized)")
+                logger.error(response.json()['errorMessage'])
+                raise RuntimeError("Unauthorized access token", response)
+            else:
+                logger.error("Unhandled HTTP response")
+                logger.error("HTTP Response status code %i", response.status_code)
+                logger.error("HTTP Response headers:")
+                logger.error(response.headers)
+                logger.error("HTTP Response text:")
+                logger.error(response.text)
+                raise RuntimeError("Unhandled HTTP response", response)
+
+        else:  # authenticate with username/password
             authendpoint="/j_spring_security_check"
             url = self.config['baseurl'] + authendpoint
             session=requests.session()
             credentials = dict()
             credentials['j_username'] = self.config['username']
             credentials['j_password'] = self.config['password']
-            response = session.post(url, credentials, verify= not self.config['insecure'])
-            cookie = response.headers['Set-Cookie']
-            token = cookie[cookie.index('=')+1:cookie.index(';')]
-        return (token, None, cookie)
+            response = session.post(url, credentials, verify=not self.config['insecure'])
+
+            if response.status_code == 204:  # No Content
+                cookie = response.headers['Set-Cookie']
+                bearer_token = cookie[cookie.index('=')+1:cookie.index(';')]
+                return (bearer_token, None, cookie)
+            elif response.status_code == 401:
+                logger.error("HTTP response status code = 401 (Unauthorized)")
+                logger.error(response.json()['errorMessage'])
+                raise RuntimeError("Unauthorized username/password", response)
+            else:
+                logger.error("Unhandled HTTP response")
+                logger.error("HTTP response status code %i", response.status_code)
+                logger.error("HTTP response headers:")
+                logger.error(response.headers)
+                logger.error("HTTP response text:")
+                logger.error(response.text)
+                raise RuntimeError("Unhandled HTTP response", response)
     
     def _get_hub_rest_api_version_info(self):
         '''Get the version info from the server, if available
