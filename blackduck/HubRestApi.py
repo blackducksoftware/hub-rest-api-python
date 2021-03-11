@@ -169,21 +169,13 @@ class HubInstance(object):
             )
 
             if response.status_code == 200:
-                csrf_token = response.headers['X-CSRF-TOKEN']
-                bearer_token = response.json()['bearerToken']
-                return (bearer_token, csrf_token, None)
-            elif response.status_code == 401:
-                logger.error("HTTP response status code = 401 (Unauthorized)")
-                logger.error(response.json()['errorMessage'])
-                raise RuntimeError("Unauthorized access token", response)
-            else:
-                logger.error("Unhandled HTTP response")
-                logger.error("HTTP Response status code %i", response.status_code)
-                logger.error("HTTP Response headers:")
-                logger.error(response.headers)
-                logger.error("HTTP Response text:")
-                logger.error(response.text)
-                raise RuntimeError("Unhandled HTTP response", response)
+                try:
+                    csrf_token = response.headers['X-CSRF-TOKEN']
+                    bearer_token = response.json()['bearerToken']
+                    return (bearer_token, csrf_token, None)
+                except:
+                    logger.exception("HTTP response status code 200 but unable to obtain bearer token")
+                    # fall through to unhandled
 
         else:  # authenticate with username/password
             authendpoint="/j_spring_security_check"
@@ -195,21 +187,30 @@ class HubInstance(object):
             response = session.post(url, credentials, verify=not self.config['insecure'])
 
             if response.status_code == 204:  # No Content
-                cookie = response.headers['Set-Cookie']
-                bearer_token = cookie[cookie.index('=')+1:cookie.index(';')]
-                return (bearer_token, None, cookie)
-            elif response.status_code == 401:
-                logger.error("HTTP response status code = 401 (Unauthorized)")
+                try:
+                    cookie = response.headers['Set-Cookie']
+                    bearer_token = cookie[cookie.index('=')+1:cookie.index(';')]
+                    return (bearer_token, None, cookie)
+                except:
+                    logger.exception("HTTP response status code 204 but unable to obtain bearer token")
+                    # fall through to unhandled
+
+        if response.status_code == 401:
+            logger.error("HTTP response status code = 401 (Unauthorized)")
+            try:
                 logger.error(response.json()['errorMessage'])
-                raise RuntimeError("Unauthorized username/password", response)
-            else:
-                logger.error("Unhandled HTTP response")
-                logger.error("HTTP response status code %i", response.status_code)
-                logger.error("HTTP response headers:")
-                logger.error(response.headers)
-                logger.error("HTTP response text:")
-                logger.error(response.text)
-                raise RuntimeError("Unhandled HTTP response", response)
+            except:
+                logger.exception("unable to extract error message")
+                logger.error("HTTP response headers: %s", response.headers)
+                logger.error("HTTP response text: %s", response.text)
+            raise RuntimeError("Unauthorized", response)
+
+        # all unhandled responses fall through to here
+        logger.error("Unhandled HTTP response")
+        logger.error("HTTP response status code %i", response.status_code)
+        logger.error("HTTP response headers: %s", response.headers)
+        logger.error("HTTP response text: %s", response.text)
+        raise RuntimeError("Unhandled HTTP response", response)
     
     def _get_hub_rest_api_version_info(self):
         '''Get the version info from the server, if available
