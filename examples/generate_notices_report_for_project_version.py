@@ -18,9 +18,6 @@ import zipfile
 parser = argparse.ArgumentParser("A program to generate the notices file for a given project-version")
 parser.add_argument("project_name")
 parser.add_argument("version_name")
-
-# TODO: Add the copyright checkbox option
-
 parser.add_argument('-f', "--file_name_base", default="notices_report", help="Base file name to write the report data into. If the report format is TEXT a .zip file will be created, otherwise a .json file")
 parser.add_argument('-r', '--report_format', default='TEXT', choices=["JSON", "TEXT"], help="Report format - choices are TEXT or HTML")
 parser.add_argument('-c', '--include_copyright_info', action='store_true', help="Set this option to have additional copyright information from the Black Duck KB included in the notices file report.")
@@ -53,6 +50,12 @@ def download_report(location, file_name_base, retries=10):
 					json.dump(response.json(), f, indent=3)
 			logging.info("Successfully downloaded json file to {} for report {}".format(
 					filename, report_id))
+		elif response.status_code == 412 and response.json()['errorCode'] == '{report.main.read.unfinished.report.contents}':
+			# failed to download, and report generation still in progress, wait and try again infinitely
+			# TODO: is it possible for things to get stuck in this forever?
+			logging.warning(f"Failed to retrieve report {report_id} for reason {response.json()['errorCode']}.  Waiting 5 seconds then trying infinitely")
+			time.sleep(5)
+			download_report(location, file_name_base, retries)
 		else:
 			logging.warning("Failed to retrieve report {}".format(report_id))
 			logging.warning("Probably not ready yet, waiting 5 seconds then retrying (remaining retries={}".format(retries))
