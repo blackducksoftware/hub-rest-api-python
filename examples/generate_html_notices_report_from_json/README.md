@@ -1,3 +1,7 @@
+## Overview ##
+This mini project is designed to give customers the option of producing a standalone single html format notices file similar to the one found in the Black Duck Web UI.  The one in the UI is not easily downloadable, and it comes with various javascript, css, and other files which would make it cumbersome to distribute.
+
+
 ## To use ##
 
 ```
