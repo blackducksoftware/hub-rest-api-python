@@ -41,6 +41,7 @@ parser = argparse.ArgumentParser("Find and delete older project-versions system-
 parser.add_argument("-e", "--excluded_phases", default=excluded_phases_defaults, help=f"Set the phases to exclude from deletion (defaults to {excluded_phases_defaults})")
 parser.add_argument("-a", "--age", type=int, help=f"Project-versions older than this age (days) will be deleted unless their phase is in the list of excluded phases ({excluded_phases_defaults})")
 parser.add_argument("-d", "--delete", action='store_true', help=f"Because this script can, and will, delete project-versions we require the caller to explicitly ask to delete things. Otherwise, the script runs in a 'test mode' and just says what it would do.")
+parser.add_argument("-ncl", "--do_not_delete_code_locations", action='store_true', help=f"By default the script will delete code locations mapped to project versions being deleted.  Pass this flag if you do not want to delete code locations.")
 args = parser.parse_args()
 
 logging.basicConfig(format='%(asctime)s:%(levelname)s:%(module)s: %(message)s', stream=sys.stderr, level=logging.DEBUG)
@@ -51,6 +52,9 @@ logging.getLogger("blackduck.HubRestApi").setLevel(logging.WARNING)
 hub = HubInstance()
 
 projects = hub.get_projects(limit=9999).get('items', [])
+
+logging.warning(f"The default behaviour of this script has changed.  Previously it would not delete mapped code locations while deleting a project version and would rely on these being cleaned up by the system at a later date.")
+logging.info(f"If you wish to keep the previous behaviour please pass the -ncl or --do_not_delete_code_locations parameter.")
 
 for project in projects:
 	versions = hub.get_project_versions(project, limit=9999)
@@ -66,6 +70,10 @@ for project in projects:
 				# TODO: What to do if/when this is the last version in a project to avoid having empty projects being left around
 				logging.debug(f"Deleting version {version['versionName']} from project {project['name']} cause it is {version_age} days old which is greater than {args.age} days")
 				url = version['_meta']['href']
+				if not args.do_not_delete_code_locations:
+					logging.debug(f"Deleting code locations for version {version['versionName']} from project {project['name']}")
+					hub.delete_project_version_codelocations(version)
+
 				response = hub.execute_delete(url)
 				if response.status_code == 204:
 					logging.info(f"Successfully deleted version {version['versionName']} from project {project['name']}")
