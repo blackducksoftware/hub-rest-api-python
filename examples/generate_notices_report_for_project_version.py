@@ -31,8 +31,9 @@ logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', stream=sys.s
 class FailedReportDownload(Exception):
     pass
 
-DOWNLOAD_ERROR_CODES = ['{report.main.read.unfinished.report}', '{report.main.download.unfinished.report}']
+DOWNLOAD_ERROR_CODES = ['{report.main.read.unfinished.report.contents}', '{report.main.download.unfinished.report}']
 
+'{report.main.read.unfinished.report.contents}'
 def download_report(location, file_name_base, retries=10):
     report_id = location.split("/")[-1]
 
