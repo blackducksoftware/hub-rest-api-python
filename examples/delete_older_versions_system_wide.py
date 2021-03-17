@@ -53,7 +53,7 @@ hub = HubInstance()
 
 projects = hub.get_projects(limit=9999).get('items', [])
 
-logging.warn(f"The default behaviour of this script has changed.  Previously it would not delete mapped code locations while deleting a project version and would rely on these being cleaned up by the system at a later date.")
+logging.warning(f"The default behaviour of this script has changed.  Previously it would not delete mapped code locations while deleting a project version and would rely on these being cleaned up by the system at a later date.")
 logging.info(f"If you wish to keep the previous behaviour please pass the -ncl or --do_not_delete_code_locations parameter.")
 
 for project in projects:
