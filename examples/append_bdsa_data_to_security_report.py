@@ -56,13 +56,14 @@ def handle_security_report(csvfile):
         raise FileExistsError(f"File {file_to_create} already exists so cannot write output file")
 
     # Read the security report line by line
-    with open(file_to_create, "w") as output_csv_file:
+    with open(file_to_create, "w", encoding="utf8") as output_csv_file:
         with open(csvfile, 'r') as read_obj:
             writer = csv.writer(output_csv_file, delimiter=',', lineterminator='\n')
             reader = csv.reader(read_obj)
             
             all = []
             row = next(reader)
+            row.append('BDSA Id')
             row.append('Solution')
             row.append('Workaround')
             all.append(row)
@@ -74,16 +75,27 @@ def handle_security_report(csvfile):
                 #logging.debug(f"BDSA ID [{bdsa_id}]")
                 if bdsa_id != None:
                     bdsa_data = load_bdsa_data(bdsa_id)
-                    #logging.debug(f"BDSA Data Solution [{bdsa_data['solution']}]")
-                    #logging.debug(f"BDSA Data Workaround [{bdsa_data['workaround']}]")
-                    #row.append(row[0])
-                    row.append(bdsa_data['solution'])
-                    row.append(bdsa_data['workaround'])
-                    all.append(row)
+                    #logging.info(f"{bdsa_data}")
+                    if bdsa_data and "solution" in bdsa_data and "workaround" in bdsa_data:
+                        #logging.debug(f"BDSA Data Solution [{bdsa_data['solution']}]")
+                        #logging.debug(f"BDSA Data Workaround [{bdsa_data['workaround']}]")
+                        #row.append(row[0])
+                        row.append(bdsa_id)
+                        row.append(bdsa_data['solution'])
+                        row.append(bdsa_data['workaround'])
+                        all.append(row)
+                    else:
+                        logging.debug(f"BDSA Data not found for {bdsa_id}")
+                        row.append(bdsa_id)
+                        row.append('')
+                        row.append('')
+                        all.append(row)
                 else:  
                     # Add the line as is.
                     logging.debug(f"No BDSA Record")
-                    row.append(row[0])
+                    row.append('')
+                    row.append('')
+                    row.append('')
                     all.append(row)
 
             logging.info(f"Writing output csv file [{file_to_create}]")
