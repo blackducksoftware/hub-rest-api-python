@@ -87,8 +87,8 @@ def handle_security_report(csvfile):
                     else:
                         logging.debug(f"BDSA Data not found for {bdsa_id}")
                         row.append(bdsa_id)
-                        row.append('')
-                        row.append('')
+                        row.append('Failed to load BDSA data')
+                        row.append('Failed to load BDSA data')
                         all.append(row)
                 else:  
                     # Add the line as is.
