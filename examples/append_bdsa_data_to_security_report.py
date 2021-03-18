@@ -76,11 +76,11 @@ def handle_security_report(csvfile):
                 if bdsa_id != None:
                     bdsa_data = load_bdsa_data(bdsa_id)
                     #logging.info(f"{bdsa_data}")
-                    if bdsa_data and "solution" in bdsa_data and "workaround" in bdsa_data:
+                    if bdsa_data and "solution" in bdsa_data and "workaround" in bdsa_data and "name" in bdsa_data:
                         #logging.debug(f"BDSA Data Solution [{bdsa_data['solution']}]")
                         #logging.debug(f"BDSA Data Workaround [{bdsa_data['workaround']}]")
                         #row.append(row[0])
-                        row.append(bdsa_id)
+                        row.append(bdsa_data['name'])
                         row.append(bdsa_data['solution'])
                         row.append(bdsa_data['workaround'])
                         all.append(row)
@@ -93,7 +93,7 @@ def handle_security_report(csvfile):
                 else:  
                     # Add the line as is.
                     logging.debug(f"No BDSA Record")
-                    row.append('')
+                    row.append('N/A')
                     row.append('')
                     row.append('')
                     all.append(row)
