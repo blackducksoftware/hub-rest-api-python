@@ -57,13 +57,14 @@ def handle_security_report(csvfile):
 
     # Read the security report line by line
     with open(file_to_create, "w", encoding="utf8") as output_csv_file:
-        with open(csvfile, 'r') as read_obj:
+        with open(csvfile, 'r', encoding="utf8") as read_obj:
             writer = csv.writer(output_csv_file, delimiter=',', lineterminator='\n')
             reader = csv.reader(read_obj)
             
             all = []
             row = next(reader)
             row.append('BDSA Id')
+            row.append('BDSA Url')
             row.append('Solution')
             row.append('Workaround')
             all.append(row)
@@ -81,18 +82,21 @@ def handle_security_report(csvfile):
                         #logging.debug(f"BDSA Data Workaround [{bdsa_data['workaround']}]")
                         #row.append(row[0])
                         row.append(bdsa_data['name'])
+                        row.append(bdsa_data['_meta']['href'])
                         row.append(bdsa_data['solution'])
                         row.append(bdsa_data['workaround'])
                         all.append(row)
                     else:
                         logging.debug(f"BDSA Data not found for {bdsa_id}")
                         row.append(bdsa_id)
+                        row.append('')
                         row.append('Failed to load BDSA data')
                         row.append('Failed to load BDSA data')
                         all.append(row)
                 else:  
                     # Add the line as is.
                     logging.debug(f"No BDSA Record")
+                    row.append('N/A')
                     row.append('N/A')
                     row.append('')
                     row.append('')
