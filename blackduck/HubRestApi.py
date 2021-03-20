@@ -839,9 +839,30 @@ class HubInstance(object):
         jsondata = response.json()
         return jsondata
 
-    def get_version_components(self, projectversion, limit=1000):
-        paramstring = self.get_limit_paramstring(limit)
-        url = projectversion['_meta']['href'] + "/components" + paramstring
+    def collect_all_version_components(self, components, project_version):
+        processed = 1000
+        total_count = components.get('totalCount')
+        if len(components.get('items')) <= total_count:
+            components_list = []
+            while True:
+                logging.debug("Getting the next 1000 components")
+                temp_components = self.get_version_components(project_version, parameters={'offset': processed}).get('items')
+                processed += len(temp_components)
+                components_list += temp_components
+                if processed >= total_count:
+                    logging.debug("Captured all components. processed={}, total_count={}, components_list_length={}".format(
+                        processed,
+                        total_count,
+                        len(components_list)))
+                    break
+            components.update({'items': components.get('items') + components_list})
+            return components
+        else:
+            return components
+
+    def get_version_components(self, projectversion, limit=1000, parameters={}):
+        parameters.update({'limit': limit})
+        url = projectversion['_meta']['href'] + "/components" + self._get_parameter_string(parameters)
         headers = self.get_headers()
         headers['Accept'] = 'application/vnd.blackducksoftware.bill-of-materials-6+json'
         response = requests.get(url, headers=headers, verify = not self.config['insecure'])
