@@ -6,6 +6,10 @@ import urllib.parse
 
 logger = logging.getLogger(__name__)
 
+VERSION_DISTRIBUTION=["EXTERNAL", "SAAS", "INTERNAL", "OPENSOURCE"]
+VERSION_PHASES = ["PLANNING", "DEVELOPMENT", "PRERELEASE", "RELEASED", "DEPRECATED", "ARCHIVED"]
+PROJECT_VERSION_SETTINGS = ['nickname', 'releaseComments', 'versionName', 'phase', 'distribution', 'releasedOn']
+
 def _get_projects_url(self):
     return self.get_urlbase() + "/api/projects"
 
@@ -47,9 +51,9 @@ def create_project_version(self, project_obj, new_version_name, clone_version=No
     url = self.get_link(project_obj, "versions")
 
     version_phase = parameters.get("phase", "PLANNING")
-    if version_phase not in HubInstance.VERSION_PHASES:
+    if version_phase not in VERSION_PHASES:
         raise InvalidVersionPhase("The phase given {} is not in the list of valid phases ({})".format(
-            version_phase, HubInstance.VERSION_PHASES))
+            version_phase, VERSION_PHASES))
 
     post_data = {
         "versionUrl": url,
@@ -168,13 +172,13 @@ def update_project_version_settings(self, project_name, version_name, new_settin
 
     if version:
         for k,v in new_settings.items():
-            if k in HubInstance.PROJECT_VERSION_SETTINGS:
+            if k in PROJECT_VERSION_SETTINGS:
                 logger.debug("updating setting {} in version {} with value {}".format(
                     k, version['versionName'], v))
                 version[k] = v
             else:
                 logger.warn("Setting {} is not in the list of project version settings ({})".format(
-                    k, HubInstance.PROJECT_VERSION_SETTINGS))
+                    k, PROJECT_VERSION_SETTINGS))
 
         url = version['_meta']['href']
 

@@ -61,6 +61,10 @@ class HubInstance(object):
     '''
     classdocs
     '''
+
+    # TODO: For now leaving these here (even though they are copied to Clients.py and Projects.py)
+    #       because code in examples and presumably consumers of the library may be referencing these
+    #
     VERSION_DISTRIBUTION=["EXTERNAL", "SAAS", "INTERNAL", "OPENSOURCE"]
     VERSION_PHASES = ["PLANNING", "DEVELOPMENT", "PRERELEASE", "RELEASED", "DEPRECATED", "ARCHIVED"]
     PROJECT_VERSION_SETTINGS = ['nickname', 'releaseComments', 'versionName', 'phase', 'distribution', 'releasedOn']

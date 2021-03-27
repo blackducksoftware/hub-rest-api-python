@@ -7,9 +7,10 @@ terminaltables
 timestring
 
 # for unit testing
-pytest
-requests-mock
-pytest-datadir
+pytest          # see https://docs.pytest.org/en/stable/index.html
+pytest-html     # see https://pytest-html.readthedocs.io/en/latest/index.html
+requests-mock   # see https://requests-mock.readthedocs.io/en/latest/
+pytest-datadir  # see http://github.com/gabrielcnr/pytest-datadir
 
 # For package building and distribution (e.g. to PyPi)
 setuptools
