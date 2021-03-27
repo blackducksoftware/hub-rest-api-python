@@ -27,7 +27,8 @@ projects = hub.get_projects(parameters=parameters)
 
 if 'totalCount' in projects and projects['totalCount'] == 1:
 	project = projects['items'][0]
+	tags = hub.get_project_tags(project)
 else:
-	project = {'info': 'project {} not found'.format(args.project_name)}
+	tags = {'info': 'project {} not found'.format(args.project_name)}
 
-print(json.dumps(project))
+print(json.dumps(tags))
