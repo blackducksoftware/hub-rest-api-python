@@ -2,6 +2,7 @@
 Created on Jul 6, 2018
 
 @author: kumykov
+@contributors: gsnyder2007, AR-Calder
 
 Wrapper for common HUB API queries. 
 Upon initialization Bearer tocken is obtained and used for all subsequent calls
