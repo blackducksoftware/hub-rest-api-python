@@ -39,7 +39,7 @@ if args.unmapped:
 else:
 	code_locations = hub.get_codelocations(limit=10000, parameters=parameters)
 
-code_locations = code_locations.get('items', [])
+# code_locations = code_locations.get('items', [])
 
 if args.scan_summaries:
     for code_location in code_locations:
