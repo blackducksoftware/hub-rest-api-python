@@ -32,7 +32,7 @@ class EndpointNotFound(Exception):
 class UnacceptableContentType(Exception):
     pass
 
-def exception_handler(self, response, name):
+def http_exception_handler(self, response, name):
     error_codes = {
         404 : EndpointNotFound,
         406 : UnacceptableContentType
