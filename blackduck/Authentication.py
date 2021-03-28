@@ -31,7 +31,6 @@ class BearerAuth(requests.auth.AuthBase):
         (requests.auth): auth header updated with token
     """
     from .Exceptions import http_exception_handler
-
     
     def __init__(
         self,
@@ -57,7 +56,6 @@ class BearerAuth(requests.auth.AuthBase):
         self.session = session or requests.session()
         self.timeout = timeout        
 
-
     def __call__(self, request):
         if not self.auth_token or self.valid_until < datetime.utcnow():
             # If authentication token not set or no longer valid
@@ -69,7 +67,6 @@ class BearerAuth(requests.auth.AuthBase):
         })
 
         return request
-
 
     def authenticate(self):
         if not self.verify:
@@ -113,6 +110,25 @@ class BearerAuth(requests.auth.AuthBase):
 
 
 class CookieAuth(requests.auth.AuthBase):
+    """authenticate with blackduck hub using username/password
+       note: this should be avoided if possible or used as a temporary measure
+
+    Args:
+        session? (requests.session): optional requests session i.e. for proxy settings
+        username (string): username of blackduck hub user
+        password (string): password of blackduck hub user
+        base_url (string): url of blackduck hub instance
+        verify (list/bool): requests.verify
+        timeout (int): time in seconds before failing auth request 
+
+    Raises:
+        ValueError: when token or base_url are missing
+        connect_timeout: see: requests.requests.exceptions.connect_timeout
+        read_timeout: see: requests.requests.exceptions.read_timeout
+
+    Returns:
+        (requests.auth): auth header updated with token
+    """
     from .Exceptions import http_exception_handler
 
     def __init__(
