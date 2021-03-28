@@ -16,11 +16,11 @@ class BearerAuth(requests.auth.AuthBase):
     """authenticate with blackduck hub using bearer token
 
     Args:
-        session? (requests.session): optional requests session i.e. for proxy settings
+        session? (requests.session): requests session i.e. for proxy settings
         token (string): bearer token as generated in blackduck hub
         base_url (string): url of blackduck hub instance
-        verify (list/bool): requests.verify
-        timeout (int): time in seconds before failing auth request 
+        verify? (list/bool): requests.verify
+        timeout? (int): time in seconds before failing auth request 
 
     Raises:
         ValueError: when token or base_url are missing
@@ -114,12 +114,12 @@ class CookieAuth(requests.auth.AuthBase):
        note: this should be avoided if possible or used as a temporary measure
 
     Args:
-        session? (requests.session): optional requests session i.e. for proxy settings
+        session? (requests.session): requests session i.e. for proxy settings
         username (string): username of blackduck hub user
         password (string): password of blackduck hub user
         base_url (string): url of blackduck hub instance
-        verify (list/bool): requests.verify
-        timeout (int): time in seconds before failing auth request 
+        verify? (list/bool): requests.verify
+        timeout? (int): time in seconds before failing auth request 
 
     Raises:
         ValueError: when token or base_url are missing
