@@ -4,6 +4,8 @@ import json
 from operator import itemgetter
 import urllib.parse
 
+from .Utils import object_id
+
 logger = logging.getLogger(__name__)
 
 valid_categories = ['VERSION','CODE_LOCATIONS','COMPONENTS','SECURITY','FILES', 'ATTACHMENTS', 'CRYPTO_ALGORITHMS', 'PROJECT_VERSION_CUSTOM_FIELDS', 'BOM_COMPONENT_CUSTOM_FIELDS', 'LICENSE_TERM_FULFILLMENT']

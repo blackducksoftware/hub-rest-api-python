@@ -117,3 +117,9 @@ def pprint(value):
         None
     """
     print(pfmt(value))
+
+def object_id(object):
+    assert '_meta' in object, "REST API object must have _meta key"
+    assert 'href' in object['_meta'], "REST API object must have href key in it's _meta"
+    return object['_meta']['href'].split("/")[-1]
+
