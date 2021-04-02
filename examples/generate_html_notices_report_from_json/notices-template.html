@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html style="font-family:Open Sans,sans-serif;">
+<body>
+<h1>
+    {{ projectVersion.projectName }} <span>&mdash;</span> {{ projectVersion.versionName }} <span>&mdash;</span> Notices File
+</h1>
+<div style="clear:both;display:block;">
+    <div style="display:inline-block;">
+        <span>Phase:</span>
+        <span>{{ projectVersion.versionPhase }}</span>
+    </div>
+    |
+    <div style="display:inline-block;">
+        <span>Distribution:</span>
+        <span>{{ projectVersion.versionDistribution }}</span>
+    </div>
+</div>
+
+<h1 id="comp-header" style="cursor:pointer;">Components</h1>
+<table style="width:100%;border-collapse:collapse;font-family:Open Sans,sans-serif;" id="comp-container">
+    <thead>
+    <tr style="border-bottom:1px solid black">
+        <th style="text-align:left;background-color:#f6f6f6;font-weight:500">Component</th>
+        <th style="text-align:left;background-color:#f6f6f6;font-weight:500">License</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for row in componentLicenses %}
+        <tr style="border-bottom:1px solid black">
+            <td>
+                <span>
+                    <span style="font-weight:700">{{ row.component.projectName }}</span>
+                    <span style="font-weight:500">
+                        {% if row.component.versionName %}
+                            {{ row.component.versionName }}
+                        {% endif %}
+                    </span>
+                </span>
+            </td>
+            <td>
+                <div>
+                    {% if row.licenses|length > 0 %}
+                        {{ row.licenses[0]['name'] }}
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% if componentCopyrightTexts|length > 0 %}
+    <h1 id="copyright-header" style="cursor:pointer;">Copyright Data</h1>
+    <div id="copyright-container">
+        {% for row in componentCopyrightTexts %}
+            <h2>
+                {{ row.componentVersionSummary.projectName }} <span>&mdash;</span> {{ row.originFullName }}
+            </h2>
+            {% for cr in row.copyrightTexts %}
+                <ul>
+                    <li style="list-style-type:disc;">
+                        {{ cr|e }}
+                    </li>
+                </ul>
+            {% endfor %}
+        {% endfor %}
+    </div>
+{% endif %}
+
+<h1 id="license-header" style="cursor:pointer;">Licenses</h1>
+<div id="license-container">
+    {% for row in licenseTexts %}
+        <h2>{{ row.name }}</h2>
+        <div>
+            {% for comp in row.components %}
+                {{ comp.projectName }} {{ comp.versionName }}{% if not loop.last %},{% endif %}
+            {% endfor %}
+        </div>
+        <pre style="background-color:#f6f6f6;border:1px solid black">{{ row.text|e }}</pre>
+    {% endfor %}
+</div>
+
+
+
+<script>
+    compheader = document.getElementById("comp-header")
+    if (!(compheader === null)) {
+        compheader.addEventListener("click", function() {
+            container = document.getElementById("comp-container")
+            if (container.style.display === "none") {
+                container.style.display = null;
+            } else {
+                container.style.display = "none";
+            }
+        });
+    }
+
+    copyheader = document.getElementById("copyright-header")
+    if (!(copyheader === null)) {
+        copyheader.addEventListener("click", function() {
+            container = document.getElementById("copyright-container")
+            if (container.style.display === "none") {
+                container.style.display = null;
+            } else {
+                container.style.display = "none";
+            }
+        });
+    }
+
+    licenseheader = document.getElementById("license-header")
+    if (!(licenseheader === null)) {
+        licenseheader.addEventListener("click", function() {
+            container = document.getElementById("license-container")
+            if (container.style.display === "none") {
+                container.style.display = null;
+            } else {
+                container.style.display = "none";
+            }
+        });
+    }
+
+</script>
+
+</body>
+</html>
