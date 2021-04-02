@@ -29,6 +29,7 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 for bom_component in bom_components['items']:
+	print(json.dumps(bom_component, indent=2))
 	# Retrieve the licenses and license text for this bom component and insert the license info along with the bom component info
 	# into the all_licenses dictionary
 	component_licenses = hub.get_license_info_for_bom_component(bom_component)

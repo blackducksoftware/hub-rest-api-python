@@ -44,4 +44,4 @@ for license in licenses:
     obligations_url = hub.get_link(license, 'license-obligations')
     license['obligations'] = hub.execute_get(obligations_url).json().get('items', [])
 
-print(json.dumps(licenses))
+print(json.dumps(licenses, indent=2))
