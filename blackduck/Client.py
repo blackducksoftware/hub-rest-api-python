@@ -10,8 +10,54 @@ Token will auto-renew on timeout.
 from .Utils import find_field, safe_get
 from .Authentication import BearerAuth
 import logging
-import requests
+import os
+import requests.packages.urllib3
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
+from urllib.parse import urljoin
+
 logger = logging.getLogger(__name__)
+
+
+class HubSession(requests.Session):
+    """Hold base_url, timeout, retries, and provide sensible defaults"""
+
+    def __init__(self, base_url, timeout, retries, verify):
+        super().__init__()
+        self.base_url = base_url
+        self._timeout = float(timeout)  # timeout is not a member of requests.Session
+        self.verify = verify
+
+        # use sane defaults to handle unreliable networks
+        """HTTP response status codes:
+                429 = Too Many Requests
+                500 = Internal Server Error
+                502 = Bad Gateway
+                503 = Service Unavailable
+                504 = Gateway Timeout
+        """
+        retry_strategy = Retry(
+            total=int(retries),
+            backoff_factor=2,  # exponential retry 1, 2, 4, 8, 16 sec ...
+            status_forcelist=[429, 500, 502, 503, 504],
+            method_whitelist=['GET']
+        )
+
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.mount("https://", adapter)
+        self.mount("http://", adapter)
+        logging.info("Using a session with a %s second timeout and up to %s retries per request", timeout, retries)
+
+        self.proxies.update({
+            'http': os.environ.get('http_proxy', ''),
+            'https': os.environ.get('https_proxy', '')
+        })
+
+    def request(self, method, url, **kwargs):
+        kwargs['timeout'] = self._timeout
+        url = urljoin(self.base_url, url)
+        return super().request(method, url, **kwargs)
+
 
 class Client:
     '''
@@ -29,24 +75,19 @@ class Client:
 
     def __init__(
         self,
-        *args,
         token=None,
         base_url=None,
         session=None,
         auth=None,
         verify=True,
-        timeout=15,
-        **kwargs):
+        timeout=15.0,  # in seconds
+        retries=3):
 
-        self.verify=verify
-        self.timeout=int(timeout)
         self.base_url=base_url
-        self.session = session or requests.session()
+        self.session = session or HubSession(base_url, timeout, retries, verify)
         self.auth = auth or BearerAuth(
             session = self.session,
-            token=token,
-            base_url=base_url,
-            verify=self.verify
+            token=token
         )
 
     def print_methods(self):

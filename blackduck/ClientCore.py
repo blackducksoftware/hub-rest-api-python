@@ -46,8 +46,7 @@ def _request(
         response = self.session.request(
             method=method, 
             url=url, 
-            headers=headers, 
-            verify=self.verify, 
+            headers=headers,
             auth=self.auth, 
             **kwargs
         )
@@ -62,12 +61,12 @@ def _request(
 
     # Do not handle exceptions - just just more details as to possible causes
     # Thus we do not catch a JsonDecodeError here even though it may occur
-    except requests.exceptions.ConnectTimeout as connect_timeout:
-        logger.critical(f"could not establish a connection within {self.timeout}s, this may be indicative of proxy misconfiguration")
-        raise connect_timeout
-    except requests.exceptions.ReadTimeout as read_timeout:
-        logger.critical(f"slow or unstable connection, consider increasing timeout (currently set to {self.timeout}s)")
-        raise read_timeout
+    except requests.exceptions.ConnectTimeout:
+        logger.critical("could not establish a connection; this may be indicative of proxy misconfiguration")
+        raise
+    except requests.exceptions.ReadTimeout:
+        logger.critical("slow or unstable connection, consider increasing timeout")
+        raise
     else:
         return response_json
     
@@ -156,13 +155,13 @@ def _get_base_resource_url(self, resource_name, is_public=True, **kwargs):
     if is_public:
         resources = self._request(
             method="GET",
-            url=self.base_url + f"/api/",
+            url="/api/",
             name='_get_base_resource_url',
             **kwargs
         )
         return resources.get(resource_name, "")
     else:
-        return self.base_url + f"/api/{resource_name}"
+        return f"/api/{resource_name}"
 
 def get_base_resource(self, resource_name, is_public=True, **kwargs):
     return self._request(

@@ -16,30 +16,18 @@ class BearerAuth(requests.auth.AuthBase):
     
     from .Exceptions import http_exception_handler
 
-    def __init__(
-        self,
-        session=None,
-        token=None,
-        base_url=None,
-        verify=True,
-        timeout=15,
-        ):
-
-        if any(arg == False for arg in (token, base_url)):
+    def __init__(self, session=None, token=None):
+        if any(arg is False for arg in (session, token)):
             raise ValueError(
-                'token & base_url are required'
+                'session & token are required'
             )
 
-        self.verify=verify
         self.client_token = token
         self.auth_token = None
         self.csrf_token = None
         self.valid_until = datetime.utcnow()
 
-        self.auth_url = requests.compat.urljoin(base_url, '/api/tokens/authenticate')
-        self.session = session or requests.session()
-        self.timeout = timeout        
-
+        self.session = session
 
     def __call__(self, request):
         if not self.auth_token or self.valid_until < datetime.utcnow():
@@ -53,9 +41,8 @@ class BearerAuth(requests.auth.AuthBase):
 
         return request
 
-
     def authenticate(self):
-        if not self.verify:
+        if not self.session.verify:
             requests.packages.urllib3.disable_warnings()
             # Announce this on every auth attempt, as a little incentive to properly configure certs
             logger.warn("ssl verification disabled, connection insecure. do NOT use verify=False in production!")
@@ -63,12 +50,8 @@ class BearerAuth(requests.auth.AuthBase):
         try:
             response = self.session.request(
                 method='POST',
-                url=self.auth_url,
-                headers = {
-                    "Authorization" : f"token {self.client_token}"
-                },
-                verify=self.verify,
-                timeout=self.timeout
+                url="/api/tokens/authenticate",
+                headers={"Authorization": f"token {self.client_token}"}
             )
 
             if response.status_code / 100 != 2:
@@ -84,12 +67,12 @@ class BearerAuth(requests.auth.AuthBase):
 
         # Do not handle exceptions - just just more details as to possible causes
         # Thus we do not catch a JsonDecodeError here even though it may occur
-        # - no futher details to give.  
-        except requests.exceptions.ConnectTimeout as connect_timeout:
-            logger.critical(f"could not establish a connection within {self.timeout}s, this may be indicative of proxy misconfiguration")
-            raise connect_timeout
-        except requests.exceptions.ReadTimeout as read_timeout:
-            logger.critical(f"slow or unstable connection, consider increasing timeout (currently set to {self.timeout}s)")
-            raise read_timeout
+        # - no further details to give.
+        except requests.exceptions.ConnectTimeout:
+            logger.critical("could not establish a connection; this may be indicative of proxy misconfiguration")
+            raise
+        except requests.exceptions.ReadTimeout:
+            logger.critical("slow or unstable connection, consider increasing timeout")
+            raise
         else:
             logger.info(f"success: auth granted until {self.valid_until} UTC")
