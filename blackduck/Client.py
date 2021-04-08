@@ -82,13 +82,24 @@ class Client:
         verify=True,
         timeout=15.0,  # in seconds
         retries=3):
+        """Instantiate a Client for use with Hub's REST-API
 
-        self.base_url=base_url
+        Args:
+            token (str): Access Token obtained from the Hub UI: System -> My Access Tokens
+            base_url (str): e.g. "https://your.blackduck.url"
+            session (requests.Session): custom session if specified.  For advanced users only.
+                If not provided, a HubSession with recommended defaults will be generated and used.
+                Any custom session must incorporate a base_url in every request as a plain
+                requests.Session() will not work.  See HubSession implementation for an example.
+            auth (requests.auth.AuthBase): custom authorization if specified. For advanced users only.
+                If not provided, one based on the access token is generated and used.
+            verify (bool): TLS certificate verification. Defaults to True.
+            timeout (float): request timeout in seconds. Defaults to 15 seconds.
+            retries (int): maximum number of times to retry a request. Defaults to 3.
+        """
+        self.base_url = base_url
         self.session = session or HubSession(base_url, timeout, retries, verify)
-        self.auth = auth or BearerAuth(
-            session = self.session,
-            token=token
-        )
+        self.session.auth = auth or BearerAuth(session=self.session, token=token)
 
     def print_methods(self):
         import inspect

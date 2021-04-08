@@ -6,13 +6,20 @@ Created on Dec 23, 2020
 '''
  
 import requests
+from requests.auth import AuthBase
 import logging
 import json
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
-class BearerAuth(requests.auth.AuthBase):
+
+class NoAuth(AuthBase):
+    def __call__(self, r):
+        return r
+
+
+class BearerAuth(AuthBase):
     
     from .Exceptions import http_exception_handler
 
@@ -51,6 +58,7 @@ class BearerAuth(requests.auth.AuthBase):
             response = self.session.request(
                 method='POST',
                 url="/api/tokens/authenticate",
+                auth=NoAuth(),  # temporarily strip authentication to avoid infinite recursion
                 headers={"Authorization": f"token {self.client_token}"}
             )
 

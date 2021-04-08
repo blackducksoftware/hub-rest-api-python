@@ -47,7 +47,6 @@ def _request(
             method=method, 
             url=url, 
             headers=headers,
-            auth=self.auth, 
             **kwargs
         )
 
