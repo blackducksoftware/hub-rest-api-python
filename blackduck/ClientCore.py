@@ -161,10 +161,10 @@ def get_resource(self, source=None, name=None, items=True, public=True, **kwargs
     """Generic function to facilitate subresource fetching  
 
     Args:
-        bd_object (dict/json): [description]
-        resource_name (str): [description]
-        iterable (bool, optional): [description]. Defaults to True.
-        is_public (bool, optional): [description]. Defaults to True.
+        source (dict/json): Source resource object i.e. project
+        name (str): Name of targetted resource i.e. 'versions'
+        items (bool, optional): Enable resource generator. Defaults to True.
+        public (bool, optional): Allow only public api resources. Defaults to True.
 
     Returns:
         dict/json: named resource object
@@ -188,10 +188,10 @@ def get_metadata(self, source=None, name=None, items=True, public=True, **kwargs
     """ Generic function to facilitate subresource metadata fetching  
 
     Args:
-        bd_object (dict/json): [description]
-        resource_name (str): [description]
-        iterable (bool, optional): [description]. Defaults to True.
-        is_public (bool, optional): [description]. Defaults to True.
+        source (dict/json): Source resource object i.e. project
+        name (str): Name of targetted resource i.e. 'versions'
+        items (bool, optional): Enable resource generator. Defaults to True.
+        public (bool, optional): Allow only public api resources. Defaults to True.
 
     Returns:
         dict/json: named resource metadata
@@ -216,9 +216,6 @@ def list_resources(self, source=None, **kwargs):
 
     Optional Args:
         source (dict/json): ..of subresources. Defaults to None / API Base.
-
-    Raises:
-        KeyError: on key not found
 
     Returns:
         list: available *public* resources
