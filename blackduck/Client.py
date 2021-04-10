@@ -70,7 +70,7 @@ class Client:
     )
 
     from .ClientCore import (
-        _request, _get_items, _get_resource_href, get_resource, list_resources, _get_base_resource_url, get_base_resource, _get_parameter_string
+        _request, _get_items, _get_base_resource_url, _get_base, _get_resource_url, get_resource, list_resources, get_metadata, get_parameter_string
     )
 
     def __init__(
@@ -106,16 +106,6 @@ class Client:
         for fn in inspect.getmembers(self, predicate=inspect.ismember):
             print(fn[0])
 
-    # Example for projects
-    def get_projects(self, parameters=[], **kwargs):
-        return self._get_items(
-            method='GET',
-            # url unlikely to change hence is_public=false (faster).
-            url= self._get_base_resource_url('projects', is_public=False),
-            name="project",
-            **kwargs
-        )
-
     def get_project_by_name(self, project_name, **kwargs):
-        projects = self.get_projects(**kwargs)
+        projects = self.get_resource(name='projects')
         return find_field(projects, 'name', project_name)
