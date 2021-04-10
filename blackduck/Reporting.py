@@ -4,14 +4,16 @@ import json
 from operator import itemgetter
 import urllib.parse
 
+from .Utils import object_id
+
 logger = logging.getLogger(__name__)
 
-valid_categories = ['VERSION','CODE_LOCATIONS','COMPONENTS','SECURITY','FILES', 'ATTACHMENTS', 'CRYPTO_ALGORITHMS', 'PROJECT_VERSION_CUSTOM_FIELDS', 'BOM_COMPONENT_CUSTOM_FIELDS', 'LICENSE_TERM_FULFILLMENT']
+valid_categories = ['VERSION','CODE_LOCATIONS','COMPONENTS','SECURITY','FILES', 'ATTACHMENTS', 'CRYPTO_ALGORITHMS', 'PROJECT_VERSION_CUSTOM_FIELDS', 'BOM_COMPONENT_CUSTOM_FIELDS', 'LICENSE_TERM_FULFILLMENT', 'UPGRADE_GUIDANCE']
 valid_report_formats = ["CSV", "JSON"]
 def create_version_reports(self, version, report_list, format="CSV"):
-    assert all(list(map(lambda k: k in HubInstance.valid_categories, report_list))), "One or more selected report categories in {} are not valid ({})".format(
-        report_list, HubInstance.valid_categories)
-    assert format in HubInstance.valid_report_formats, "Format must be one of {}".format(HubInstance.valid_report_formats)
+    assert all(list(map(lambda k: k in valid_categories, report_list))), "One or more selected report categories in {} are not valid ({})".format(
+        report_list, valid_categories)
+    assert format in valid_report_formats, "Format must be one of {}".format(valid_report_formats)
 
     post_data = {
         'categories': report_list,
@@ -24,7 +26,7 @@ def create_version_reports(self, version, report_list, format="CSV"):
 
 valid_notices_formats = ["TEXT", "JSON"]
 def create_version_notices_report(self, version, format="TEXT", include_copyright_info=True):
-    assert format in HubInstance.valid_notices_formats, "Format must be one of {}".format(HubInstance.valid_notices_formats)
+    assert format in valid_notices_formats, "Format must be one of {}".format(valid_notices_formats)
 
     post_data = {
         'versionId': object_id(version),
@@ -67,7 +69,7 @@ def download_notification_report(self, report_location_url):
 ##
 valid_vuln_status_report_formats = ["CSV", "JSON"]
 def create_vuln_status_report(self, format="CSV"):
-    assert format in HubInstance.valid_vuln_status_report_formats, "Format must be one of {}".format(HubInstance.valid_vuln_status_report_formats)
+    assert format in valid_vuln_status_report_formats, "Format must be one of {}".format(valid_vuln_status_report_formats)
 
     post_data = {
         "reportFormat": format,

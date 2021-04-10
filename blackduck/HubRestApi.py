@@ -52,18 +52,14 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-def object_id(object):
-    assert '_meta' in object, "REST API object must have _meta key"
-    assert 'href' in object['_meta'], "REST API object must have href key in it's _meta"
-    return object['_meta']['href'].split("/")[-1]
+from .Utils import object_id
 
 class HubInstance(object):
     '''
     classdocs
     '''
-    VERSION_DISTRIBUTION=["EXTERNAL", "SAAS", "INTERNAL", "OPENSOURCE"]
-    VERSION_PHASES = ["PLANNING", "DEVELOPMENT", "PRERELEASE", "RELEASED", "DEPRECATED", "ARCHIVED"]
-    PROJECT_VERSION_SETTINGS = ['nickname', 'releaseComments', 'versionName', 'phase', 'distribution', 'releasedOn']
+
+    from .constants import VERSION_DISTRIBUTION, VERSION_PHASES, PROJECT_VERSION_SETTINGS
 
     # TODO: What to do about the config file for thread-safety, concurrency
     configfile = ".restconfig.json"

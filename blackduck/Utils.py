@@ -9,15 +9,16 @@ from datetime import datetime, timedelta
 import dateutil.parser
 import json
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
 
 def iso8601_to_date(iso_string, with_zone=False):
-    """Utility function to convert iso_8061 formatted string to datetime object, optionally accounting for timezone
+    """Utility function to convert iso_8601 formatted string to datetime object, optionally accounting for timezone
 
     Args:
-        iso_string (string): the iso_8061 string to convert to datetime object
+        iso_string (string): the iso_8601 string to convert to datetime object
         with_zone (bool, optional): whether to account for timezone offset. Defaults to False.
 
     Returns:
@@ -37,13 +38,13 @@ def iso8601_timespan(days_ago, from_date=datetime.utcnow(), delta=timedelta(week
         yield curr_date.isoformat('T', 'seconds')
         curr_date += delta
 
-def min_iso8061():
-    """Utility wrapper for iso8061_to_date which provides minimum date (for comparison purposes).
+def min_iso8601():
+    """Utility wrapper for iso8601_to_date which provides minimum date (for comparison purposes).
 
     Returns:
         datetime.datetime: 0 / 1970-01-01T00:00:00.000
     """
-    return iso8061_to_date("1970-01-01T00:00:00.000")
+    return iso8601_to_date("1970-01-01T00:00:00.000")
 
 def find_field(data_to_filter, field_name, field_value):
     """Utility function to filter blackduck objects for specific fields
@@ -88,12 +89,21 @@ def get_url(obj):
     return safe_get(obj, '_meta', 'href')
 
 def get_resource_name(obj):
+    """Utility function to determine resource name from a given resource object
+
+    Args:
+        obj (dict): object to perform name lookup on.
+
+    Returns:
+        string: name if found or None.
+    """
     parts = get_url(obj).split('/')
-
-    for part in parts:
-        pass
-
-    #    regex for id 8-4-4-12
+    print("parts =", get_url(obj))
+    for part in reversed(parts[:-1]):
+        # regex for id 8-4-4-12
+        if re.search("^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$", part):
+            continue    
+        return part
     
 
 def pfmt(value):
@@ -117,3 +127,21 @@ def pprint(value):
         None
     """
     print(pfmt(value))
+
+def object_id(object):
+    assert '_meta' in object, "REST API object must have _meta key"
+    assert 'href' in object['_meta'], "REST API object must have href key in it's _meta"
+    return object['_meta']['href'].split("/")[-1]
+
+def expect_type(given, expected):
+    """Utility wrapper for assert isinstance.
+
+    Args:
+        given (object): object to compare
+        expected (type): expected object type
+
+    Throws:
+        AssertionError: on expected type != given type
+    """
+    assert isinstance(given, expected), f"Expected {expected} given {type(given)}"
+
