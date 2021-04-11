@@ -152,8 +152,6 @@ class CookieAuth(AuthBase):
                     "j_username" : self.username,
                     "j_password" : self.password
                 },
-                verify=self.verify,
-                timeout=self.timeout
             )
 
             if response.status_code / 100 != 2:
