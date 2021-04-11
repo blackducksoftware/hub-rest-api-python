@@ -22,7 +22,7 @@ class NoAuth(AuthBase):
 class BearerAuth(AuthBase):
     
     from .Exceptions import http_exception_handler
-
+    # kwargs as to ignore unneeded auth params i.e. user/pass
     def __init__(self, session=None, token=None, **kwargs):
         if any(arg is False for arg in (session, token)):
             raise ValueError(
@@ -107,7 +107,7 @@ class CookieAuth(AuthBase):
         (requests.auth): auth header updated with token
     """
     from .Exceptions import http_exception_handler
-
+    # kwargs as to ignore unneeded auth params i.e. token
     def __init__(
         self,
         session,
