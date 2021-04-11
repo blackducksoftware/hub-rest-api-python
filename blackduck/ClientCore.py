@@ -8,7 +8,7 @@ import logging
 import requests
 import json
 
-from .Utils import find_field, safe_get
+from .Utils import find_field, safe_get, get_resource_name
 logger = logging.getLogger(__name__)
 
 def _request(
@@ -154,7 +154,7 @@ def _get_resource_url(self, source, name, public=True):
     )
 
     if None == res:
-        raise KeyError(f"'{self.get_resource_name(source)}' object has no such key '{name}', available keys = {self.list_resources(source)}")
+        raise KeyError(f"'{get_resource_name(source)}' object has no such key '{name}', available keys = {self.list_resources(source)}")
     return safe_get(res, 'href')
 
 def get_resource(self, source=None, name=None, items=True, public=True, **kwargs):
