@@ -86,7 +86,7 @@ class BearerAuth(AuthBase):
             logger.info(f"success: auth granted until {self.valid_until} UTC")
 
 
-class CookieAuth(requests.auth.AuthBase):
+class CookieAuth(AuthBase):
     """authenticate with blackduck hub using username/password
        note: this should be avoided if possible or used as a temporary measure
 
@@ -113,13 +113,10 @@ class CookieAuth(requests.auth.AuthBase):
         session,
         username,
         password,
-        base_url,
-        verify=True,
-        timeout=15,
     ):
-        if any(arg == False for arg in (username, password, base_url)):
+        if any(arg == False for arg in (username, password, session)):
             raise ValueError(
-                'username, password & base_url are required'
+                'session, username and password are required'
             )
 
         self.verify=verify
@@ -127,11 +124,7 @@ class CookieAuth(requests.auth.AuthBase):
         self.password = password,
         self.auth_token = None
         self.csrf_token = None
-        self.valid_until = datetime.utcnow()
-
-        self.auth_url = requests.compat.urljoin(base_url, '/j_spring_security_check')
-        self.session = session or requests.session()
-        self.timeout = timeout        
+        self.valid_until = datetime.utcnow()        
 
     def __call__(self, request):
         if not self.auth_token or self.valid_until < datetime.utcnow():
@@ -154,7 +147,7 @@ class CookieAuth(requests.auth.AuthBase):
         try:
             response = self.session.request(
                 method='POST',
-                url=self.auth_url,
+                url='/j_spring_security_check',
                 headers = {
                     "j_username" : self.username,
                     "j_password" : self.password
