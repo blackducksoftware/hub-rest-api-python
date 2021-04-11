@@ -24,12 +24,12 @@ logging.basicConfig(
 )
 
 bd = Client(
-    token=os.environ.get('blackduck_token', "YOUR TOKEN HERE"),
+    token=os.environ.get('blackduck_token'),
     base_url="https://your.blackduck.url",
     # verify=False  # TLS certificate verification
 )
 
-for project in bd.get_projects():
+for project in bd.get_resource(name='projects'):
     print(project.get('name'))
 ```
 
