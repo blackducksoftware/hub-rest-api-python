@@ -23,7 +23,7 @@ class BearerAuth(AuthBase):
     
     from .Exceptions import http_exception_handler
 
-    def __init__(self, session=None, token=None):
+    def __init__(self, session=None, token=None, **kwargs):
         if any(arg is False for arg in (session, token)):
             raise ValueError(
                 'session & token are required'
@@ -113,6 +113,7 @@ class CookieAuth(AuthBase):
         session,
         username,
         password,
+        **kwargs
     ):
         if any(arg == False for arg in (username, password, session)):
             raise ValueError(

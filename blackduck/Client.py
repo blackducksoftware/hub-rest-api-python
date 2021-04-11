@@ -99,7 +99,7 @@ class Client:
         """
         self.base_url = base_url
         self.session = session or HubSession(base_url, timeout, retries, verify)
-        self.session.auth = auth or BearerAuth(session=self.session, token=token)
+        self.session.auth = (auth or BearerAuth)(session=self.session, token=token)
 
     def print_methods(self):
         import inspect
