@@ -35,7 +35,8 @@ def _request(
     """
 
     headers = {
-        'accept' : 'application/json'
+        'accept': 'application/json',
+        'content-type': 'application/json'
     }
     headers.update(kwargs.pop('headers', dict()))
 
@@ -55,6 +56,9 @@ def _request(
                 response=response,
                 name=name
             )
+
+        if 'Content-Type' in response.headers and 'internal' in response.headers['Content-Type']:
+            logging.warning("Response contains internal proprietary Content-Type: " + response.headers['Content-Type'])
 
         response_json = response.json()
 
