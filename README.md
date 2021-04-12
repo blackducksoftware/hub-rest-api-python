@@ -15,16 +15,22 @@ pip install blackduck
 ```python
 from blackduck import Client
 import json
+import logging
+import os
 
-bd = Client(
-    token=os.environ.get('blackduck_token', 'YOUR TOKEN HERE'),
-    base_url='https://your.blackduck.url' #!important! no trailing slash
-    #, verify=False # if required
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s'
 )
 
-for project in bd.get_projects():
-  print(project.get('name')
+bd = Client(
+    token=os.environ.get('blackduck_token'),
+    base_url="https://your.blackduck.url",
+    # verify=False  # TLS certificate verification
+)
 
+for project in bd.get_resource(name='projects'):
+    print(project.get('name'))
 ```
 
 ### Examples
