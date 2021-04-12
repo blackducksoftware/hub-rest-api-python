@@ -40,7 +40,7 @@ def _request(
     headers.update(kwargs.pop('headers', dict()))
 
     if parameters:
-        url += self._get_parameter_string(parameters)
+        url += self.get_parameter_string(parameters)
 
     try:
         response = self.session.request(
@@ -101,129 +101,6 @@ def _get_items(self, url, method='GET', page_size=100, name='', **kwargs):
             break
 
         offset += page_size     
-
-def _get_base(self, **kwargs):
-    """Utility function to provide base(/api/) object.
-       Base is root of all other calls, hence the common function.
-
-    Returns:
-        dict: api base resource
-    """
-    return self._request(
-            method="GET",
-            url="/api/",
-            name='_get_base_resource_url',
-            **kwargs
-    )
-
-def _get_base_resource_url(self, name, public=True, **kwargs):
-    """Utility function to get url for a given base(/api/) resouce
-
-    Args:
-        name (str)
-
-    Raises:
-        KeyError: on key not found
-
-    Returns:
-        str: url to named resource
-    """
-    res = self._get_base(**kwargs).get(name) if public else f"/api/{name}"
-    
-    if not res:
-        raise KeyError(f"'/api/ has no such key '{name}', available keys = {self.list_resources()}")
-    return res
-
-def _get_resource_url(self, source, name, public=True):
-    """Utility function to get url for a given name
-
-    Args:
-        source (dict/json): resource object i.e. project
-        name (str): name of api sub-resource i.e. versions
-        public (bool): whether the resource is part of the public api
-    Raises:
-        KeyError: on key not found
-
-    Returns:
-        str: url to named resource
-    """
-    res = f"{self.get_url(source)}/{name}" if not public else find_field(
-        data_to_filter=safe_get(source, '_meta', 'links'),
-        field_name='rel',
-        field_value=name
-    )
-
-    if None == res:
-        raise KeyError(f"'{get_resource_name(source)}' object has no such key '{name}', available keys = {self.list_resources(source)}")
-    return safe_get(res, 'href')
-
-def get_resource(self, source=None, name=None, items=True, public=True, **kwargs):
-    """Generic function to facilitate subresource fetching  
-
-    Args:
-        source (dict/json): Source resource object i.e. project
-        name (str): Name of targetted resource i.e. 'versions'
-        items (bool, optional): Enable resource generator. Defaults to True.
-        public (bool, optional): Allow only public api resources. Defaults to True.
-
-    Returns:
-        dict/json: named resource object
-    """
-    if None == name:
-        raise ValueError("'name' cannot be null")
-    if None == source:
-        url = self._get_base_resource_url(name, public)
-    else:
-        url = self._get_resource_url(source, name, public)
-
-    fn = self._get_items if items else self._request
-    return fn(
-        method='GET',
-        url=url,
-        name=name,
-        **kwargs
-    )
-
-def get_metadata(self, source=None, name=None, items=True, public=True, **kwargs):
-    """ Generic function to facilitate subresource metadata fetching  
-
-    Args:
-        source (dict/json): Source resource object i.e. project
-        name (str): Name of targetted resource i.e. 'versions'
-        items (bool, optional): Enable resource generator. Defaults to True.
-        public (bool, optional): Allow only public api resources. Defaults to True.
-
-    Returns:
-        dict/json: named resource metadata
-    """
-    if None == name:
-        raise ValueError("'name' cannot be null")
-    if None == source:
-        url = self._get_base_resource_url(name, public)
-    else:
-        url = self._get_resource_url(source, name, public)
-
-    return self._request(
-        method='GET',
-        url=url,
-        params={'limit':0},
-        name=name,
-        **kwargs
-    )
-
-def list_resources(self, source=None, **kwargs):
-    """Utility function to list available subresources
-
-    Optional Args:
-        source (dict/json): ..of subresources. Defaults to None / API Base.
-
-    Returns:
-        list: available *public* resources
-    """
-    if None==source:
-        base = self._get_base(**kwargs)
-        return [key for key, value in base.items()]
-    return [res.get('rel') for res in safe_get(source, '_meta', 'links')]
 
 def get_parameter_string(self, parameters=list()):
     return '?' + '&'.join(parameters) if parameters else ''
