@@ -76,6 +76,8 @@ class Client:
     def __init__(
         self,
         token=None,
+        username=None,
+        password=None,
         base_url=None,
         session=None,
         auth=None,
@@ -99,7 +101,7 @@ class Client:
         """
         self.base_url = base_url
         self.session = session or HubSession(base_url, timeout, retries, verify)
-        self.session.auth = (auth or BearerAuth)(session=self.session, token=token)
+        self.session.auth = (auth or BearerAuth)(session=self.session, token=token, username=username, password=password)
 
     def print_methods(self):
         import inspect
