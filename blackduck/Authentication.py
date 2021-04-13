@@ -20,30 +20,33 @@ class NoAuth(AuthBase):
 
 
 class BearerAuth(AuthBase):
-    
-    from .Exceptions import http_exception_handler
+    """Authenticate with Blackduck hub using access token"""
 
-    def __init__(self, session=None, token=None):
+    def __init__(self, session, token):
+        """
+        Args:
+            session (requests.session): requests session to authenticate
+            token (string): of Blackduck user from UI: System -> My Access Tokens
+        """
         if any(arg is False for arg in (session, token)):
             raise ValueError(
                 'session & token are required'
             )
 
-        self.client_token = token
-        self.auth_token = None
+        self.session = session
+        self.access_token = token
+        self.bearer_token = None
         self.csrf_token = None
         self.valid_until = datetime.utcnow()
 
-        self.session = session
-
     def __call__(self, request):
-        if not self.auth_token or self.valid_until < datetime.utcnow():
-            # If authentication token not set or no longer valid
+        if not self.bearer_token or self.valid_until < datetime.utcnow():
+            # If bearer token not set or no longer valid
             self.authenticate()
 
         request.headers.update({ 
-            "authorization" : f"bearer {self.auth_token}",
-            "X-CSRF-TOKEN" : self.csrf_token
+            "authorization": f"bearer {self.bearer_token}",
+            "X-CSRF-TOKEN": self.csrf_token
         })
 
         return request
@@ -52,70 +55,76 @@ class BearerAuth(AuthBase):
         if not self.session.verify:
             requests.packages.urllib3.disable_warnings()
             # Announce this on every auth attempt, as a little incentive to properly configure certs
-            logger.warn("ssl verification disabled, connection insecure. do NOT use verify=False in production!")
-            
-        try:
-            response = self.session.request(
-                method='POST',
-                url="/api/tokens/authenticate",
-                auth=NoAuth(),  # temporarily strip authentication to avoid infinite recursion
-                headers={"Authorization": f"token {self.client_token}"}
-            )
+            logger.warning("ssl verification disabled, connection insecure. do NOT use verify=False in production!")
 
-            if response.status_code / 100 != 2:
-                self.http_exception_handler(
-                    response=response,
-                    name="authenticate"
-                )
+        response = self.session.post(
+            url="/api/tokens/authenticate",
+            auth=NoAuth(),  # temporarily strip authentication to avoid infinite recursion
+            headers={"Authorization": f"token {self.access_token}"}
+        )
 
-            content = response.json()
-            self.csrf_token = response.headers.get('X-CSRF-TOKEN')
-            self.auth_token = content.get('bearerToken')
-            self.valid_until = datetime.utcnow() + timedelta(milliseconds=int(content.get('expiresInMilliseconds', 0)))
+        if response.status_code == 200:
+            try:
+                content = response.json()
+                self.bearer_token = content['bearerToken']
+                self.csrf_token = response.headers['X-CSRF-TOKEN']
+                self.valid_until = datetime.utcnow() + timedelta(milliseconds=int(content['expiresInMilliseconds']))
+                logger.info(f"success: auth granted until {self.valid_until} UTC")
+                return
+            except (json.JSONDecodeError, KeyError):
+                logging.exception("HTTP response status code 200 but unable to obtain bearer token")
+                # fall through
 
-        # Do not handle exceptions - just just more details as to possible causes
-        # Thus we do not catch a JsonDecodeError here even though it may occur
-        # - no further details to give.
-        except requests.exceptions.ConnectTimeout:
-            logger.critical("could not establish a connection; this may be indicative of proxy misconfiguration")
-            raise
-        except requests.exceptions.ReadTimeout:
-            logger.critical("slow or unstable connection, consider increasing timeout")
-            raise
-        else:
-            logger.info(f"success: auth granted until {self.valid_until} UTC")
+        if response.status_code == 401:
+            logging.error("HTTP response status code = 401 (Unauthorized)")
+            try:
+                logging.error(response.json()['errorMessage'])
+            except (json.JSONDecodeError, KeyError):
+                logging.exception("unable to extract error message")
+                logging.error("HTTP response headers: %s", response.headers)
+                logging.error("HTTP response text: %s", response.text)
+            raise RuntimeError("Unauthorized access token", response)
+
+        # all unhandled responses fall through to here
+        logging.error("Unhandled HTTP response")
+        logging.error("HTTP response status code %i", response.status_code)
+        logging.error("HTTP response headers: %s", response.headers)
+        logging.error("HTTP response text: %s", response.text)
+        raise RuntimeError("Unhandled HTTP response", response)
 
 
 class CookieAuth(AuthBase):
-    """authenticate with blackduck hub using username/password
-       note: this should be avoided if possible or used as a temporary measure
+    """Authenticate with Blackduck hub using username/password
+
+       Note: username/password is not recommended and Client users are encouraged
+             to use the more secure token authentication instead.
     """
+
     def __init__(self, session, username, password):
         """
         Args:
             session (requests.session): requests session to authenticate
-            username (string): username of blackduck hub user
-            password (string): password of blackduck hub user
+            username (string): of Blackduck hub user
+            password (string): of Blackduck hub user
         """
         if any(arg is False for arg in (session, username, password)):
             raise ValueError(
                 'session, username and password are required'
             )
 
+        self.session = session
         self.username = username
         self.password = password
-        self.auth_token = None
+        self.bearer_token = None
         self.valid_until = datetime.utcnow()
 
-        self.session = session
-
     def __call__(self, request):
-        if not self.auth_token or self.valid_until < datetime.utcnow():
-            # If authentication token not set or no longer valid
+        if not self.bearer_token or self.valid_until < datetime.utcnow():
+            # If bearer token not set or no longer valid
             self.authenticate()
 
         request.headers.update({ 
-            "authorization": f"bearer {self.auth_token}",
+            "authorization": f"bearer {self.bearer_token}",
         })
 
         return request
@@ -138,7 +147,7 @@ class CookieAuth(AuthBase):
         if response.status_code == 204:  # No Content
             try:
                 cookie = response.headers['Set-Cookie']
-                self.auth_token = cookie[cookie.index('=')+1:cookie.index(';')]
+                self.bearer_token = cookie[cookie.index('=') + 1:cookie.index(';')]
                 self.valid_until = datetime.utcnow() + timedelta(minutes=120)  # token is good for 2 hours
                 logger.info(f"success: auth granted until {self.valid_until} UTC")
                 return
