@@ -34,8 +34,8 @@ class UnacceptableContentType(Exception):
 
 def http_exception_handler(self, response, name):
     error_codes = {
-        404 : EndpointNotFound,
-        406 : UnacceptableContentType
+        404: EndpointNotFound,
+        406: UnacceptableContentType
     }
 
     try:
@@ -45,5 +45,5 @@ def http_exception_handler(self, response, name):
 
     error = error_codes.get(response.status_code)
     if error:
-        raise error(f"{name}: {content}")
+        raise error(f"(status code {response.status_code}) {name}: {content}")
     raise NotImplementedError(f"No handler for status code: {response.status_code}")

@@ -11,24 +11,24 @@ from datetime import datetime, timedelta
 import blackduck
 
 def vulns_in_all_project_versions_components(bd):
-    for project in bd.get_resource(name='projects'):
-        for version in bd.get_resource(project, 'versions'):
-            for component in bd.get_resource(version, 'components'):
-                for vulnerability in bd.get_resource(component, 'vulnerabilities'):
+    for project in bd.get_resource('projects'):
+        for version in bd.get_resource('versions', project):
+            for component in bd.get_resource('components', version):
+                for vulnerability in bd.get_resource('vulnerabilities', component):
                     print(f"{project.get('name')}-{version.get('versionName')} [{component.get('componentName')}] has {vulnerability.get('severity')} severity vulnerability '{vulnerability.get('name')}'")
     
 def list_project_subresources(bd):
-    for project in bd.get_resource(name='projects'):
+    for project in bd.get_resource('projects'):
         subresources = bd.list_resources(project)
         print(f"projects has the following subresources: {', '.join(subresources)}")
         return
 
 def list_project_versions(bd):
     i = 1
-    project_count = bd.get_metadata(name='projects').get('totalCount')
-    for project in bd.get_resource(name='projects'):
+    project_count = bd.get_metadata('projects').get('totalCount')
+    for project in bd.get_resource('projects'):
         print(f"Project ({i}/{project_count}): {project.get('name')}")
-        for version in bd.get_resource(project, 'versions'):
+        for version in bd.get_resource('versions', project):
             print(f"  {version.get('versionName')}")
         i += 1
 
@@ -39,7 +39,7 @@ def projects_added_at_4_week_intervals(bd):
     for timestamp in blackduck.Utils.iso8601_timespan(days_ago=365, delta=timedelta(weeks=4)):
         last_count=count
         count=0
-        for project in bd.get_resource(name='projects'):
+        for project in bd.get_resource('projects'):
             created_at = blackduck.Utils.iso8601_to_date(project.get('createdAt'))
             count += (created_at <= blackduck.Utils.iso8601_to_date(timestamp))
 
