@@ -77,8 +77,6 @@ class Client:
     def __init__(
         self,
         token=None,
-        username=None,
-        password=None,
         base_url=None,
         session=None,
         auth=None,
@@ -102,7 +100,7 @@ class Client:
         """
         self.base_url = base_url
         self.session = session or HubSession(base_url, timeout, retries, verify)
-        self.session.auth = (auth or BearerAuth)(session=self.session, token=token, username=username, password=password)
+        self.session.auth = auth or BearerAuth(self.session, token)
         self.root_resources_dict = None
 
     def list_resources(self, parent=None):
