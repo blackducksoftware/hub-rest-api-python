@@ -82,12 +82,12 @@ def _get_items(self, url, method='GET', page_size=100, name='', **kwargs):
         page_size (int, optional): [description]. Defaults to 100.
         name (str, optional): [description]. Defaults to ''.
 
-    Returns:
-        list(dict/json): list of items
+    Yields:
+        generator(dict/json): of items
     """
     offset = 0
     params = kwargs.pop('params', dict())
-    all_items = []
+
     while True:
         params.update({'offset':f"{offset}", 'limit':f"{page_size}"})
         items = self._request(
@@ -98,11 +98,12 @@ def _get_items(self, url, method='GET', page_size=100, name='', **kwargs):
             **kwargs
         ).get('items', list())
 
-        all_items.extend(items)
+        for item in items:
+            yield item
 
         if len(items) < page_size:
             # This will be true if there are no more 'pages' to view
-            return all_items
+            break
 
         offset += page_size     
 
