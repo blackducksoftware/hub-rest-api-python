@@ -106,7 +106,7 @@ class Client:
         self.root_resources_dict = None
 
     def list_resources(self, parent=None):
-        """List resources that can be fetched
+        """List resources that can be fetched.
 
         Args:
             self:
@@ -115,6 +115,7 @@ class Client:
 
         Returns:
             dict(str -> str): of public resource names to urls
+                              To obtain the url to the parent itself, use key 'href'.
         """
         if parent is not None and not isinstance(parent, dict):
             raise TypeError("parent parameter must be a dict if not None")
@@ -125,10 +126,10 @@ class Client:
             if self.root_resources_dict is None:
                 # cache root resources for efficiency
                 resp = self.session.get("/api/")
-                resp_json = resp.json()
-                del resp_json['_meta']
-                resp_json['href'] = resp.url  # save url to root iteself
-                self.root_resources_dict = resp_json
+                resources_dict = resp.json()
+                resources_dict['href'] = resp.url  # save url to root itself
+                del resources_dict['_meta']
+                self.root_resources_dict = resources_dict
             return self.root_resources_dict
         else:
             key = '_hub_rest_api_python_resources_dict'
@@ -137,7 +138,7 @@ class Client:
                 try:
                     rel_href_pairs = iter(obj)
                 except TypeError:
-                    logger.error("not iterable bd_object:")
+                    logger.error("not iterable obj:")
                     pprint(obj)
                     raise
                 resources_dict = {}
