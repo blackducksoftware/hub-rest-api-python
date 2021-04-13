@@ -118,13 +118,16 @@ class Client:
         """
         if parent is not None and not isinstance(parent, dict):
             raise TypeError("parent parameter must be a dict if not None")
+
         if not parent:
             # the root resources are in a different format (name -> href)
             # compared to (rel, href) pairs in _meta.links
             if self.root_resources_dict is None:
                 # cache root resources for efficiency
-                resp_json = self.session.get("/api/").json()
+                resp = self.session.get("/api/")
+                resp_json = resp.json()
                 del resp_json['_meta']
+                resp_json['href'] = resp.url  # save url to root iteself
                 self.root_resources_dict = resp_json
             return self.root_resources_dict
         else:
@@ -140,6 +143,7 @@ class Client:
                 resources_dict = {}
                 for res in rel_href_pairs:
                     resources_dict[res['rel']] = res['href']
+                resources_dict['href'] = safe_get(parent, '_meta', 'href')  # save url to parent itself
                 parent[key] = resources_dict  # cache for future use
             return parent[key]
 
