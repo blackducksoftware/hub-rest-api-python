@@ -79,7 +79,7 @@ class Client:
     Ultimately it provides a solid foundation especially suited for long-running scripts.
     """
 
-    from .Exceptions import(
+    from .Exceptions import (
         http_exception_handler
     )
 
@@ -162,7 +162,7 @@ class Client:
             parent (dict/json): resource object from prior get_resource() call.
                                 Use None for root /api/ base.
             items (bool, optional): enable resource generator for paginated results. Defaults to True.
-            kwargs: passed to requests.session.get
+            kwargs: passed to session.request
 
         Returns:
             list (items=True) or dict formed from returned json
@@ -171,6 +171,7 @@ class Client:
             raise TypeError("name parameter must be a non-empty str")
         if parent is not None and not isinstance(parent, dict):
             raise TypeError("parent parameter must be a dict if not None")
+
         resources_dict = self.list_resources(parent)
         if name not in resources_dict:
             msg = f"resource name '{name}' not found in available resources"
@@ -191,6 +192,7 @@ class Client:
             name (str): resource name i.e. specific key from list_resources()
             parent (dict/json): resource object from prior get_resource() call.
                                 Use None for root /api/ base.
+            kwargs: passed to session.request
 
         Returns:
             dict/json: named resource metadata
