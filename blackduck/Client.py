@@ -56,20 +56,31 @@ class HubSession(requests.Session):
 
     def request(self, method, url, **kwargs):
         kwargs['timeout'] = self._timeout
+        if method.lower() == 'get':
+            # set default media type if not provided
+            headers = {
+                'accept': "application/json",
+                'content-type': "application/json"
+            }
+            headers.update(kwargs.pop('headers', dict()))
+            kwargs['headers'] = headers
         url = urljoin(self.base_url, url)
         return super().request(method, url, **kwargs)
 
 
 class Client:
-    '''
-    classdocs
-    '''
+    """A binding to Blackduck's REST API that provides a robust connection backed by a session object.
+    A base URL, timeout, retries, proxies, and TLS verification are set upon initialization and these
+    attributes are persisted across all requests.
+
+    At the REST API level, it provides a consistent way to discover and traverse public resources,
+    uses a generator to fetch all items using pagination, and automatically renews the bearer token.
+
+    Ultimately it provides a solid foundation especially suited for long-running scripts.
+    """
+
     from .Exceptions import(
         http_exception_handler
-    )
-
-    from .ClientCore import (
-        _request, _get_items, get_parameter_string
     )
 
     def __init__(
@@ -105,7 +116,6 @@ class Client:
         """List resources that can be fetched.
 
         Args:
-            self:
             parent (dict/json): resource object from prior get_resource invocations.
                                 Defaults to None (for root /api/ base).
 
@@ -148,7 +158,6 @@ class Client:
         """Fetch a resource
 
         Args:
-            self:
             name (str): resource name i.e. specific key from list_resources()
             parent (dict/json): resource object from prior get_resource() call.
                                 Use None for root /api/ base.
@@ -170,13 +179,10 @@ class Client:
             raise KeyError(msg)
         url = resources_dict[name]
 
-        fn = self._get_items if items else self._request
-        return fn(
-            method='GET',
-            url=url,
-            name=name,
-            **kwargs
-        )
+        if items:
+            return self.get_items(url, name=name, **kwargs)
+        else:
+            return self.checked_request('get', url, name, **kwargs)
 
     def get_metadata(self, name, parent=None, **kwargs):
         """Fetch resource metadata and other useful data such as totalCount
@@ -192,3 +198,56 @@ class Client:
         # limit: 0 works for 'projects' but not for 'codeLocations' or project 'versions'
         kwargs['params'] = {'limit': 1}
         return self.get_resource(name, parent, items=False, **kwargs)
+
+    def checked_request(self, method, url, name='', **kwargs):
+        """Request from endpoint and return json result
+
+        Args:
+            method (str): http request type e.g. 'get', 'post', etc.
+            url (str): of endpoint
+            name (str, optional): for informational purposes in case of error. Defaults to ''.
+            kwargs: passed to session.request
+
+        Yields:
+            json/dict: requested object
+        """
+        response = self.session.request(method, url, **kwargs)
+
+        if response.status_code != 200:
+            self.http_exception_handler(response, name)
+
+        if 'Content-Type' in response.headers:
+            content_type = response.headers['Content-Type']
+            if 'internal' in content_type:
+                logging.warning("Response contains internal proprietary Content-Type: " + content_type)
+
+        return response.json()
+
+    def get_items(self, url, page_size=100, name='', **kwargs):
+        """Fetch 'pages' of items
+
+        Args:
+            url (str): of endpoint
+            page_size (int): Number of items to get per page. Defaults to 100.
+            name (str, optional): for informational purposes in case of error. Defaults to ''.
+            kwargs: passed to session.request
+
+        Yields:
+            generator(dict/json): of items
+        """
+        offset = 0
+        params = kwargs.pop('params', dict())
+
+        while True:
+            params.update({'offset': f"{offset}", 'limit': f"{page_size}"})
+            kwargs['params'] = params
+            items = self.checked_request('get', url, name, **kwargs).get('items', list())
+
+            for item in items:
+                yield item
+
+            if len(items) < page_size:
+                # This will be true if there are no more 'pages' to view
+                break
+
+            offset += page_size
