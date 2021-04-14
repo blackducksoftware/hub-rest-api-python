@@ -148,6 +148,15 @@ class CookieAuth(AuthBase):
             try:
                 cookie = response.headers['Set-Cookie']
                 self.bearer_token = cookie[cookie.index('=') + 1:cookie.index(';')]
+                # As of 2021.2 the bearer token is good for 2 hours but there
+                # is no explicit reference to expiry time in the response.
+                #
+                # There is internal talk (Feb. 2021) of revamping authentication and the
+                # validity time will likely be reduced or the /j_spring_security_check
+                # may be deprecated.
+                #
+                # HUB-25720: It is not possible to extend the validity time
+                # of the bearer token obtained via /j_spring_security_check.
                 self.valid_until = datetime.utcnow() + timedelta(minutes=120)  # token is good for 2 hours
                 logger.info(f"success: auth granted until {self.valid_until} UTC")
                 return
