@@ -195,11 +195,6 @@ class Client:
         kwargs['params'] = {'limit': 1}
         return self.get_resource(name, parent, items=False, **kwargs)
 
-    def print_methods(self):
-        import inspect
-        for fn in inspect.getmembers(self, predicate=inspect.ismember):
-            print(fn[0])
-
     def get_project_by_name(self, project_name, **kwargs):
         projects = self.get_resource(name='projects')
         return find_field(projects, 'name', project_name)
