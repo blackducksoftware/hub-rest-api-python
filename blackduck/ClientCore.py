@@ -6,9 +6,7 @@ Created on Dec 23, 2020
  
 import logging
 import requests
-import json
 
-from .Utils import find_field, safe_get, get_resource_name
 logger = logging.getLogger(__name__)
 
 def _request(

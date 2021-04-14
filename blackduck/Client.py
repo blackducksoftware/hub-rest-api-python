@@ -7,7 +7,7 @@ Upon initialization Bearer token is obtained and used for all subsequent calls.
 Token will auto-renew on timeout.
 '''
 
-from .Utils import find_field, safe_get
+from .Utils import safe_get
 from .Authentication import BearerAuth
 import logging
 import os
@@ -64,8 +64,6 @@ class Client:
     '''
     classdocs
     '''
-    from .constants import VERSION_DISTRIBUTION, VERSION_PHASES, PROJECT_VERSION_SETTINGS
-
     from .Exceptions import(
         http_exception_handler
     )
@@ -194,7 +192,3 @@ class Client:
         # limit: 0 works for 'projects' but not for 'codeLocations' or project 'versions'
         kwargs['params'] = {'limit': 1}
         return self.get_resource(name, parent, items=False, **kwargs)
-
-    def get_project_by_name(self, project_name, **kwargs):
-        projects = self.get_resource(name='projects')
-        return find_field(projects, 'name', project_name)
