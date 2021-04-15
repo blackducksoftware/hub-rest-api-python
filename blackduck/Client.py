@@ -1,13 +1,13 @@
-'''
+"""
 Created on Dec 23, 2020
 @author: ar-calder
 
 Wrapper for common HUB API queries. 
 Upon initialization Bearer token is obtained and used for all subsequent calls.
 Token will auto-renew on timeout.
-'''
+"""
 
-from .Utils import find_field, safe_get
+from .Utils import safe_get
 from .Authentication import BearerAuth
 import logging
 import os
@@ -56,33 +56,41 @@ class HubSession(requests.Session):
 
     def request(self, method, url, **kwargs):
         kwargs['timeout'] = self._timeout
+        if method.lower() == 'get':
+            # set default media type if not provided
+            headers = {
+                'accept': "application/json",
+                'content-type': "application/json"
+            }
+            headers.update(kwargs.pop('headers', dict()))
+            kwargs['headers'] = headers
         url = urljoin(self.base_url, url)
         return super().request(method, url, **kwargs)
 
 
 class Client:
-    '''
-    classdocs
-    '''
-    from .constants import VERSION_DISTRIBUTION, VERSION_PHASES, PROJECT_VERSION_SETTINGS
+    """A binding to Blackduck's REST API that provides a robust connection backed by a session object.
+    A base URL, timeout, retries, proxies, and TLS verification are set upon initialization and these
+    attributes are persisted across all requests.
 
-    from .Exceptions import(
+    At the REST API level, it provides a consistent way to discover and traverse public resources,
+    uses a generator to fetch all items using pagination, and automatically renews the bearer token.
+
+    Ultimately it provides a solid foundation especially suited for long-running scripts.
+    """
+
+    from .Exceptions import (
         http_exception_handler
     )
 
-    from .ClientCore import (
-        _request, _get_items, get_parameter_string
-    )
-
-    def __init__(
-        self,
-        token=None,
-        base_url=None,
-        session=None,
-        auth=None,
-        verify=True,
-        timeout=15.0,  # in seconds
-        retries=3):
+    def __init__(self,
+                 token=None,
+                 base_url=None,
+                 session=None,
+                 auth=None,
+                 verify=True,
+                 timeout=15.0,  # in seconds
+                 retries=3):
         """Instantiate a Client for use with Hub's REST-API
 
         Args:
@@ -107,7 +115,6 @@ class Client:
         """List resources that can be fetched.
 
         Args:
-            self:
             parent (dict/json): resource object from prior get_resource invocations.
                                 Defaults to None (for root /api/ base).
 
@@ -150,12 +157,11 @@ class Client:
         """Fetch a resource
 
         Args:
-            self:
             name (str): resource name i.e. specific key from list_resources()
             parent (dict/json): resource object from prior get_resource() call.
                                 Use None for root /api/ base.
-            items (bool, optional): enable resource generator for paginated results. Defaults to True.
-            kwargs: passed to requests.session.get
+            items (bool): enable resource generator for paginated results. Defaults to True.
+            kwargs: passed to session.request
 
         Returns:
             list (items=True) or dict formed from returned json
@@ -164,6 +170,7 @@ class Client:
             raise TypeError("name parameter must be a non-empty str")
         if parent is not None and not isinstance(parent, dict):
             raise TypeError("parent parameter must be a dict if not None")
+
         resources_dict = self.list_resources(parent)
         if name not in resources_dict:
             msg = f"resource name '{name}' not found in available resources"
@@ -172,13 +179,10 @@ class Client:
             raise KeyError(msg)
         url = resources_dict[name]
 
-        fn = self._get_items if items else self._request
-        return fn(
-            method='GET',
-            url=url,
-            name=name,
-            **kwargs
-        )
+        if items:
+            return self.get_items(url, name=name, **kwargs)
+        else:
+            return self.checked_request('get', url, name, **kwargs)
 
     def get_metadata(self, name, parent=None, **kwargs):
         """Fetch resource metadata and other useful data such as totalCount
@@ -187,6 +191,7 @@ class Client:
             name (str): resource name i.e. specific key from list_resources()
             parent (dict/json): resource object from prior get_resource() call.
                                 Use None for root /api/ base.
+            kwargs: passed to session.request
 
         Returns:
             dict/json: named resource metadata
@@ -195,11 +200,55 @@ class Client:
         kwargs['params'] = {'limit': 1}
         return self.get_resource(name, parent, items=False, **kwargs)
 
-    def print_methods(self):
-        import inspect
-        for fn in inspect.getmembers(self, predicate=inspect.ismember):
-            print(fn[0])
+    def checked_request(self, method, url, name='', **kwargs):
+        """Request from endpoint and return json result
 
-    def get_project_by_name(self, project_name, **kwargs):
-        projects = self.get_resource(name='projects')
-        return find_field(projects, 'name', project_name)
+        Args:
+            method (str): http request type e.g. 'get', 'post', etc.
+            url (str): of endpoint
+            name (str, optional): for informational purposes in case of error. Defaults to ''.
+            kwargs: passed to session.request
+
+        Returns:
+            json/dict: requested object
+        """
+        response = self.session.request(method, url, **kwargs)
+
+        if response.status_code != 200:
+            self.http_exception_handler(response, name)
+
+        if 'Content-Type' in response.headers:
+            content_type = response.headers['Content-Type']
+            if 'internal' in content_type:
+                logging.warning("Response contains internal proprietary Content-Type: " + content_type)
+
+        return response.json()
+
+    def get_items(self, url, page_size=100, name='', **kwargs):
+        """Fetch 'pages' of items
+
+        Args:
+            url (str): of endpoint
+            page_size (int): Number of items to get per page. Defaults to 100.
+            name (str, optional): for informational purposes in case of error. Defaults to ''.
+            kwargs: passed to session.request
+
+        Yields:
+            generator(dict/json): of items
+        """
+        offset = 0
+        params = kwargs.pop('params', dict())
+
+        while True:
+            params.update({'offset': f"{offset}", 'limit': f"{page_size}"})
+            kwargs['params'] = params
+            items = self.checked_request('get', url, name, **kwargs).get('items', list())
+
+            for item in items:
+                yield item
+
+            if len(items) < page_size:
+                # This will be true if there are no more 'pages' to view
+                break
+
+            offset += page_size

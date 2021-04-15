@@ -1,9 +1,7 @@
-'''
-
+"""
 Created on Dec 23, 2020
 @author: ar-calder
-
-'''
+"""
  
 import requests
 from requests.auth import AuthBase
