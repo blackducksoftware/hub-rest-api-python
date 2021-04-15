@@ -112,7 +112,7 @@ class Client:
         self.root_resources_dict = None
 
     def list_resources(self, parent=None):
-        """List resources that can be fetched.
+        """List named resources that can be fetched.
 
         Args:
             parent (dict/json): resource object from prior get_resource invocations.
@@ -154,7 +154,7 @@ class Client:
             return parent[key]
 
     def get_resource(self, name, parent=None, items=True, **kwargs):
-        """Fetch a resource
+        """Fetch a named resource
 
         Args:
             name (str): resource name i.e. specific key from list_resources()
@@ -185,7 +185,7 @@ class Client:
             return self.checked_request('get', url, name, **kwargs)
 
     def get_metadata(self, name, parent=None, **kwargs):
-        """Fetch resource metadata and other useful data such as totalCount
+        """Fetch named resource metadata and other useful data such as totalCount
 
         Args:
             name (str): resource name i.e. specific key from list_resources()
@@ -201,7 +201,7 @@ class Client:
         return self.get_resource(name, parent, items=False, **kwargs)
 
     def checked_request(self, method, url, name='', **kwargs):
-        """Request from endpoint and return json result
+        """Request from url endpoint and return json result
 
         Args:
             method (str): http request type e.g. 'get', 'post', etc.
