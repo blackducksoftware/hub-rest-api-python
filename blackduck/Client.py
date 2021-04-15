@@ -1,11 +1,11 @@
-'''
+"""
 Created on Dec 23, 2020
 @author: ar-calder
 
 Wrapper for common HUB API queries. 
 Upon initialization Bearer token is obtained and used for all subsequent calls.
 Token will auto-renew on timeout.
-'''
+"""
 
 from .Utils import safe_get
 from .Authentication import BearerAuth
@@ -83,15 +83,14 @@ class Client:
         http_exception_handler
     )
 
-    def __init__(
-        self,
-        token=None,
-        base_url=None,
-        session=None,
-        auth=None,
-        verify=True,
-        timeout=15.0,  # in seconds
-        retries=3):
+    def __init__(self,
+                 token=None,
+                 base_url=None,
+                 session=None,
+                 auth=None,
+                 verify=True,
+                 timeout=15.0,  # in seconds
+                 retries=3):
         """Instantiate a Client for use with Hub's REST-API
 
         Args:
@@ -161,7 +160,7 @@ class Client:
             name (str): resource name i.e. specific key from list_resources()
             parent (dict/json): resource object from prior get_resource() call.
                                 Use None for root /api/ base.
-            items (bool, optional): enable resource generator for paginated results. Defaults to True.
+            items (bool): enable resource generator for paginated results. Defaults to True.
             kwargs: passed to session.request
 
         Returns:
@@ -210,7 +209,7 @@ class Client:
             name (str, optional): for informational purposes in case of error. Defaults to ''.
             kwargs: passed to session.request
 
-        Yields:
+        Returns:
             json/dict: requested object
         """
         response = self.session.request(method, url, **kwargs)
