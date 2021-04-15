@@ -9,6 +9,7 @@ Token will auto-renew on timeout.
 
 from .Utils import safe_get
 from .Authentication import BearerAuth
+import json
 import logging
 import os
 from pprint import pprint
@@ -56,14 +57,15 @@ class HubSession(requests.Session):
 
     def request(self, method, url, **kwargs):
         kwargs['timeout'] = self._timeout
-        if method.lower() == 'get':
-            # set default media type if not provided
-            headers = {
-                'accept': "application/json",
-                'content-type': "application/json"
-            }
-            headers.update(kwargs.pop('headers', dict()))
-            kwargs['headers'] = headers
+
+        # set default media type if not provided
+        headers = {
+            'accept': "application/json",
+            'content-type': "application/json"
+        }
+        headers.update(kwargs.pop('headers', dict()))
+        kwargs['headers'] = headers
+
         url = urljoin(self.base_url, url)
         return super().request(method, url, **kwargs)
 
@@ -78,11 +80,6 @@ class Client:
 
     Ultimately it provides a solid foundation especially suited for long-running scripts.
     """
-
-    from .Exceptions import (
-        http_exception_handler
-    )
-
     def __init__(self,
                  token=None,
                  base_url=None,
@@ -201,28 +198,56 @@ class Client:
         return self.get_resource(name, parent, items=False, **kwargs)
 
     def checked_request(self, method, url, name='', **kwargs):
-        """Request from url endpoint and return json result
+        """Send request to url endpoint and return json result
 
         Args:
             method (str): http request type e.g. 'get', 'post', etc.
             url (str): of endpoint
-            name (str, optional): for informational purposes in case of error. Defaults to ''.
+            name (str, optional): for informational purposes in case of error. Defaults to None.
             kwargs: passed to session.request
 
         Returns:
-            json/dict: requested object
+            json/dict: requested object (status code 200) else None
+
+        Raises:
+            requests.exceptions.HTTPError: from response.raise_for_status()
         """
-        response = self.session.request(method, url, **kwargs)
+        r = self.session.request(method, url, **kwargs)
 
-        if response.status_code != 200:
-            self.http_exception_handler(response, name)
+        status_code_lookup = {
+            200: "OK",
+            201: "Created",
+            204: "No Content",
+            401: "Unauthorized",
+            404: "Not Found",
+            406: "Not Acceptable",
+            412: "Precondition Failed",
+        }
 
-        if 'Content-Type' in response.headers:
-            content_type = response.headers['Content-Type']
+        if r.status_code not in [200, 201, 204]:
+            # print out a more descriptive error message before raising an exception
+            try:
+                content = json.dumps(r.json(), indent=4)
+            except json.JSONDecodeError:
+                logging.error("caught JSONDecodeError, using response.text")
+                content = r.text
+
+            logging.error(f"checked_request failed for name: {name}, url: {r.url}")
+            status_description = status_code_lookup.get(r.status_code, "<not in status_code_lookup i.e. unexpected!>")
+            logging.error(f"HTTP response status code {r.status_code}: {status_description}")
+            logging.error(f"HTTP response text (formatted): {content}")
+
+        r.raise_for_status()
+
+        if 'Content-Type' in r.headers:
+            content_type = r.headers['Content-Type']
             if 'internal' in content_type:
                 logging.warning("Response contains internal proprietary Content-Type: " + content_type)
 
-        return response.json()
+        if r.status_code in [201, 204]:
+            return None
+        else:
+            return r.json()
 
     def get_items(self, url, page_size=100, name='', **kwargs):
         """Fetch 'pages' of items
