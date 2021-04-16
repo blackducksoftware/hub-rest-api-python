@@ -58,13 +58,15 @@ class HubSession(requests.Session):
     def request(self, method, url, **kwargs):
         kwargs['timeout'] = self._timeout
 
-        # set default media type if not provided
-        headers = {
-            'accept': "application/json",
-            'content-type': "application/json"
-        }
-        headers.update(kwargs.pop('headers', dict()))
-        kwargs['headers'] = headers
+        if method.lower() == 'get':
+            headers = kwargs.pop('headers', dict())
+            lc_keys = {key.lower(): value for (key, value) in headers.items()}
+            if 'accept' not in lc_keys and 'content-type' not in lc_keys:
+                # set default media type only if neither 'accept' nor 'content-type'
+                # exist as some endpoints may only accept one or the other but not both
+                lc_keys['accept'] = "application/json"
+                lc_keys['content-type'] = "application/json"
+            kwargs['headers'] = lc_keys
 
         url = urljoin(self.base_url, url)
         return super().request(method, url, **kwargs)
