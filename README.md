@@ -1,4 +1,4 @@
-## Overview ##
+# Overview
 
 The hub-rest-api-python provides Python bindings for Hub REST API.
 
@@ -10,7 +10,7 @@ The defect was fixed in version 0.0.53.
 
 Customers using the [blackduck library](https://pypi.org/project/blackduck) should upgrade to version 0.0.53, or later, to implement the fix.
 
-## New in 1.0.0 ##
+# New in 1.0.0
 
 Introducing the new Client class.
 
@@ -28,14 +28,14 @@ the bearer token.
 To read more about the new Client class see the [Client User Guide](https://github.com/blackducksoftware/hub-rest-api-python/wiki/Client-User-Guide)
 on the [Hub REST API Python Wiki](https://github.com/blackducksoftware/hub-rest-api-python/wiki).
 
-### Important Note ###
+### Important Note
 The old HubInstance (in HubRestApi.py) keeps its existing functionality for backwards compatibility and therefore does
 **not** currently leverage any of the new features in the Client class.
 
 We believe that the new features are compelling enough to strongly encourage users to consider moving from HubInstance
 to Client. Please give it a try and let us know what you think!
 
-## To use ##
+# To use
 
 ```
 pip3 install blackduck
@@ -65,55 +65,22 @@ for project in bd.get_resource(name='projects'):
 
 Example code showing how to work with the new Client can be found in the *examples/client* folder.
 
-## Build ##
+# Test #
+Using [pytest](https://pytest.readthedocs.io/en/latest/contents.html)
 
-You should be using [virtualenv](https://pypi.org/project/virtualenv/), [virtrualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to make things easy on yourself.
+```bash
+git clone https://github.com/blackducksoftware/hub-rest-api-python.git
+cd hub-rest-api-python
+# optional but advisable: create/use virtualenv
+# you should have 3.x+, e.g. Python 3.8.0+
 
-Ref: [Packaging Python Projects Tutorial](https://packaging.python.org/tutorials/packaging-projects/)
-
-### Build the blackduck packages
-To build both the source distribution package and the wheel package,
-
-```
 pip3 install -r requirements.txt
-python3 setup.py sdist bdist_wheel
+pip3 install .
+cd test
+pytest
 ```
 
-### Distribute the package
-
-Requires you have an account on either/both [PyPi](https://pypi.org) and [Test PyPi](https://test.pypi.org) *AND* you must be a package maintainer.
-
-Send a request to gsnyder@synopsys.com or gsnyder2007@gmail.com if you want to be listed as a package maintainer.
-
-#### To PyPi
-
-Upload to PyPi,
-
-```
-twine upload dist/*
-```
-
-Then try installing it from PyPy
-
-```
-pip install blackduck
-```
-
-#### To Test PyPi
-
-Upload to Test PyPi,
-
-```
-twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-```
-
-Then try installing it from Test PyPy
-
-```
-pip install --index-url https://test.pypi.org/simple/ blackduck
-```
-
-### Install package locally
+## Install package locally
 
 Do this when testing a new version.
 
@@ -124,27 +91,17 @@ pip3 install -r requirements.txt
 pip3 install .
 ```
 
-## Test ##
-Using (pytest)[https://pytest.readthedocs.io/en/latest/contents.html]
+To uninstall:
 
-```bash
-git clone https://github.com/blackducksoftware/hub-rest-api-python.git
-cd hub-rest-api-python
-# optional but advisable: create/use virtualenv
-# you should have 3.x+, e.g. Python 3.7.0
-
-pip3 install -r requirements.txt
-pip3 install .
-cd test
-pytest
+```
+pip3 uninstall blackduck
 ```
 
 ## Where can I get the latest release? ##
-This package is available on PyPi,
+This package is available on PyPi:
 
 `pip3 install blackduck`
 
 ## Documentation ##
-Documentation for hub-rest-api-python can be found on the base project:  [Hub REST API Python Wiki](https://github.com/blackducksoftware/hub-rest-api-python/wiki)
-
-
+Documentation for hub-rest-api-python can be found on the base project:
+[Hub REST API Python Wiki](https://github.com/blackducksoftware/hub-rest-api-python/wiki)
