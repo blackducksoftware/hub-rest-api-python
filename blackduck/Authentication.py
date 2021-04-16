@@ -70,24 +70,24 @@ class BearerAuth(AuthBase):
                 logger.info(f"success: auth granted until {self.valid_until} UTC")
                 return
             except (json.JSONDecodeError, KeyError):
-                logging.exception("HTTP response status code 200 but unable to obtain bearer token")
+                logger.exception("HTTP response status code 200 but unable to obtain bearer token")
                 # fall through
 
         if response.status_code == 401:
-            logging.error("HTTP response status code = 401 (Unauthorized)")
+            logger.error("HTTP response status code = 401 (Unauthorized)")
             try:
-                logging.error(response.json()['errorMessage'])
+                logger.error(response.json()['errorMessage'])
             except (json.JSONDecodeError, KeyError):
-                logging.exception("unable to extract error message")
-                logging.error("HTTP response headers: %s", response.headers)
-                logging.error("HTTP response text: %s", response.text)
+                logger.exception("unable to extract error message")
+                logger.error("HTTP response headers: %s", response.headers)
+                logger.error("HTTP response text: %s", response.text)
             raise RuntimeError("Unauthorized access token", response)
 
         # all unhandled responses fall through to here
-        logging.error("Unhandled HTTP response")
-        logging.error("HTTP response status code %i", response.status_code)
-        logging.error("HTTP response headers: %s", response.headers)
-        logging.error("HTTP response text: %s", response.text)
+        logger.error("Unhandled HTTP response")
+        logger.error("HTTP response status code %i", response.status_code)
+        logger.error("HTTP response headers: %s", response.headers)
+        logger.error("HTTP response text: %s", response.text)
         raise RuntimeError("Unhandled HTTP response", response)
 
 
@@ -159,22 +159,22 @@ class CookieAuth(AuthBase):
                 logger.info(f"success: auth granted until {self.valid_until} UTC")
                 return
             except (KeyError, ValueError):
-                logging.exception("HTTP response status code 204 but unable to obtain bearer token")
+                logger.exception("HTTP response status code 204 but unable to obtain bearer token")
                 # fall through
 
         if response.status_code == 401:
-            logging.error("HTTP response status code = 401 (Unauthorized)")
+            logger.error("HTTP response status code = 401 (Unauthorized)")
             try:
-                logging.error(response.json()['errorMessage'])
+                logger.error(response.json()['errorMessage'])
             except (json.JSONDecodeError, KeyError):
-                logging.exception("unable to extract error message")
-                logging.error("HTTP response headers: %s", response.headers)
-                logging.error("HTTP response text: %s", response.text)
+                logger.exception("unable to extract error message")
+                logger.error("HTTP response headers: %s", response.headers)
+                logger.error("HTTP response text: %s", response.text)
             raise RuntimeError("Unauthorized username/password", response)
 
         # all unhandled responses fall through to here
-        logging.error("Unhandled HTTP response")
-        logging.error("HTTP response status code %i", response.status_code)
-        logging.error("HTTP response headers: %s", response.headers)
-        logging.error("HTTP response text: %s", response.text)
+        logger.error("Unhandled HTTP response")
+        logger.error("HTTP response status code %i", response.status_code)
+        logger.error("HTTP response headers: %s", response.headers)
+        logger.error("HTTP response text: %s", response.text)
         raise RuntimeError("Unhandled HTTP response", response)

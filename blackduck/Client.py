@@ -48,7 +48,7 @@ class HubSession(requests.Session):
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.mount("https://", adapter)
         self.mount("http://", adapter)
-        logging.info("Using a session with a %s second timeout and up to %s retries per request", timeout, retries)
+        logger.info("Using a session with a %s second timeout and up to %s retries per request", timeout, retries)
 
         self.proxies.update({
             'http': os.environ.get('http_proxy', ''),
@@ -222,7 +222,7 @@ class Client:
         if 'Content-Type' in r.headers:
             content_type = r.headers['Content-Type']
             if 'internal' in content_type:
-                logging.warning("Response contains internal proprietary Content-Type: " + content_type)
+                logger.warning("Response contains internal proprietary Content-Type: " + content_type)
 
         try:
             return r.json()
@@ -267,11 +267,11 @@ class Client:
         """
         if isinstance(r, requests.HTTPError):
             r = r.response
-        logging.error(f"{r.request.method} {r.url}")
+        logger.error(f"{r.request.method} {r.url}")
         status_description = requests.status_codes._codes[r.status_code][0]
-        logging.error(f"HTTP response status code {r.status_code}: {status_description}")
+        logger.error(f"HTTP response status code {r.status_code}: {status_description}")
         try:
             content = json.dumps(r.json(), indent=4)
-            logging.error(f"HTTP response json (formatted): {content}")
+            logger.error(f"HTTP response json (formatted): {content}")
         except json.JSONDecodeError:
-            logging.error(f"HTTP response text: {r.text}")
+            logger.error(f"HTTP response text: {r.text}")
