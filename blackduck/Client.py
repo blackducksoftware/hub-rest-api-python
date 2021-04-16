@@ -151,7 +151,7 @@ class Client:
             return parent[key]
 
     def get_resource(self, name, parent=None, items=True, **kwargs):
-        """Fetch a named resource
+        """Fetch a named resource.
 
         Args:
             name (str): resource name i.e. specific key from list_resources()
@@ -182,7 +182,7 @@ class Client:
             return self.get_json(url, **kwargs)
 
     def get_metadata(self, name, parent=None, **kwargs):
-        """Fetch named resource metadata and other useful data such as totalCount
+        """Fetch named resource metadata and other useful data such as totalCount.
 
         Args:
             name (str): resource name i.e. specific key from list_resources()
@@ -198,7 +198,8 @@ class Client:
         return self.get_resource(name, parent, items=False, **kwargs)
 
     def get_json(self, url, **kwargs):
-        """Streamline get request to url endpoint and return json result
+        """Streamline GET request to url endpoint and return json result
+           while preserving underlying error handling.
 
         Args:
             url (str): of endpoint
@@ -215,7 +216,7 @@ class Client:
 
         if r.status_code != 200:
             # print out a more descriptive error message before raising an exception
-            self.log_http_error(r)
+            self.http_error_handler(r)
 
         r.raise_for_status()
 
@@ -227,7 +228,7 @@ class Client:
         try:
             return r.json()
         except json.JSONDecodeError:
-            self.log_http_error(r)
+            self.http_error_handler(r)
             raise
 
     def get_items(self, url, page_size=100, **kwargs):
@@ -259,11 +260,11 @@ class Client:
             offset += page_size
 
     @staticmethod
-    def log_http_error(r):
-        """Log http error response
+    def http_error_handler(r):
+        """Handle an unexpected HTTPError or Response by logging useful information.
 
         Args:
-            r (requests.HTTPError OR requests.Response): to log
+            r (requests.HTTPError OR requests.Response): to handle
         """
         if isinstance(r, requests.HTTPError):
             r = r.response
