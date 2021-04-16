@@ -114,6 +114,7 @@ class CookieAuth(AuthBase):
         self.username = username
         self.password = password
         self.bearer_token = None
+        self.csrf_token = None
         self.valid_until = datetime.utcnow()
 
     def __call__(self, request):
@@ -123,6 +124,7 @@ class CookieAuth(AuthBase):
 
         request.headers.update({ 
             "authorization": f"bearer {self.bearer_token}",
+            "X-CSRF-TOKEN": self.csrf_token
         })
 
         return request
@@ -146,6 +148,7 @@ class CookieAuth(AuthBase):
             try:
                 cookie = response.headers['Set-Cookie']
                 self.bearer_token = cookie[cookie.index('=') + 1:cookie.index(';')]
+                self.csrf_token = response.headers['X-CSRF-TOKEN']
                 # As of 2021.2 the bearer token is good for 2 hours but there
                 # is no explicit reference to expiry time in the response.
                 #
