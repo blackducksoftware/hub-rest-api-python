@@ -177,9 +177,9 @@ class Client:
         url = resources_dict[name]
 
         if items:
-            return self.get_items(url, name=name, **kwargs)
+            return self.get_items(url, **kwargs)
         else:
-            return self.checked_request('get', url, name, **kwargs)
+            return self.get_json(url, **kwargs)
 
     def get_metadata(self, name, parent=None, **kwargs):
         """Fetch named resource metadata and other useful data such as totalCount
@@ -197,45 +197,25 @@ class Client:
         kwargs['params'] = {'limit': 1}
         return self.get_resource(name, parent, items=False, **kwargs)
 
-    def checked_request(self, method, url, name='', **kwargs):
-        """Send request to url endpoint and return json result
+    def get_json(self, url, **kwargs):
+        """Streamline get request to url endpoint and return json result
 
         Args:
-            method (str): http request type e.g. 'get', 'post', etc.
             url (str): of endpoint
-            name (str, optional): for informational purposes in case of error. Defaults to None.
             kwargs: passed to session.request
 
         Returns:
-            json/dict: requested object (status code 200) else None
+            json/dict: requested object
 
         Raises:
             requests.exceptions.HTTPError: from response.raise_for_status()
+            json.JSONDecodeError: if response.text is not json
         """
-        r = self.session.request(method, url, **kwargs)
+        r = self.session.get(url, **kwargs)
 
-        status_code_lookup = {
-            200: "OK",
-            201: "Created",
-            204: "No Content",
-            401: "Unauthorized",
-            404: "Not Found",
-            406: "Not Acceptable",
-            412: "Precondition Failed",
-        }
-
-        if r.status_code not in [200, 201, 204]:
+        if r.status_code != 200:
             # print out a more descriptive error message before raising an exception
-            try:
-                content = json.dumps(r.json(), indent=4)
-            except json.JSONDecodeError:
-                logging.error("caught JSONDecodeError, using response.text")
-                content = r.text
-
-            logging.error(f"checked_request failed for name: {name}, url: {r.url}")
-            status_description = status_code_lookup.get(r.status_code, "<not in status_code_lookup i.e. unexpected!>")
-            logging.error(f"HTTP response status code {r.status_code}: {status_description}")
-            logging.error(f"HTTP response text (formatted): {content}")
+            self.log_http_error(r)
 
         r.raise_for_status()
 
@@ -244,18 +224,18 @@ class Client:
             if 'internal' in content_type:
                 logging.warning("Response contains internal proprietary Content-Type: " + content_type)
 
-        if r.status_code in [201, 204]:
-            return None
-        else:
+        try:
             return r.json()
+        except json.JSONDecodeError:
+            self.log_http_error(r)
+            raise
 
-    def get_items(self, url, page_size=100, name='', **kwargs):
+    def get_items(self, url, page_size=100, **kwargs):
         """Fetch 'pages' of items
 
         Args:
             url (str): of endpoint
             page_size (int): Number of items to get per page. Defaults to 100.
-            name (str, optional): for informational purposes in case of error. Defaults to ''.
             kwargs: passed to session.request
 
         Yields:
@@ -267,7 +247,7 @@ class Client:
         while True:
             params.update({'offset': f"{offset}", 'limit': f"{page_size}"})
             kwargs['params'] = params
-            items = self.checked_request('get', url, name, **kwargs).get('items', list())
+            items = self.get_json(url, **kwargs).get('items', list())
 
             for item in items:
                 yield item
@@ -277,3 +257,21 @@ class Client:
                 break
 
             offset += page_size
+
+    @staticmethod
+    def log_http_error(r):
+        """Log http error response
+
+        Args:
+            r (requests.HTTPError OR requests.Response): to log
+        """
+        if isinstance(r, requests.HTTPError):
+            r = r.response
+        logging.error(f"{r.request.method} {r.url}")
+        status_description = requests.status_codes._codes[r.status_code][0]
+        logging.error(f"HTTP response status code {r.status_code}: {status_description}")
+        try:
+            content = json.dumps(r.json(), indent=4)
+            logging.error(f"HTTP response json (formatted): {content}")
+        except json.JSONDecodeError:
+            logging.error(f"HTTP response text: {r.text}")
