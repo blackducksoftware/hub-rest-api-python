@@ -25,7 +25,8 @@ At the REST API level, the Client class provides a consistent way to discover an
 [generator](https://wiki.python.org/moin/Generators) to fetch all items using pagination, and automatically renews
 the bearer token.
 
-To read more about the new Client class see the [Client User Guide](https://github.com/blackducksoftware/hub-rest-api-python/wiki/Client-User-Guide)
+See [Client versus HubInstance Comparison](https://github.com/blackducksoftware/hub-rest-api-python/wiki/Client-versus-HubInstance-Comparison)
+and also read the [Client User Guide](https://github.com/blackducksoftware/hub-rest-api-python/wiki/Client-User-Guide)
 on the [Hub REST API Python Wiki](https://github.com/blackducksoftware/hub-rest-api-python/wiki).
 
 ### Important Note
@@ -33,7 +34,11 @@ The old HubInstance (in HubRestApi.py) keeps its existing functionality for back
 **not** currently leverage any of the new features in the Client class.
 
 We believe that the new features are compelling enough to strongly encourage users to consider moving from HubInstance
-to Client. Please give it a try and let us know what you think!
+to Client.
+See [Client versus HubInstance Comparison](https://github.com/blackducksoftware/hub-rest-api-python/wiki/Client-versus-HubInstance-Comparison).
+
+
+Please give it a try and let us know what you think!
 
 # To use
 
