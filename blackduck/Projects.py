@@ -4,6 +4,8 @@ import json
 from operator import itemgetter
 import urllib.parse
 
+from .Exceptions import InvalidVersionPhase
+
 logger = logging.getLogger(__name__)
 
 # VERSION_DISTRIBUTION=["EXTERNAL", "SAAS", "INTERNAL", "OPENSOURCE"]
