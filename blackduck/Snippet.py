@@ -3,6 +3,7 @@ import requests
 import json
 from operator import itemgetter
 import urllib.parse
+from .Exceptions import UnsupportedBDVersion
 
 logger = logging.getLogger(__name__)
 
