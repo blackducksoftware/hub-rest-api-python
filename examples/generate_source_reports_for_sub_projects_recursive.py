@@ -92,15 +92,11 @@ def genreportsforversion(projectname,versionname,reportlist):
         projectname, versionname, result.status_code))
 
     for component in components['items']:
-        subname = (component['componentName'] + '_' + component['componentVersionName'] + '.zip')
-        subname = (subname.replace(" ", ""))
-        # Above step is to generate the output from the get_version_components and specifically look at the activityData
-        # portion to indicate whether a component is a KB component, or a subproject.
-        if len(component['activityData']) == 0:
-            # Above checks length of output from activityData is >0. If equals 0, is sub-project.
-            print("activityData is empty, {} is subproject version {}".format(component['componentName'],component['componentVersionName']))
+        # NOTE THIS REQUIRES pip blackduck 0.0.56 to have the correct request header to obtain the componentType attribute.
+        if component['componentType'] == 'SUB_PROJECT':
+            print("is subproject, {} version {}".format(component['componentName'],component['componentVersionName']))
             genreportsforversion(component['componentName'],component['componentVersionName'],reportlist=['FILES'])
-        elif len(component['activityData']) != 0:
+        else:
             print('is OSS component, no report to download')
 
 
