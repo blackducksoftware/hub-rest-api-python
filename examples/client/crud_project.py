@@ -52,6 +52,19 @@ for project in bd.get_items("/api/projects", params=params):
         project_url = bd.list_resources(project)['href']
         print(f"project url: {project_url}")
 
+# PUT
+project_data = {
+    'name': project_name,
+    'description': "a different description"
+}
+
+try:
+    r = bd.session.put(project_url, json=project_data)
+    r.raise_for_status()
+    print("updated project")
+except requests.HTTPError as err:
+    bd.http_error_handler(err)
+
 # DELETE
 try:
     r = bd.session.delete(project_url)
