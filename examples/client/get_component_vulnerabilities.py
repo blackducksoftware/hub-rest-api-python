@@ -9,7 +9,7 @@ logging.basicConfig(
     format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
 )
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser("Get a specific component and list its vulnerabilities")
 parser.add_argument("--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
 parser.add_argument("--token-file", dest='token_file', required=True, help="containing access token")
 parser.add_argument("--no-verify", dest='verify', action='store_false', help="disable TLS certificate verification")
@@ -20,7 +20,6 @@ with open(args.token_file, 'r') as tf:
 
 bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
 
-# Lookup component and then list its vulnerabilities
 params = {
     'q': ["maven:commons-beanutils:commons-beanutils:1.9.3"]
 }

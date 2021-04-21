@@ -11,7 +11,7 @@ logging.basicConfig(
     format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
 )
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser("Authenticate using username/password credentials")
 parser.add_argument("--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
 parser.add_argument("--username", required=True, help="Hub user")
 parser.add_argument("--password", required=True, help="Hub user")
