@@ -142,13 +142,14 @@ class Client:
                 try:
                     rel_href_pairs = iter(obj)
                 except TypeError:
-                    logger.error("not iterable obj:")
-                    pprint(obj)
+                    logger.error("unable to list resources on parent object (missing ['_meta']['links']):")
+                    pprint(parent)
                     raise
                 resources_dict = {}
                 for res in rel_href_pairs:
                     resources_dict[res['rel']] = res['href']
-                resources_dict['href'] = safe_get(parent, '_meta', 'href')  # save url to parent itself
+                # save url to parent itself if available, otherwise save 'href': None
+                resources_dict['href'] = safe_get(parent, '_meta', 'href')
                 parent[key] = resources_dict  # cache for future use
             return parent[key]
 
