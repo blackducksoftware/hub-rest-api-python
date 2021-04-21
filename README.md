@@ -68,7 +68,7 @@ for project in bd.get_resource(name='projects'):
 
 ### Examples
 
-Example code showing how to work with the new Client can be found in the *examples/client* folder.
+Example code showing how to work with the new Client can be found in the *examples* folder.
 
 # Test #
 Using [pytest](https://pytest.readthedocs.io/en/latest/contents.html)
