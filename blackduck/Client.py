@@ -12,7 +12,7 @@ from .Authentication import BearerAuth
 import json
 import logging
 import os
-from pprint import pprint
+from pprint import pformat
 import requests.packages.urllib3
 from requests.packages.urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
@@ -143,7 +143,7 @@ class Client:
                     rel_href_pairs = iter(obj)
                 except TypeError:
                     logger.error("unable to list resources on parent object (missing ['_meta']['links']):")
-                    pprint(parent)
+                    logger.error(pformat(parent))
                     raise
                 resources_dict = {}
                 for res in rel_href_pairs:
@@ -175,7 +175,7 @@ class Client:
         if name not in resources_dict:
             msg = f"resource name '{name}' not found in available resources"
             logger.error(msg)
-            pprint(resources_dict)
+            logger.error(pformat(resources_dict))
             raise KeyError(msg)
         url = resources_dict[name]
 
