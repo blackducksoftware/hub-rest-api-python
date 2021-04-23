@@ -30,5 +30,9 @@ for project in bd.get_resource('projects'):
     pprint(bd.list_resources(project))
     for version in bd.get_resource('versions', project):
         print(f"Version: {version['versionName']}")
-        print("Exiting after printing first project and version")
-        quit(0)
+        for bom_component in bd.get_resource('components', version):
+            print(f"BOM component: {bom_component['componentName']}:{bom_component['componentVersionName']}")
+        # print(f"Version list_resources():")
+        # pprint(bd.list_resources(version))
+        # print("Exiting after printing first project and version")
+        # quit(0)
