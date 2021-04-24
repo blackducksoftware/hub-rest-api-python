@@ -23,7 +23,7 @@ VERSION = None
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'requests', 
+    'requests', 'python-dateutil'
 ]
 
 # The rest you shouldn't have to touch too much :)
