@@ -1,3 +1,7 @@
+# for vulns, e.g. CVE-2014-0114, that have > 100 headers assoc with them
+import http.client
+http.client._MAXHEADERS = 1000
+
 from blackduck import Client
 
 import argparse
@@ -26,7 +30,7 @@ bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
 params = {
     'q': [f"name:{args.project_name}"]
 }
-projects = [p for p in bd.get_resource('projects', params=params)]
+projects = [p for p in bd.get_resource('projects', params=params) if p['name'] == args.project_name]
 assert len(projects) == 1, f"There should be one, and only one project named {args.project_name}. We found {len(projects)}"
 project = projects[0]
 
@@ -57,4 +61,4 @@ for bom_component_vuln in bd.get_resource('vulnerable-components', version):
     bom_component_vuln['related_vulnerability'] = related_vuln
     all_bom_component_vulns.append(bom_component_vuln)
 
-pprint(bom_component_vuln)
+pprint(all_bom_component_vulns)
