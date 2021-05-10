@@ -35,11 +35,11 @@ class BearerAuth(AuthBase):
         self.access_token = token
         self.bearer_token = None
         self.csrf_token = None
-        self.valid_until = datetime.utcnow()
+        self.valid_until = datetime.now()
 
     def __call__(self, request):
-        if not self.bearer_token or self.valid_until < datetime.utcnow():
-            # If bearer token not set or no longer valid
+        if not self.bearer_token or datetime.now() > self.valid_until - timedelta(minutes=5):
+            # If bearer token not set or nearing expiry
             self.authenticate()
 
         request.headers.update({ 
@@ -66,8 +66,8 @@ class BearerAuth(AuthBase):
                 content = response.json()
                 self.bearer_token = content['bearerToken']
                 self.csrf_token = response.headers['X-CSRF-TOKEN']
-                self.valid_until = datetime.utcnow() + timedelta(milliseconds=int(content['expiresInMilliseconds']))
-                logger.info(f"success: auth granted until {self.valid_until} UTC")
+                self.valid_until = datetime.now() + timedelta(milliseconds=int(content['expiresInMilliseconds']))
+                logger.info(f"success: auth granted until {self.valid_until.astimezone()}")
                 return
             except (json.JSONDecodeError, KeyError):
                 logger.exception("HTTP response status code 200 but unable to obtain bearer token")
@@ -115,11 +115,11 @@ class CookieAuth(AuthBase):
         self.password = password
         self.bearer_token = None
         self.csrf_token = None
-        self.valid_until = datetime.utcnow()
+        self.valid_until = datetime.now()
 
     def __call__(self, request):
-        if not self.bearer_token or self.valid_until < datetime.utcnow():
-            # If bearer token not set or no longer valid
+        if not self.bearer_token or datetime.now() > self.valid_until - timedelta(minutes=5):
+            # If bearer token not set or nearing expiry
             self.authenticate()
 
         request.headers.update({ 
@@ -158,8 +158,8 @@ class CookieAuth(AuthBase):
                 #
                 # HUB-25720: It is not possible to extend the validity time
                 # of the bearer token obtained via /j_spring_security_check.
-                self.valid_until = datetime.utcnow() + timedelta(minutes=120)  # token is good for 2 hours
-                logger.info(f"success: auth granted until {self.valid_until} UTC")
+                self.valid_until = datetime.now() + timedelta(minutes=120)  # token is good for 2 hours
+                logger.info(f"success: auth granted until {self.valid_until.astimezone()}")
                 return
             except (KeyError, ValueError):
                 logger.exception("HTTP response status code 204 but unable to obtain bearer token")
