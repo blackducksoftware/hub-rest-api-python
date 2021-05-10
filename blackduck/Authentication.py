@@ -38,7 +38,7 @@ class BearerAuth(AuthBase):
         self.valid_until = datetime.now()
 
     def __call__(self, request):
-        if not self.bearer_token or datetime.now() > self.valid_until - timedelta(minutes=15):
+        if not self.bearer_token or datetime.now() > self.valid_until - timedelta(minutes=5):
             # If bearer token not set or nearing expiry
             self.authenticate()
 
@@ -118,7 +118,7 @@ class CookieAuth(AuthBase):
         self.valid_until = datetime.now()
 
     def __call__(self, request):
-        if not self.bearer_token or datetime.now() > self.valid_until - timedelta(minutes=15):
+        if not self.bearer_token or datetime.now() > self.valid_until - timedelta(minutes=5):
             # If bearer token not set or nearing expiry
             self.authenticate()
 
