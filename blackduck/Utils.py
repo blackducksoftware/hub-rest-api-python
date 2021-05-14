@@ -14,37 +14,33 @@ import re
 logger = logging.getLogger(__name__)
 
 
-def iso8601_to_date(iso_string, with_zone=False):
-    """Utility function to convert iso_8601 formatted string to datetime object, optionally accounting for timezone
+def to_datetime(date):
+    """Utility function to convert common date formats to datetime object
 
     Args:
-        iso_string (string): the iso_8601 string to convert to datetime object
-        with_zone (bool, optional): whether to account for timezone offset. Defaults to False.
+        iso_string (string/datetime/date)
 
     Returns:
-        datetime.datetime: equivalent time, with or without timezone offsets
+        datetime.datetime
     """
-    date_timezone = iso_string.split('Z')
-    date = dateutil.parser.parse(date_timezone[0])
-    if with_zone and len(date_timezone > 1):
-        hours_minutes = date_timezone[1].split(':')
-        minutes = (60*int(hours_minutes[0]) + int(hours_minutes[1] if len(hours_minutes) > 1 else 0))
-        date = date + datetime.timedelta(minutes=minutes)
-    return date
+    if isinstance(date, str):
+        from dateutil.parser import parse
+        return parse(date)
+    if isinstance(date, datetime.datetime):
+        return date
+    if isinstance(date, datetime.date):
+        return datetime.datetime(
+            year=date.year,
+            month=date.month,
+            day=date.day
+        )
+        
 
-def iso8601_timespan(days_ago, from_date=datetime.utcnow(), delta=timedelta(weeks=1)):
+def timespan(days_ago, from_date=datetime.now(), delta=timedelta(weeks=1)):
     curr_date = from_date - timedelta(days=days_ago)
     while curr_date < from_date:
-        yield curr_date.isoformat('T', 'seconds')
+        yield curr_date
         curr_date += delta
-
-def min_iso8601():
-    """Utility wrapper for iso8601_to_date which provides minimum date (for comparison purposes).
-
-    Returns:
-        datetime.datetime: 0 / 1970-01-01T00:00:00.000
-    """
-    return iso8601_to_date("1970-01-01T00:00:00.000")
 
 def find_field(data_to_filter, field_name, field_value):
     """Utility function to filter blackduck objects for specific fields
@@ -104,29 +100,6 @@ def get_resource_name(obj):
         if re.search("^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$", part):
             continue    
         return part
-    
-
-def pfmt(value):
-    """Utility function to 'pretty format' a dict or json 
-
-    Args:
-        value (json/dict): the json object or dict to pretty format
-
-    Returns:
-        string: json formatted string representing passed object
-    """
-    return json.dumps(value, indent=4)
-
-def pprint(value):
-    """Utility wrapper for pfmt that prints 'pretty formatted' json data.
-
-    Args:
-        value (json/dict): the json object or dict to pretty print
-
-    Returns:
-        None
-    """
-    print(pfmt(value))
 
 def object_id(object):
     assert '_meta' in object, "REST API object must have _meta key"
