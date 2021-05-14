@@ -12,7 +12,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-parser = argparse.ArgumentParser("Delete empty projects and versions, older than <d> days (default: 30)")
+parser = argparse.ArgumentParser("delete_empty_project_versions")
 parser.add_argument("--base-url", required=True, help="blackduck hub server url e.g. https://your.app.blackduck.com")
 parser.add_argument("--token-file", dest='token_file', required=True, help="path to file containing blackduck hub token")
 parser.add_argument("--no-verify", dest='verify', action='store_false', help="disable TLS certificate verification")
