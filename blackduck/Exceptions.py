@@ -6,7 +6,7 @@ Created on Dec 22, 2020
 '''
 import logging
 from json import JSONDecodeError
-from .Utils import pfmt
+from pprint import pformat
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def http_exception_handler(self, response, name):
     }
 
     try:
-        content = pfmt(response.json())
+        content = pformat(response.json())
     except JSONDecodeError:
         content = response.text
 
