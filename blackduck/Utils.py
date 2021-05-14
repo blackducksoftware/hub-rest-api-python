@@ -34,6 +34,7 @@ def to_datetime(date):
             month=date.month,
             day=date.day
         )
+    raise TypeError(f"object of type {type(date)} cannot be converted to datetime")
         
 
 def timespan(days_ago, from_date=datetime.now(), delta=timedelta(weeks=1)):
