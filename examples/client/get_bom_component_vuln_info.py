@@ -87,9 +87,9 @@ if args.csv_file:
         writer.writeheader()
         for comp_vuln in all_bom_component_vulns:
             row_data = {
-                'Vulnerability Name': comp_vuln['vulnerabilityName'],
-                'Vulnerability Description': comp_vuln['description'],
-                'Remediation Status': comp_vuln['remediationStatus'],
+                'Vulnerability Name': comp_vuln['vulnerabilityWithRemediation']['vulnerabilityName'],
+                'Vulnerability Description': comp_vuln['vulnerabilityWithRemediation']['description'],
+                'Remediation Status': comp_vuln['vulnerabilityWithRemediation']['remediationStatus'],
                 'Component': comp_vuln['componentName'],
                 'Component Version': comp_vuln['componentVersionName'],
                 'Exploit Available': comp_vuln['vulnerability_details'].get('exploitPublishDate', 'None available'),
