@@ -234,7 +234,7 @@ class Client:
             self.http_error_handler(r)
             raise
 
-    def get_items(self, url, page_size=100, **kwargs):
+    def get_items(self, url, page_size=1000, **kwargs):
         """Fetch 'pages' of items
 
         Args:
