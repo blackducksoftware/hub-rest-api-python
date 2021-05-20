@@ -239,7 +239,7 @@ class Client:
 
         Args:
             url (str): of endpoint
-            page_size (int): Number of items to get per page. Defaults to 100.
+            page_size (int): Number of items to get per page. Defaults to 250.
             kwargs: passed to session.request
 
         Yields:
