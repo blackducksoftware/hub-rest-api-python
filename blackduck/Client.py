@@ -234,12 +234,12 @@ class Client:
             self.http_error_handler(r)
             raise
 
-    def get_items(self, url, page_size=100, **kwargs):
+    def get_items(self, url, page_size=250, **kwargs):
         """Fetch 'pages' of items
 
         Args:
             url (str): of endpoint
-            page_size (int): Number of items to get per page. Defaults to 100.
+            page_size (int): Number of items to get per page. Defaults to 250.
             kwargs: passed to session.request
 
         Yields:
