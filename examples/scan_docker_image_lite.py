@@ -33,17 +33,29 @@ Scans will be named as
         
 Layers are numbered in chronological order
 
+If a dockerfile or a base image spec is available, grouping could be done based on the 
+information gathered from those sources.
+
+layers that are present in the base image will be grouped as *_base_*
+layers that are not present in the base image will be grouped as *_addon_*
+
+
+
 Usage:
 
-scan_docker_image_slim.py [-h] imagespec  [--grouping=group_end:group_name,group_end:group_name]
+scan_docker_image_slim.py [-h] imagespec  [--grouping=group_end:group_name,group_end:group_name] | [--dockerfile=Dockerfile | --base-image=baseimagespec]
 
 positional arguments:
-  imagespec          Container image tag, e.g. repository/imagename:version
+  imagespec             Container image tag, e.g. repository/imagename:version
 
 optional arguments:
-  -h, --help         show this help message and exit
-
-  --grouping=group_end:group_name,group_end:group_name     specify layer grouping
+  -h, --help            show this help message and exit
+  --grouping GROUPING   Group layers into user defined provect versions (can't be used with --base-image)
+  --base-image BASE_IMAGE
+                        Use base image spec to determine base image/layers (can't be used with --grouping or
+                        --dockerfile)
+  --dockerfile DOCKERFILE
+                        Use Dockerfile to determine base image/layers (can't be used with --grouping or ---base-image)
   
 '''
 
