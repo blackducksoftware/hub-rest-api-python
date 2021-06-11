@@ -10,7 +10,13 @@ from blackduck.HubRestApi import HubInstance
 
 import argparse
 import json
+import logging
 import time
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
+)
 
 version_name_map = {
 	'version': 'VERSION',
