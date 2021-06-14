@@ -56,6 +56,8 @@ optional arguments:
                         --dockerfile)
   --dockerfile DOCKERFILE
                         Use Dockerfile to determine base image/layers (can't be used with --grouping or ---base-image)
+  --project-name        Specify project name (default is container image spec)
+  --project-verson      Specify project version (default is container image tag/version)
   
 '''
 
@@ -190,6 +192,8 @@ class ContainerImageScanner():
         self.base_image = base_image
         self.dockerfile = dockerfile
         self.base_layers = None
+        self.project_name = self.image_name
+        self.project_version = self.image_version
         print ("<--{}-->".format(self.grouping))
               
     def prepare_container_image(self):
@@ -220,12 +224,12 @@ class ContainerImageScanner():
                     layer['group_name'] = "undefined"
                 else:
                     layer['group_name'] = self.groups.get(str(intlist[key_number]))
-                layer['project_version'] = "{}_{}".format(self.image_version,layer['group_name'])
-                layer['name'] = "{}_{}_{}_layer_{}".format(self.image_name,self.image_version,layer['group_name'],str(num))
+                layer['project_version'] = "{}_{}".format(self.project_version,layer['group_name'])
+                layer['name'] = "{}_{}_{}_layer_{}".format(self.project_name,self.project_version,layer['group_name'],str(num))
             else:
-                layer['project_version'] = self.image_version
-                layer['name'] = self.image_name + "_" + self.image_version + "_layer_" + str(num)
-            layer['project_name'] = self.image_name
+                layer['project_version'] = self.project_version
+                layer['name'] = self.project_name + "_" + self.project_version + "_layer_" + str(num)
+            layer['project_name'] = self.project_name
             layer['path'] = i
             while self.config['history'][num + offset -1].get('empty_layer', False):
                 offset = offset + 1
@@ -246,7 +250,7 @@ class ContainerImageScanner():
         offset = 0
         for i in self.manifest[0]['Layers']:
             layer = {}
-            layer['project_name'] = self.image_name
+            layer['project_name'] = self.project_name
             layer['path'] = i
             while self.config['history'][num + offset -1].get('empty_layer', False):
                 offset = offset + 1
@@ -256,14 +260,14 @@ class ContainerImageScanner():
             if self.base_layers:
                 pass
                 if layer['shaid'] in self.base_layers:
-                    layer['project_version'] = "{}_{}".format(self.image_version,'base')
-                    layer['name'] = "{}_{}_{}_layer_{}".format(self.image_name,self.image_version,'base',str(num))
+                    layer['project_version'] = "{}_{}".format(self.project_version,'base')
+                    layer['name'] = "{}_{}_{}_layer_{}".format(self.project_name,self.project_version,'base',str(num))
                 else:
-                    layer['project_version'] = "{}_{}".format(self.image_version,'addon')
-                    layer['name'] = "{}_{}_{}_layer_{}".format(self.image_name,self.image_version,'addon',str(num))
+                    layer['project_version'] = "{}_{}".format(self.project_version,'addon')
+                    layer['name'] = "{}_{}_{}_layer_{}".format(self.project_name,self.project_version,'addon',str(num))
             else:
-                layer['project_version'] = self.image_version
-                layer['name'] = self.image_name + "_" + self.image_version + "_layer_" + str(num)
+                layer['project_version'] = self.project_version
+                layer['name'] = self.project_name + "_" + self.project_version + "_layer_" + str(num)
             self.layers.append(layer)
             num = num + 1
         print (json.dumps(self.layers, indent=4))
@@ -320,12 +324,19 @@ class ContainerImageScanner():
         return base_layers  
     
 
-def scan_container_image(imagespec, grouping=None, base_image=None, dockerfile=None):
+def scan_container_image(imagespec, grouping=None, base_image=None, dockerfile=None, project_name=None, project_version=None):
     
     hub = HubInstance()
     scanner = ContainerImageScanner(hub, imagespec, grouping=grouping, base_image=base_image, dockerfile=dockerfile)
+    if project_name:
+        scanner.project_name = project_name
+    if project_version:
+        scanner.project_version = project_version
     if not grouping:
-        scanner.base_layers = scanner.get_base_layers()
+        if not base_image and not dockerfile:
+            scanner.grouping = '1024:everything'
+        else:
+            scanner.base_layers = scanner.get_base_layers()
     scanner.prepare_container_image()
     scanner.process_container_image()
     scanner.submit_layer_scans()
@@ -342,6 +353,8 @@ def main(argv=None):
     parser.add_argument('--grouping',default=None, type=str, help="Group layers into user defined provect versions (can't be used with --base-image)")
     parser.add_argument('--base-image',default=None, type=str, help="Use base image spec to determine base image/layers (can't be used with --grouping or --dockerfile)")
     parser.add_argument('--dockerfile',default=None, type=str, help="Use Dockerfile to determine base image/layers (can't be used with --grouping or ---base-image)")
+    parser.add_argument('--project-name',default=None, type=str, help="Specify project name (default is container image spec)")
+    parser.add_argument('--project-version',default=None, type=str, help="Specify project version (default is container image tag/version)")
     
     args = parser.parse_args()
     
@@ -359,7 +372,7 @@ def main(argv=None):
         parser.print_help(sys.stdout)
         sys.exit(1)
 
-    scan_container_image(args.imagespec, args.grouping, args.base_image, args.dockerfile)
+    scan_container_image(args.imagespec, args.grouping, args.base_image, args.dockerfile, args.project_name, args.project_version)
         
     
 if __name__ == "__main__":
