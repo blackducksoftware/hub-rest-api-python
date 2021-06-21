@@ -67,7 +67,7 @@ Using --detect-options
 It is possible to pass detect options directly to detect command.
 For example one wants to specify cloning options directly
 
-python3 scan_container_image_lite.py <imagespec> --detect-options='--detect.clone.project.version.name=version --detect.project.clone.categories=COMPONENT_DATA,VULN_DATA'
+python3 scan_docker_image_lite.py <imagespec> --detect-options='--detect.clone.project.version.name=version --detect.project.clone.categories=COMPONENT_DATA,VULN_DATA'
 
 There is not validation of extra parameters passed, use with care.
 '''
