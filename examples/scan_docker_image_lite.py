@@ -58,7 +58,18 @@ optional arguments:
                         Use Dockerfile to determine base image/layers (can't be used with --grouping or ---base-image)
   --project-name        Specify project name (default is container image spec)
   --project-verson      Specify project version (default is container image tag/version)
-  
+  --detect-options DETECT_OPTIONS
+                        Extra detect options to be passed directlyto the detect
+
+
+Using --detect-options
+
+It is possible to pass detect options directly to detect command.
+For example one wants to specify cloning options directly
+
+python3 scan_container_image_lite.py <imagespec> --detect-options='--detect.clone.project.version.name=version --detect.project.clone.categories=COMPONENT_DATA,VULN_DATA'
+
+There is not validation of extra parameters passed, use with care.
 '''
 
 from blackduck.HubRestApi import HubInstance
@@ -153,7 +164,8 @@ class DockerWrapper():
 class Detector():
     def __init__(self, hub):
         # self.detecturl = 'https://blackducksoftware.github.io/hub-detect/hub-detect.sh'
-        self.detecturl = 'https://detect.synopsys.com/detect.sh'
+        # self.detecturl = 'https://detect.synopsys.com/detect.sh'
+        self.detecturl = 'https://detect.synopsys.com/detect7.sh'
         self.baseurl = hub.config['baseurl']
         self.filename = '/tmp/hub-detect.sh'
         self.token=hub.config['api_token']
@@ -176,7 +188,9 @@ class Detector():
 
 class ContainerImageScanner():
     
-    def __init__(self, hub, container_image_name, workdir='/tmp/workdir', grouping=None, base_image=None, dockerfile=None):
+    def __init__(
+        self, hub, container_image_name, workdir='/tmp/workdir', 
+        grouping=None, base_image=None, dockerfile=None, detect_options=None):
         self.hub = hub
         self.hub_detect = Detector(hub)
         self.docker = DockerWrapper(workdir)
@@ -194,6 +208,9 @@ class ContainerImageScanner():
         self.base_layers = None
         self.project_name = self.image_name
         self.project_version = self.image_version
+        self.extra_options = []
+        if detect_options:
+            self.extra_options = detect_options.split(" ")
         print ("<--{}-->".format(self.grouping))
               
     def prepare_container_image(self):
@@ -286,6 +303,7 @@ class ContainerImageScanner():
             # options.append('--detect.blackduck.signature.scanner.disabled=false')
             options.append('--detect.code.location.name={}_{}_code_{}'.format(layer['name'],self.image_version,layer['path']))
             options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path'].split('/')[0]))
+            options.extend(self.extra_options)
             self.hub_detect.detect_run(options)
 
     def get_base_layers(self):
@@ -324,10 +342,14 @@ class ContainerImageScanner():
         return base_layers  
     
 
-def scan_container_image(imagespec, grouping=None, base_image=None, dockerfile=None, project_name=None, project_version=None):
+def scan_container_image(
+    imagespec, grouping=None, base_image=None, dockerfile=None, 
+    project_name=None, project_version=None, detect_options=None):
     
     hub = HubInstance()
-    scanner = ContainerImageScanner(hub, imagespec, grouping=grouping, base_image=base_image, dockerfile=dockerfile)
+    scanner = ContainerImageScanner(
+        hub, imagespec, grouping=grouping, base_image=base_image, 
+        dockerfile=dockerfile, detect_options=detect_options)
     if project_name:
         scanner.project_name = project_name
     if project_version:
@@ -355,6 +377,7 @@ def main(argv=None):
     parser.add_argument('--dockerfile',default=None, type=str, help="Use Dockerfile to determine base image/layers (can't be used with --grouping or ---base-image)")
     parser.add_argument('--project-name',default=None, type=str, help="Specify project name (default is container image spec)")
     parser.add_argument('--project-version',default=None, type=str, help="Specify project version (default is container image tag/version)")
+    parser.add_argument('--detect-options',default=None, type=str, help="Extra detect options to be passed directlyto the detect")
     
     args = parser.parse_args()
     
@@ -372,7 +395,14 @@ def main(argv=None):
         parser.print_help(sys.stdout)
         sys.exit(1)
 
-    scan_container_image(args.imagespec, args.grouping, args.base_image, args.dockerfile, args.project_name, args.project_version)
+    scan_container_image(
+        args.imagespec, 
+        args.grouping, 
+        args.base_image, 
+        args.dockerfile, 
+        args.project_name, 
+        args.project_version,
+        args.detect_options)
         
     
 if __name__ == "__main__":
