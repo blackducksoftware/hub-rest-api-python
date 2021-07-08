@@ -10,15 +10,36 @@ from blackduck.HubRestApi import HubInstance
 
 import argparse
 import json
+import logging
 import time
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
+)
+
+version_name_map = {
+	'version': 'VERSION',
+	'scans': 'CODE_LOCATIONS',
+	'components': 'COMPONENTS',
+	'vulnerabilities': 'SECURITY',
+	'source':'FILES',
+	'cryptography': 'CRYPTO_ALGORITHMS',
+	'license_terms': 'LICENSE_TERM_FULFILLMENT',
+	'component_additional_fields': 'BOM_COMPONENT_CUSTOM_FIELDS',
+	'project_version_additional_fields': 'PROJECT_VERSION_CUSTOM_FIELDS',
+	'vulnerability_matches': 'VULNERABILITY_MATCH'
+}
+
+all_reports = list(version_name_map.keys())
 
 parser = argparse.ArgumentParser("A program to create reports for a given project-version")
 parser.add_argument("project_name")
 parser.add_argument("version_name")
 parser.add_argument("-z", "--zip_file_name", default="reports.zip")
 parser.add_argument("-r", "--reports",
-	default="version,scans,components,vulnerabilities,source", 
-	help="Comma separated list (no spaces) of the reports to generate - version, scans, components, vulnerabilities, source, and cryptography reports (default: all, except cryptography")
+	default=",".join(all_reports), 
+	help=f"Comma separated list (no spaces) of the reports to generate - {list(version_name_map.keys())}. Default is all reports.")
 parser.add_argument('--format', default='CSV', choices=["CSV"], help="Report format - only CSV available for now")
 parser.add_argument('-t', '--tries', default=4, type=int, help="How many times to retry downloading the report, i.e. wait for the report to be generated")
 parser.add_argument('-s', '--sleep_time', default=5, type=int, help="The amount of time to sleep in-between (re-)tries to download the report")
@@ -26,14 +47,6 @@ parser.add_argument('-s', '--sleep_time', default=5, type=int, help="The amount 
 args = parser.parse_args()
 
 hub = HubInstance()
-
-version_name_map = {
-	'version': 'VERSION',
-	'scans': 'CODE_LOCATIONS',
-	'components': 'COMPONENTS',
-	'vulnerabilities': 'SECURITY',
-	'source':'FILES'
-}
 
 class FailedReportDownload(Exception):
 	pass
