@@ -11,7 +11,7 @@ def upload_scan(self, filename):
     headers = self.get_headers()
     if filename.endswith('.json') or filename.endswith('.jsonld'):
         headers['Content-Type'] = 'application/ld+json'
-        with open(filename,"r") as f:
+        with open(filename,"rb") as f:
             response = requests.post(url, headers=headers, data=f, verify=not self.config['insecure'])
     elif filename.endswith('.bdio'):
         headers['Content-Type'] = 'application/vnd.blackducksoftware.bdio+zip'
