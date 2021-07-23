@@ -29,6 +29,8 @@ for cf in custom_fields:
         cf_to_modify = cf
         break
 
+import pdb; pdb.set_trace()
+
 if cf_to_modify:
     logging.debug("Updating custom field {} with value {}".format(cf_to_modify, args.new_value))
     cf_to_modify['values'] = [args.new_value]
