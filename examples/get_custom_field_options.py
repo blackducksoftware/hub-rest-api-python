@@ -21,11 +21,12 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 hub = HubInstance()
 
-# delete all custom fields for the specified object type
+# get all custom fields for the specified object type
 custom_fields = hub.get_custom_fields(args.object).get('items', [])
 for custom_field in custom_fields:
     field_url = custom_field['_meta']['href']
     field_id = field_url.split("/")[-1]
+    import pdb; pdb.set_trace()
     if field_id == args.field_id:
         field_obj = hub.execute_get(field_url).json()
 
