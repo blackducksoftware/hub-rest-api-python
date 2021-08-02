@@ -16,6 +16,8 @@ For a standard container image specification as in
 
 Main project will be named "repository/image-name" and will have "version" as a version
 
+Docker Inspector scan project on squashed imaged will be named as "repository/image-name"_squashed and will have "version" as a version
+
 Sub-projects for layers will be named as
       repository/image-name_layer_1
       repository/image-name_layer_2
@@ -149,6 +151,18 @@ class Detector():
         cmd.extend(options)
         subprocess.run(cmd)
 
+    def detect_inspector_run(self, options=['--help']):
+        cmd = ['bash']
+        cmd.append(self.filename)
+        cmd.append('--blackduck.url=%s' % self.baseurl)
+        cmd.append('--blackduck.api.token=' + self.token)
+        cmd.append('--blackduck.trust.cert=true')
+        cmd.append('--detect.tools=DOCKER')
+        #cmd.append('--detect.docker.inspector.air.gap.path=/root/packaged-inspectors/docker')
+        cmd.extend(options)
+        subprocess.run(cmd)
+
+
 class ContainerImageScanner():
     
     def __init__(self, hub, container_image_name, workdir='/tmp/workdir', dockerfile=None, base_image=None, omit_base_layers=False):
@@ -223,13 +237,11 @@ class ContainerImageScanner():
                 if not self.omit_base_layers:
                     main_project_release_base = self.hub.get_or_create_project_version(self.image_name, base_image_version)
                     for layer in base:
-                        parameters = {}
-                        parameters['description'] = layer['command']['created_by']
+                        parameters = {'description': layer['command']['created_by']}
                         sub_project_release = self.hub.get_or_create_project_version(layer['name'], self.image_version, parameters=parameters)
                         self.hub.add_version_as_component(main_project_release_base, sub_project_release)
                 for layer in addon:
-                    parameters = {}
-                    parameters['description'] = layer['command']['created_by']
+                    parameters = {'description': layer['command']['created_by']}
                     sub_project_release = self.hub.get_or_create_project_version(layer['name'], self.image_version, parameters=parameters)
                     self.hub.add_version_as_component(main_project_release_addon, sub_project_release)
             else:
@@ -268,10 +280,21 @@ class ContainerImageScanner():
         options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path'].split('/')[0]))
         self.hub_detect.detect_run(options)
 
+    def submit_docker_inspector_scan(self):
+        main_project_release = self.hub.get_or_create_project_version(self.image_name, self.image_version)
+        sub_project_release = self.hub.get_or_create_project_version(self.image_name + "_squashed", self.image_version)
+        self.hub.add_version_as_component(main_project_release, sub_project_release)
+        options = ['--detect.project.name={}_squashed'.format(self.image_name),
+                   '--detect.project.version.name="{}"'.format(self.image_version),
+                   '--detect.code.location.name=DI_{}'.format(self.docker.imagefile),
+                   '--detect.docker.tar={}'.format(self.docker.imagefile)]
+        self.hub_detect.detect_inspector_run(options)
+
     def cleanup_project_structure(self):
         release = self.hub.get_or_create_project_version(self.image_name,self.image_version)
         base_release = self.hub.get_project_version_by_name(self.image_name,self.image_version + "__base_layers")
         addon_release = self.hub.get_project_version_by_name(self.image_name,self.image_version + "_addon_layers")
+        squahed_release = self.hub.get_project_version_by_name(self.image_name,self.image_version + "_squashed")
         
         print("--------")
         print(base_release)
@@ -301,6 +324,8 @@ class ContainerImageScanner():
             print(self.hub.delete_project_version_by_name(self.image_name,self.image_version + "__base_layers"))
         if addon_release:
             print(self.hub.delete_project_version_by_name(self.image_name,self.image_version + "_addon_layers"))
+        if squahed_release :
+            print(self.hub.delete_project_version_by_name(self.image_name, self.image_version + "_squashed"))
         project = self.hub.get_project_by_name(self.image_name)
         versions = self.hub.get_project_versions(project)
         if versions['totalCount'] == 1:
@@ -357,6 +382,14 @@ def scan_container_image(imagespec, layer_number=0):
         scanner.generate_single_layer_project_structure(layer_number)
         scanner.submit_single_layer_scan(int(layer_number))
 
+
+def scan_squashed_image(imagespec) :
+    hub = HubInstance()
+    scanner = ContainerImageScanner(hub, imagespec)
+    scanner.prepare_container_image()
+    scanner.submit_docker_inspector_scan()
+
+
 def scan_container_image_with_dockerfile(imagespec, dockerfile, base_image, omit_base_layers):
     hub = HubInstance()
     scanner = ContainerImageScanner(hub, imagespec, dockerfile=dockerfile, base_image=base_image, omit_base_layers=omit_base_layers)
@@ -367,7 +400,8 @@ def scan_container_image_with_dockerfile(imagespec, dockerfile, base_image, omit
     scanner.process_container_image()
     scanner.generate_project_structures(base_layers)
     scanner.submit_layer_scans()
-    
+
+
 def clean_container_project(imagespec):
     hub = HubInstance()
     scanner = ContainerImageScanner(hub, imagespec)
@@ -383,6 +417,7 @@ def main(argv=None):
         
     parser = ArgumentParser()
     parser.add_argument('imagespec', help="Container image tag, e.g.  repository/imagename:version")
+    parser.add_argument('--inspector', default=False, help="Runs Docker Inspector scan on squashed image")
     parser.add_argument('--cleanup', default=False, help="Delete project hierarchy only. Do not scan")
     parser.add_argument('--rescan-layer',default=0, type=int, help="Rescan specific layer in case of failure, 0 - scan as usual")
     parser.add_argument('--dockerfile',default=None, type=str, help="Specify dockerfile used to build this container(experimantal), can't use with --base-image")
@@ -416,7 +451,8 @@ def main(argv=None):
             scan_container_image(args.imagespec)
         else:
             scan_container_image(args.imagespec, args.rescan_layer)
-    
+    if args.inspector :
+            scan_squashed_image(args.imagespec)
+
 if __name__ == "__main__":
     sys.exit(main())
-    
