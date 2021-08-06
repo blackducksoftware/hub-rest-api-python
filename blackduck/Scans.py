@@ -63,6 +63,19 @@ def get_codelocations(self, limit=100, unmapped=False, parameters={}):
         jsondata['totalCount'] = len(jsondata['items'])
     return jsondata
 
+def get_codelocations_internal(self, limit=100, unmapped=False, parameters={}):
+    parameters['limit'] = limit
+    paramstring = self._get_parameter_string(parameters)
+    headers = self.get_headers()
+    url = self.get_apibase() + "/codelocations" + paramstring
+    headers['Accept'] = 'application/vnd.blackducksoftware.internal-1+json'
+    response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+    jsondata = response.json()
+    if unmapped:
+        jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
+        jsondata['totalCount'] = len(jsondata['items'])
+    return jsondata
+
 def get_codelocation_scan_summaries(self, code_location_id = None, code_location_obj = None, limit=100):
     '''Retrieve the scans (aka scan summaries) for the given location. You can give either
     code_location_id or code_location_obj. If both are supplied, precedence is to use code_location_obj

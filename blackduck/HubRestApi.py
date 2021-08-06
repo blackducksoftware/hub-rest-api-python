@@ -111,7 +111,7 @@ class HubInstance(object):
     from .Versions import ( add_version_as_component, remove_version_as_component )
     from .Scans import (
         delete_codelocation, delete_unmapped_codelocations, download_project_scans, 
-        get_codelocation_scan_summaries, get_codelocations, get_scan_locations, upload_scan
+        get_codelocation_scan_summaries, get_codelocations, get_codelocations_internal, get_scan_locations, upload_scan
     )
     from .Components import (
         _get_components_url, find_component_info_for_protex_component, get_component_by_id, 

@@ -13,13 +13,13 @@ hub=HubInstance()
 
 batch_size=500
 
-codelocations = hub.get_codelocations(limit=1, offset=1)
+codelocations = hub.get_codelocations(limit=1)
 total_count = codelocations['totalCount']
 
 status = {"in_progress": 0, "unstarted": 0, "completed": 0, "error": 0, "skipped": 0}
 
 for i in status.keys():
-    codelocations = hub.get_codelocations_internal(limit=1, offset=0, parameters={"filter": "codeLocationStatus:{}".format(i)})
+    codelocations = hub.get_codelocations_internal(limit=1, parameters={"filter": "codeLocationStatus:{}".format(i)})
     status[i] = codelocations['totalCount']
     
 print (total_count, status)
