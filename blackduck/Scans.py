@@ -11,7 +11,7 @@ def upload_scan(self, filename):
     headers = self.get_headers()
     if filename.endswith('.json') or filename.endswith('.jsonld'):
         headers['Content-Type'] = 'application/ld+json'
-        with open(filename,"r") as f:
+        with open(filename,"rb") as f:
             response = requests.post(url, headers=headers, data=f, verify=not self.config['insecure'])
     elif filename.endswith('.bdio'):
         headers['Content-Type'] = 'application/vnd.blackducksoftware.bdio+zip'
@@ -56,6 +56,19 @@ def get_codelocations(self, limit=100, unmapped=False, parameters={}):
     headers = self.get_headers()
     url = self.get_apibase() + "/codelocations" + paramstring
     headers['Accept'] = 'application/vnd.blackducksoftware.scan-4+json'
+    response = requests.get(url, headers=headers, verify = not self.config['insecure'])
+    jsondata = response.json()
+    if unmapped:
+        jsondata['items'] = [s for s in jsondata['items'] if 'mappedProjectVersion' not in s]
+        jsondata['totalCount'] = len(jsondata['items'])
+    return jsondata
+
+def get_codelocations_internal(self, limit=100, unmapped=False, parameters={}):
+    parameters['limit'] = limit
+    paramstring = self._get_parameter_string(parameters)
+    headers = self.get_headers()
+    url = self.get_apibase() + "/codelocations" + paramstring
+    headers['Accept'] = 'application/vnd.blackducksoftware.internal-1+json'
     response = requests.get(url, headers=headers, verify = not self.config['insecure'])
     jsondata = response.json()
     if unmapped:
