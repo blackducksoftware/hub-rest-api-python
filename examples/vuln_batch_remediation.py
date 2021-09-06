@@ -26,10 +26,12 @@ o) Origin subtring - intended to apply remediation status for specific origins
 Each processing step can be turned on or off.  At least one step must be run.  Default
 is to run both.
 
-The script get's it CVE and orign lists from CSV files.  The CSV filenames are loaded
+The script can get's its CVE and orign lists from CSV files.  The CSV filenames are loaded
 from Custom Fields in the Black Duck project.  This allows different groups of projects to
 use different remeidation settings.  If a CVE remediation status should apply globally
 to all projects, Black Duck's global remediation feature should be used.
+
+The script can also get the CSV filenames from the command line arguments.
 
 Here is an example of the CSV data for the CVE list:
 
@@ -114,9 +116,19 @@ def find_custom_field_value (custom_fields, custom_field_label):
                 return None
     return None
 
+
+
+def set_vulnerablity_remediation(hub, vuln, remediation_status, remediation_comment):
+    url = vuln['_meta']['href']
+    update={}
+    update['remediationStatus'] = remediation_status
+    update['comment'] = remediation_comment
+    response = hub.execute_put(url, data=update)
+    return response
+
 def process_vulnerabilities(hub, vulnerable_components, remediation_data=None, exclusion_data=None):
     count = 0
-    print('"Component Name","Component Version","Component OriginID","CVE","Reason","Remeidation Status","HTTP response code"')
+    print('"Component Name","Component Version","CVE","Reason","Remeidation Status","HTTP response code"')
 
     for vuln in vulnerable_components['items']:
         if vuln['vulnerabilityWithRemediation']['remediationStatus'] == "NEW":
@@ -125,6 +137,8 @@ def process_vulnerabilities(hub, vulnerable_components, remediation_data=None, e
 
             if (exclusion_data):
                 exclusion_action = origin_is_excluded(vuln, exclusion_data)
+            else:
+                exclusion_action = None
 
             # If vuln has both a remdiation action and an origin exclusion action, set remdiation status
             # to the remdiation action.  Append the exclusion action's comment to the overall comment.
@@ -137,13 +151,14 @@ def process_vulnerabilities(hub, vulnerable_components, remediation_data=None, e
                 reason = 'origin-exclusion'
 
             if (remediation_action):
-                resp = hub.set_vulnerablity_remediation(vuln, remediation_action[0],remediation_action[1])
+                resp = set_vulnerablity_remediation(hub, vuln, remediation_action[0],remediation_action[1])
                 count += 1
-                print ('\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"'.
+                print ('\"{}\",\"{}\",\"{}\",\"{}\",\"{}\",\"{}\"'.
                     format(vuln['componentName'], vuln['componentVersionName'],
-                    vuln['componentVersionOriginId'], 
                     vuln['vulnerabilityWithRemediation']['vulnerabilityName'],
                     reason, remediation_action[0], resp.status_code))
+               
+
     print (f'Remediated {count} vulnerabilities.')
 
 def main(argv=None): # IGNORE:C0111
@@ -178,7 +193,9 @@ USAGE
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument("projectname", help="Project nname")
         parser.add_argument("projectversion", help="Project vesrsion")
-        parser.add_argument("--no-process-cve-remediation-list", dest='process_cve_remediation_list', action='store_false', help="Disbable processing CVE-Remediation-list")
+        parser.add_argument("--remediation-list", dest="local_remediation_list", default=None, help="Filename of cve remediation list csv file")
+        parser.add_argument("--origin-exclusion-list", dest="local_origin_exclusion_list", default=None, help="Filename of origin exclusion list csv file")
+        parser.add_argument("--no-process-cve-remediation-list", dest='process_cve_remediation_list', action='store_false', help="Disable processing CVE-Remediation-list")
         parser.add_argument("--no-process-origin-exclusion-list", dest='process_origin_exclusion_list', action='store_false', help="Disable processing Origin-Exclusion-List")
         parser.add_argument("--cve-remediation-list-custom-field-label", default='CVE Remediation List', help='Label of Custom Field on Black Duck that contains remeidation list file name')
         parser.add_argument("--origin-exclusion-list-custom-field-label", default='Origin Exclusion List', help='Label of Custom Field on Black Duck that containts origin exclusion list file name')
@@ -189,6 +206,8 @@ USAGE
 
         projectname = args.projectname
         projectversion = args.projectversion
+        local_cve_remediation_file = args.local_remediation_list
+        local_origin_exclusion_file = args.local_origin_exclusion_list
         process_cve_remediation = args.process_cve_remediation_list
         process_origin_exclulsion = args.process_origin_exclusion_list
        
@@ -203,21 +222,34 @@ USAGE
         hub = HubInstance()
         project = hub.get_project_by_name(projectname)
         version = hub.get_project_version_by_name(projectname, projectversion)
-        custom_fields = hub.get_cf_values (project)
+        
+        custom_fields = hub.get_cf_values(project)
 
         if (process_cve_remediation):
-            cve_remediation_file = find_custom_field_value (custom_fields, args.cve_remediation_list_custom_field_label)
-            print (f' Opening: {args.cve_remediation_list_custom_field_label}:{cve_remediation_file}')
+
+            if (local_cve_remediation_file):
+                cve_remediation_file = local_cve_remediation_file
+                print (f' Opening: {cve_remediation_file}')
+            else:
+                cve_remediation_file = find_custom_field_value (custom_fields, args.cve_remediation_list_custom_field_label)
+                print (f' Opening: {args.cve_remediation_list_custom_field_label}:{cve_remediation_file}')
+
             remediation_data = load_remediation_input(cve_remediation_file)
         else:
             remediation_data = None
 
         if (process_origin_exclulsion):
-            exclusion_list_file = find_custom_field_value (custom_fields, args.origin_exclusion_list_custom_field_label)
-            print (f' Opening: {args.origin_exclusion_list_custom_field_label}:{exclusion_list_file}')
+
+            if local_origin_exclusion_file:
+                exclusion_list_file = local_origin_exclusion_file
+                print (f' Opening: {exclusion_list_file}')
+            else:
+                exclusion_list_file = find_custom_field_value (custom_fields, args.origin_exclusion_list_custom_field_label)
+                print (f' Opening: {args.origin_exclusion_list_custom_field_label}:{exclusion_list_file}')
             exclusion_data = load_remediation_input(exclusion_list_file)
         else:
             exclusion_data = None
+    
 
         # Retrieve the vulnerabiltites for the project version
         vulnerable_components = hub.get_vulnerable_bom_components(version)
