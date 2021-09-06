@@ -1,5 +1,5 @@
 '''
-Export the vulnerabilites from a project version to CSV. Can be used to apply batch vulnerability
+Export the vulnerabilites from a project as CSV. Can be used to apply batch vulnerability
 remediation with vuln_batch_remediation.py
 '''
 from blackduck import Client
@@ -25,6 +25,7 @@ def main():
     parser = argparse.ArgumentParser(prog=program_name, usage="%(prog)s [options]", description="Automated Assessment")
     parser.add_argument("--output", required=False,help="csv output path" )
     parser.add_argument("--project", required=True, help="project name")
+    parser.add_argument("--base-url", required=False, help="base url", default="https://blackduck.omicron.at")
     parser.add_argument("--version", required=False, help="project version, e.g. latest")
     parser.add_argument("--component", required=False, help="component name")
     args = parser.parse_args()
@@ -39,7 +40,7 @@ def main():
 
     bd = Client(
         token=API_TOKEN,
-        base_url="https://blackduck.omicron.at",
+        base_url=args.base_url,
         verify=False  # TLS certificate verification
     )
 
@@ -64,11 +65,7 @@ def main():
                                 name = remediation['vulnerabilityName']
                                 status = remediation['remediationStatus']
                                 description = remediation['description'].replace('\r', '').replace('\n', '')
-
-                                try:
-                                    comment = remediation['remediationComment'].replace('\r', '').replace('\n', '')
-                                except KeyError:
-                                    comment = ""
+                                comment = remediation.get('remediationComment', "").replace('\r', '').replace('\n', '')
                                 
                                 row =  [name, status, comment, componentName, componentVersion, description]
                                 csv_writer.writerow(row)
