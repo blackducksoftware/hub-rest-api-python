@@ -230,7 +230,6 @@ USAGE
         custom_fields = hub.get_cf_values(project)
 
         if (process_cve_remediation):
-
             if (local_cve_remediation_file):
                 cve_remediation_file = local_cve_remediation_file
                 print (f' Opening: {cve_remediation_file}')
@@ -243,7 +242,6 @@ USAGE
             remediation_data = None
 
         if (process_origin_exclulsion):
-
             if local_origin_exclusion_file:
                 exclusion_list_file = local_origin_exclusion_file
                 print (f' Opening: {exclusion_list_file}')

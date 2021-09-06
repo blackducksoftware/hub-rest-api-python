@@ -1,14 +1,20 @@
 '''
 Export the vulnerabilites from a project as CSV. Can be used to apply batch vulnerability
 remediation with vuln_batch_remediation.py
+
+Output is in format:
+identifier, status, comment, componentName, componentVersion, description 
+
+The API token should be specified in a .env file.
 '''
-from blackduck import Client
-import logging
-import csv
-import argparse
-from pprint import pprint
+import re
 import os
 import sys
+import csv
+import logging
+import argparse
+from pprint import pprint
+from blackduck import Client
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -47,27 +53,24 @@ def main():
     for project in bd.get_resource('projects'):
         if (project['name'] == projectname):
             for version in bd.get_resource('versions', project):
-
                 if (projectversion == None):
                     pprint(version['versionName'])
 
                 else:
                     if (version['versionName'] == projectversion):
                         for vulnverable_component in bd.get_resource('vulnerable-components', version):
-                            # TODO maybe match component name with regex?
-                            if (vulnverable_component['componentName'] == component or component == None):
+                            componentName = vulnverable_component["componentName"]
 
-                                componentName = vulnverable_component["componentName"]
+                            if (re.search(component, componentName, re.IGNORECASE) or component == None):
                                 componentVersion = vulnverable_component["componentVersionName"]
-
                                 remediation = vulnverable_component['vulnerabilityWithRemediation']
                                 
-                                name = remediation['vulnerabilityName']
                                 status = remediation['remediationStatus']
+                                identifier = remediation['vulnerabilityName']
                                 description = remediation['description'].replace('\r', '').replace('\n', '')
                                 comment = remediation.get('remediationComment', "").replace('\r', '').replace('\n', '')
                                 
-                                row =  [name, status, comment, componentName, componentVersion, description]
+                                row =  [identifier, status, comment, componentName, componentVersion, description]
                                 csv_writer.writerow(row)
                         break
             break
