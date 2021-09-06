@@ -83,15 +83,19 @@ __updated__ = '2021-12-26'
 
 
 def load_remediation_input(remediation_file):
-    with open(remediation_file, mode='r') as infile:
+    with open(remediation_file, mode='r', encoding="utf-8") as infile:
         reader = csv.reader(infile)
         return {rows[0]:[rows[1],rows[2]] for rows in reader}
 
 def remediation_is_valid(vuln, remediation_data):
     vulnerability_name = vuln['vulnerabilityWithRemediation']['vulnerabilityName']
-    # remediation_status = vuln['vulnerabilityWithRemediation']['remediationStatus']
-    # remediation_comment = vuln['vulnerabilityWithRemediation'].get('remediationComment','')
+    remediation_status = vuln['vulnerabilityWithRemediation']['remediationStatus']
+    remediation_comment = vuln['vulnerabilityWithRemediation'].get('remediationComment','')
+    
     if vulnerability_name in remediation_data.keys():
+        remediation = remediation_data[vulnerability_name]
+        if (remediation_status == remediation[0] and remediation_comment == remediation[1]):
+            return None
         return remediation_data[vulnerability_name]
     else:
         return None
