@@ -203,7 +203,7 @@ USAGE
         hub = HubInstance()
         project = hub.get_project_by_name(projectname)
         version = hub.get_project_version_by_name(projectname, projectversion)
-        custom_fields = hub.get_project_custom_fields (project)
+        custom_fields = hub.get_cf_values (project)
 
         if (process_cve_remediation):
             cve_remediation_file = find_custom_field_value (custom_fields, args.cve_remediation_list_custom_field_label)
