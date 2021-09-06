@@ -61,7 +61,7 @@ def main():
                         for vulnverable_component in bd.get_resource('vulnerable-components', version):
                             componentName = vulnverable_component["componentName"]
 
-                            if (re.search(component, componentName, re.IGNORECASE) or component == None):
+                            if (component == None or re.search(component, componentName, re.IGNORECASE)):
                                 componentVersion = vulnverable_component["componentVersionName"]
                                 remediation = vulnverable_component['vulnerabilityWithRemediation']
                                 

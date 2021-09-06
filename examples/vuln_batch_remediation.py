@@ -232,7 +232,7 @@ USAGE
         if (process_cve_remediation):
             if (local_cve_remediation_file):
                 cve_remediation_file = local_cve_remediation_file
-                print (f' Opening: {cve_remediation_file}')
+                print (f' Opening CVE remediation file: {cve_remediation_file}')
             else:
                 cve_remediation_file = find_custom_field_value (custom_fields, args.cve_remediation_list_custom_field_label)
                 print (f' Opening: {args.cve_remediation_list_custom_field_label}:{cve_remediation_file}')
@@ -244,7 +244,7 @@ USAGE
         if (process_origin_exclulsion):
             if local_origin_exclusion_file:
                 exclusion_list_file = local_origin_exclusion_file
-                print (f' Opening: {exclusion_list_file}')
+                print (f' Opening origin exclusion list: {exclusion_list_file}')
             else:
                 exclusion_list_file = find_custom_field_value (custom_fields, args.origin_exclusion_list_custom_field_label)
                 print (f' Opening: {args.origin_exclusion_list_custom_field_label}:{exclusion_list_file}')
