@@ -25,11 +25,9 @@ logging.basicConfig(
     level=logging.DEBUG,
     format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
 )
-<<<<<<< HEAD
-=======
+
 def strip_newline(str):
     return str.replace('\r', '').replace('\n', '')
->>>>>>> new-client-script
 
 def main():
     program_name = os.path.basename(sys.argv[0])
