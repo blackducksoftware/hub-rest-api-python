@@ -25,6 +25,11 @@ logging.basicConfig(
     level=logging.DEBUG,
     format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
 )
+<<<<<<< HEAD
+=======
+def strip_newline(str):
+    return str.replace('\r', '').replace('\n', '')
+>>>>>>> new-client-script
 
 def main():
     program_name = os.path.basename(sys.argv[0])
@@ -67,8 +72,13 @@ def main():
                                 
                                 status = remediation['remediationStatus']
                                 identifier = remediation['vulnerabilityName']
+<<<<<<< HEAD
                                 description = remediation['description'].replace('\r', '').replace('\n', '')
                                 comment = remediation.get('remediationComment', "").replace('\r', '').replace('\n', '')
+=======
+                                description = strip_newline(remediation['description'])
+                                comment = strip_newline(remediation.get('remediationComment', ""))
+>>>>>>> new-client-script
                                 
                                 row =  [identifier, status, comment, componentName, componentVersion, description]
                                 csv_writer.writerow(row)
