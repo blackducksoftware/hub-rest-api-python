@@ -46,20 +46,13 @@ def main():
     parser.add_argument("--project", required=True, help="project name")
     parser.add_argument("--base-url", required=False, help="base url", default="https://blackduck.omicron.at")
     parser.add_argument("--version", required=False, help="project version, e.g. latest")
-    parser.add_argument("--component", required=False, help="component name")
     parser.add_argument("--components", required=False, help="component names, comma seperated without space")
     args = parser.parse_args()
 
     components = args.components.split(',') if args.components != None else []
-
-    if (args.component != None):
-        components.append(args.component)
-
     projectname = args.project
     projectversion = args.version
     output = args.output  if  args.output != None else "output.csv"
-
-    print(components)
 
     csv_file = open(output, mode='w', newline='', encoding='utf-8')
     csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -81,7 +74,6 @@ def main():
                         for vulnverable_component in bd.get_resource('vulnerable-components', version):
                             componentName = vulnverable_component["componentName"]
 
-                            #if (component == None or re.search(component, componentName, re.IGNORECASE)):
                             if (match_component(components, componentName)):
                                 componentVersion = vulnverable_component["componentVersionName"]
                                 remediation = vulnverable_component['vulnerabilityWithRemediation']
