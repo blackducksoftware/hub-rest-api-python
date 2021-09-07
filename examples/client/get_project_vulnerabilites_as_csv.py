@@ -5,7 +5,7 @@ remediation with vuln_batch_remediation.py
 Output is in format:
 identifier, status, comment, componentName, componentVersion, description 
 
-The API token should be specified in a .env file.
+The API token should be specified in a .env file or as environment variable.
 '''
 import re
 import os

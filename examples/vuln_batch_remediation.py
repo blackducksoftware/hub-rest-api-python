@@ -200,7 +200,7 @@ USAGE
         parser.add_argument("--remediation-list", dest="local_remediation_list", default=None, help="Filename of cve remediation list csv file")
         parser.add_argument("--origin-exclusion-list", dest="local_origin_exclusion_list", default=None, help="Filename of origin exclusion list csv file")
         parser.add_argument("--no-process-cve-remediation-list", dest='process_cve_remediation_list', action='store_false', help="Disable processing CVE-Remediation-list")
-        parser.add_argument("--no-process-origin-exclusion-list", dest='process_origin_exclusion_list', action='store_false', help="Disable processing Origin-Exclusion-List")
+        parser.add_argument("--no-process-origin-exclusion-list", dest='process_origin_exclusion_list', default=None, action='store_false', help="Disable processing Origin-Exclusion-List")
         parser.add_argument("--cve-remediation-list-custom-field-label", default='CVE Remediation List', help='Label of Custom Field on Black Duck that contains remeidation list file name')
         parser.add_argument("--origin-exclusion-list-custom-field-label", default='Origin Exclusion List', help='Label of Custom Field on Black Duck that containts origin exclusion list file name')
         parser.add_argument('-V', '--version', action='version', version=program_version_message)
