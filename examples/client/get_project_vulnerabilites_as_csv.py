@@ -29,6 +29,16 @@ logging.basicConfig(
 def strip_newline(str):
     return str.replace('\r', '').replace('\n', '')
 
+def match_component(selected_components, component):
+    if (len(selected_components) == 0):
+        return True
+
+    for selected in selected_components:
+        if (re.search(selected, component, re.IGNORECASE)):
+            return True
+
+    return False
+
 def main():
     program_name = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=program_name, usage="%(prog)s [options]", description="Automated Assessment")
@@ -40,8 +50,11 @@ def main():
     parser.add_argument("--components", required=False, help="component names, comma seperated without space")
     args = parser.parse_args()
 
-    component = args.component
-    components = args.components.sqlit(',')
+    components = args.components.split(',') if args.components != None else []
+
+    if (args.component != None):
+        components.append(args.component)
+
     projectname = args.project
     projectversion = args.version
     output = args.output  if  args.output != None else "output.csv"
@@ -68,7 +81,8 @@ def main():
                         for vulnverable_component in bd.get_resource('vulnerable-components', version):
                             componentName = vulnverable_component["componentName"]
 
-                            if (component == None or re.search(component, componentName, re.IGNORECASE)):
+                            #if (component == None or re.search(component, componentName, re.IGNORECASE)):
+                            if (match_component(components, componentName)):
                                 componentVersion = vulnverable_component["componentVersionName"]
                                 remediation = vulnverable_component['vulnerabilityWithRemediation']
                                 
