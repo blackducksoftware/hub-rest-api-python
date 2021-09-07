@@ -72,13 +72,8 @@ def main():
                                 
                                 status = remediation['remediationStatus']
                                 identifier = remediation['vulnerabilityName']
-<<<<<<< HEAD
-                                description = remediation['description'].replace('\r', '').replace('\n', '')
-                                comment = remediation.get('remediationComment', "").replace('\r', '').replace('\n', '')
-=======
                                 description = strip_newline(remediation['description'])
                                 comment = strip_newline(remediation.get('remediationComment', ""))
->>>>>>> new-client-script
                                 
                                 row =  [identifier, status, comment, componentName, componentVersion, description]
                                 csv_writer.writerow(row)
