@@ -22,7 +22,7 @@ load_dotenv()
 API_TOKEN = os.getenv('API_TOKEN')
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
 )
 
