@@ -127,7 +127,7 @@ def set_vulnerablity_remediation(hub, vuln, remediation_status, remediation_comm
     url = vuln['_meta']['href']
     update={}
     update['remediationStatus'] = remediation_status
-    update['comment'] = remediation_comment
+    update['comment'] = remediation_comment.replace('\\n','\n')
     response = hub.execute_put(url, data=update)
     return response
 
