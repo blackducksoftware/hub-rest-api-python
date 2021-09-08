@@ -42,10 +42,10 @@ def match_component(selected_components, component):
 def main():
     program_name = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=program_name, usage="%(prog)s [options]", description="Automated Assessment")
+    parser.add_argument("project", help="project name")
+    parser.add_argument("version",  help="project version, e.g. latest")
     parser.add_argument("--output", required=False,help="csv output path" )
-    parser.add_argument("--project", required=True, help="project name")
     parser.add_argument("--base-url", required=False, help="base url", default="https://blackduck.omicron.at")
-    parser.add_argument("--version", required=False, help="project version, e.g. latest")
     parser.add_argument("--components", required=False, help="component names, comma seperated without space")
     args = parser.parse_args()
 
