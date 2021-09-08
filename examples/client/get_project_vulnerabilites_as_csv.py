@@ -27,7 +27,7 @@ logging.basicConfig(
 )
 
 def strip_newline(str):
-    return str.replace('\r', '').replace('\n', '')
+    return str.replace('\r', '').replace('\n', ' ')
 
 def match_component(selected_components, component):
     if (len(selected_components) == 0):
@@ -77,7 +77,7 @@ def main():
                             if (match_component(components, componentName)):
                                 componentVersion = vulnverable_component["componentVersionName"]
                                 remediation = vulnverable_component['vulnerabilityWithRemediation']
-                                
+
                                 status = remediation['remediationStatus']
                                 identifier = remediation['vulnerabilityName']
                                 description = strip_newline(remediation['description'])

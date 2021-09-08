@@ -69,7 +69,7 @@ import os
 import json
 import csv
 import traceback
-
+from pprint import pprint
 from argparse import ArgumentParser
 from argparse import RawDescriptionHelpFormatter
 
@@ -138,6 +138,8 @@ def process_vulnerabilities(hub, vulnerable_components, remediation_data=None, e
         if vuln['vulnerabilityWithRemediation']['remediationStatus'] == "NEW":
             if (remediation_data):
                 remediation_action = remediation_is_valid(vuln, remediation_data)
+            else:
+                remediation_action = None
 
             if (exclusion_data):
                 exclusion_action = origin_is_excluded(vuln, exclusion_data)
