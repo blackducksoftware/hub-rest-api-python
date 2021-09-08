@@ -210,7 +210,7 @@ USAGE
         parser = ArgumentParser(description=program_license, formatter_class=RawDescriptionHelpFormatter)
         parser.add_argument("projectname", help="Project nname")
         parser.add_argument("projectversion", help="Project vesrsion")
-        parser.add_argument("--dry-run", dest="dry_run", nargs='?', const="dry_run.csv", help="dry run")
+        parser.add_argument("--dry-run", dest="dry_run", nargs='?', const="dry_run.csv", help="dry run remediations and output to file")
         parser.add_argument("--remediation-list", dest="local_remediation_list", default=None, help="Filename of cve remediation list csv file")
         parser.add_argument("--origin-exclusion-list", dest="local_origin_exclusion_list", default=None, help="Filename of origin exclusion list csv file")
         parser.add_argument("--no-process-cve-remediation-list", dest='process_cve_remediation_list', action='store_false', help="Disable processing CVE-Remediation-list")
