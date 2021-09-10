@@ -277,11 +277,11 @@ class ContainerImageScanner():
             if self.base_layers:
                 pass
                 if layer['shaid'] in self.base_layers:
-                    layer['project_version'] = "{}_{}".format(self.project_version,'base')
-                    layer['name'] = "{}_{}_{}_layer_{}".format(self.project_name,self.project_version,'base',str(num))
+                    layer['group_name'] = 'base'
                 else:
-                    layer['project_version'] = "{}_{}".format(self.project_version,'addon')
-                    layer['name'] = "{}_{}_{}_layer_{}".format(self.project_name,self.project_version,'addon',str(num))
+                    layer['group_name'] = 'addon'
+                layer['project_version'] = "{}_{}".format(self.project_version,layer['group_name'])
+                layer['name'] = "{}_{}_{}_layer_{}".format(self.project_name,self.project_version,layer['group_name'],str(num))
             else:
                 layer['project_version'] = self.project_version
                 layer['name'] = self.project_name + "_" + self.project_version + "_layer_" + str(num)
@@ -303,8 +303,21 @@ class ContainerImageScanner():
             # options.append('--detect.blackduck.signature.scanner.disabled=false')
             options.append('--detect.code.location.name={}_{}_code_{}'.format(layer['name'],self.image_version,layer['path']))
             options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path'].split('/')[0]))
-            options.extend(self.extra_options)
+            if self.base_image or self.grouping or self.dockerfile:
+                options.extend(self.adorn_extra_options(layer))
+            else:
+                options.extend(self.extra_options)
             self.hub_detect.detect_run(options)
+
+    def adorn_extra_options(self, layer):
+        result = list()
+        option_to_adorn = '--detect.clone.project.version.name='
+        for option in self.extra_options:
+            if option.startswith(option_to_adorn):
+                result.append(option.rstrip() + "_" + layer['group_name'])
+            else:
+                result.append(option)
+        return result
 
     def get_base_layers(self):
         if (not self.dockerfile)and (not self.base_image):
