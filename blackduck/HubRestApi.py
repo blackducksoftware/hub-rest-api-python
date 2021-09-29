@@ -123,6 +123,7 @@ class HubInstance(object):
         supported_cf_object_types
     )
     from .Licences import ( _get_license_info, get_license_info_for_bom_component, get_licenses )
+    from .Snippet import ( _check_version_compatibility, get_file_matches_for_bom_component )
     from .System import ( get_health_checks, get_notifications )
     from .Ldap import ( disable_ldap, enable_ldap, get_ldap_configs, get_ldap_state )
 
