@@ -39,7 +39,7 @@ Usage: Enumerate BOM componets without copyrigth statements. retrieve
 
 ```
 python3 get_upstream_copyrights.py [OPTIONS]
-```
+
 OPTIONS:
     [-h]                            Help
     -u BASE_URL                     URL of a Blackduck system
@@ -50,4 +50,4 @@ OPTIONS:
     [-jo JSON_OUTPUT_FILE]          Write an optional JSON file with output data
     [-ukc USE_UPDATED_COPYRIGHT]    Use kbCopyright instead of updatedCopyright (default: false)
     [-nv]                           Trust TLS certificate
-
+```
