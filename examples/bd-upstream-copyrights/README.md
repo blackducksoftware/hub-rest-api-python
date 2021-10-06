@@ -20,7 +20,7 @@ Optional JSON file can be written
 
 ## Program output
 
-'''
+```
 #####
 ComponentName ComponentversionName
 #####
@@ -30,15 +30,16 @@ Statement-1
 Statement-1
 -----
 .....
-'''
+```
 
 ## Invokig 
 
 Usage: Enumerate BOM componets without copyrigth statements. retrieve 
        copyright statements form upstream channel and/or version
 
+```
 python3 get_upstream_copyrights.py [OPTIONS]
-
+```
 OPTIONS:
     [-h]                            Help
     -u BASE_URL                     URL of a Blackduck system
