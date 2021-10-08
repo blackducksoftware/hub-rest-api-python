@@ -85,10 +85,10 @@ def download_notification_report(bd, report_location_url):
 DOWNLOAD_ERROR_CODES = ['{report.main.read.unfinished.report.contents}', '{report.main.download.unfinished.report}']
 
 def download_report(bd, location, file_name_base, retries=10, sleep_time=5):
-	'''This function uses recursion to re-try downloading a report from the given location (URL). The reports take
-	some time to be generated so it may take several retries before the report is ready for download. Adjust retries
-	and sleep_time accordingly
-	'''
+    '''This function uses recursion to re-try downloading a report from the given location (URL). The reports take
+    some time to be generated so it may take several retries before the report is ready for download. Adjust retries
+    and sleep_time accordingly
+    '''
     report_id = location.split("/")[-1]
 
     if retries:
