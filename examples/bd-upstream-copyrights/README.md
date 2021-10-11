@@ -3,10 +3,10 @@
 ## Introduction
 
 This program will attempt to produce missing Copyright statements 
-for BOM entries that do not have orgin associated copyright statements.
+for BOM entries that do not have orgin provided copyright statements.
 
-The scriot will enumerate BOM entried that appear on NOTICES report 
-without copyright and for each of then will try to retrieve 
+The script will enumerate BOM entried that appear without copyright
+on NOTICES report and will attempt to retrieve 
 upstream copyright notices from source origin (github, long_tail)
 
 if that fails, the script will process earlier versions of componets
