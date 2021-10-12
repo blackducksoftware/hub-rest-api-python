@@ -1,3 +1,3 @@
 
 from .HubRestApi import HubInstance
-from .Client import Client
+from .ExtendedClient import Client

@@ -32,6 +32,9 @@ class EndpointNotFound(Exception):
 class UnacceptableContentType(Exception):
     pass
 
+class ProjectNotFound(Exception):
+    pass
+    
 def http_exception_handler(self, response, name):
     error_codes = {
         404: EndpointNotFound,
