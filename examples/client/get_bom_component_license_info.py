@@ -80,7 +80,7 @@ for bom_component in bd.get_resource('components', version):
         elif 'licenses' in license:
             for lic in license['licenses']:
                 if 'license' in lic:
-                    license_details.append(bd.session.get(lic['license']).json())
+                    license_details.append(bd.get_json(lic['license']))
                 else:
                     logging.warning(f"License {license.get('licenseDisplay', 'Unknown')} had no 'license' key (aka link)")
         else:
