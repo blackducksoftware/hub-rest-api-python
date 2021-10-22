@@ -153,6 +153,11 @@ post_data = {
         'reportType': 'VERSION_LICENSE',
         'reportFormat': args.format	
 }
+if args.include_copyright_info:
+    post_data.update({
+        'categories':[ "COPYRIGHT_TEXT" ]
+        })
+    
 license_reports_url = bd.list_resources(version).get('licenseReports')
 assert license_reports_url, "Ruh-roh, a version should always have a licenseReports resource under it"
 
