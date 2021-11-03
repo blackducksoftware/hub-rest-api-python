@@ -45,7 +45,7 @@ parser.add_argument(
     "-f", "--format", 
     default="JSON", 
     choices=FORMAT_CHOICES, 
-    help=f"Choose the output format. Must be one of {', '.join(FORMAT_CHOICES)}")
+    help=f"Choose the output format. Must be one of {', '.join(FORMAT_CHOICES)} (default: JSON)")
 parser.add_argument(
     "-o", "--output-file-base", 
     dest="output_file_base", 
@@ -88,8 +88,15 @@ columns = [
     'License Approval Status',
     'License Source',
     'License Ownership',
-    'Components Using License'
+    'Components Using License',
+    'Last Updated',
+    'Last Status Update',
+    'Status Updated By',
+    'Created At',
+    'Created By',
 ]
+
+# import pdb; pdb.set_trace()
 
 if args.format == "JSON":
     with open(f"{args.output_file_base}.json", "w") as f:
@@ -105,7 +112,12 @@ elif args.format == "CSV":
                 'License Approval Status': lic_info['licenseStatus'],
                 'License Source': lic_info['licenseSource'],
                 'License Ownership': lic_info['ownership'],
-                'Components Using License': lic_info['bomComponentCount']
+                'Components Using License': lic_info['bomComponentCount'],
+                'Last Updated': lic_info.get('updatedAt', 'Has not been updated'),
+                'Last Status Update': lic_info.get('statusUpdatedAt', 'Has not been updated'),
+                'Status Updated By': lic_info.get('statusUpdatedBy', 'Not applicable'),
+                'Created At': lic_info.get('createdAt', 'Not applicable'),
+                'Created By': lic_info.get('createdBy', 'Not applicable')
             }
             writer.writerow(row)
 elif args.format == "XSL":
