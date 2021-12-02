@@ -18,7 +18,7 @@ wheel
 twine
 
 #For some reporting libraries
-pandas
+#pandas
 
 # For easy date/time operations
 arrow
