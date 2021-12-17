@@ -60,8 +60,9 @@ args = parser.parse_args()
 
 def download_report(bd_client, location, filename, retries=args.tries):
 	report_id = location.split("/")[-1]
-	download_url = f"{bd_client.base_url}/api/reports/{report_id}"
+	download_url = f"{bd_client.base_url}api/reports/{report_id}"
 
+	import pdb; pdb.set_trace()
 	if retries:
 		print("Retrieving generated report from {}".format(location))
 		response = bd.session.get(download_url, headers={'Content-Type': 'application/zip', 'Accept':'application/zip'})
