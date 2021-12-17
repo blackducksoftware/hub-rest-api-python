@@ -67,7 +67,8 @@ class HubInstance(object):
     from .Core import (
         _create,_get_hub_rest_api_version_info,_get_major_version,_get_parameter_string,_validated_json_data,
         execute_delete,execute_get,execute_post,execute_put,get_api_version,get_apibase,get_auth_token,get_headers,
-        get_limit_paramstring,get_link,get_matched_components,get_tags_url,get_urlbase,read_config,write_config
+        get_limit_paramstring,get_link,get_matched_components,get_tags_url,get_urlbase,read_config,write_config,
+        _check_version_compatibility
     )
     from .Roles import (
         _get_role_url, assign_role_given_role_url, assign_role_to_user_or_group, 
@@ -123,7 +124,7 @@ class HubInstance(object):
         supported_cf_object_types
     )
     from .Licences import ( _get_license_info, get_license_info_for_bom_component, get_licenses )
-    from .Snippet import ( _check_version_compatibility, get_file_matches_for_bom_component )
+    from .Snippet import ( get_file_matches_for_bom_component )
     from .System import ( get_health_checks, get_notifications )
     from .Ldap import ( disable_ldap, enable_ldap, get_ldap_configs, get_ldap_state )
 
