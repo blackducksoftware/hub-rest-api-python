@@ -183,3 +183,9 @@ def get_matched_components(self, version_obj, limit=9999):
     url = "{}{}".format(url, param_string)
     response = self.execute_get(url)
     return response.json()
+
+def _check_version_compatibility(self):
+    if int(self.bd_major_version) < 2018:
+        raise UnsupportedBDVersion("The BD major version {} is less than the minimum required major version {}".format(self.bd_major_version, 2018))        
+
+    
