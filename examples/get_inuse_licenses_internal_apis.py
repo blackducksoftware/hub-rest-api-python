@@ -98,14 +98,28 @@ for license in inuse_licenses:
     usages = response.json().get('items', [])
     logging.debug("Found {} usages for license {}".format(len(usages), license['name']))
     for usage in usages:
+        component_version = usage.get('componentVersionName', 'Unknown')
+        component_name_str = f"{usage['componentName']}:{component_version}"
         # usage === component that referenced the license
         logging.debug("Retrieving project-versions that use component {}:{} (license={}".format(
-            usage['componentName'], usage['componentVersionName'], license['name']))
-        component_url = hub.get_link(usage, "componentVersion")
+            usage['componentName'], component_version, license['name']))
+        component_url = hub.get_link(usage, "componentVersion") or hub.get_link(usage, 'component')
+        #TODO Figure out how to handle the case where the component version is not known
+        logging.debug(f"component_url: {component_url}")
+        if not component_url:
+            logging.warning(f"Component {component_name_str} had no URL, skipping...")
+            continue
+        else:
+            logging.debug(f"Retrieving component info for {component_name_str}")
         response = hub.execute_get(component_url)
         component = response.json()
         usage['component_details'] = component
         project_version_references_url = hub.get_link(component, "references")
+        if not project_version_references_url:
+            logging.warning(f"Component {component_name_str} has no 'references' link, skipping...")
+            continue
+        else:
+            logging.debug(f"Retrieving project references for {component_name_str}")
         project_version_references_url = project_version_references_url + "?limit=1000"
         response = hub.execute_get(project_version_references_url)
         project_references = response.json().get('items', [])
@@ -116,11 +130,11 @@ for license in inuse_licenses:
             for i, project_ref in enumerate(project_references):
                 row = offset + i + 1
                 logging.debug("Adding license {}, used in component {}:{}, and project-version {}:{} to row {}".format(
-                    license['name'], usage['componentName'], usage['componentVersionName'], project_ref['projectName'], project_ref['versionName'], row))
+                    license['name'], usage['componentName'], component_version, project_ref['projectName'], project_ref['versionName'], row))
                 data_to_write.extend([
                     (row, 0, license['name']),
                     (row, 1, usage['componentName']),
-                    (row, 2, usage['componentVersionName']),
+                    (row, 2, component_version),
                     (row, 3, project_ref['projectName']),
                     (row, 4, project_ref['versionName']),
                     (row, 5, project_ref['projectUrl']),
@@ -133,7 +147,7 @@ for license in inuse_licenses:
             data_to_write.extend([
                 (row, 0, license['name']),
                 (row, 1, usage['componentName']),
-                (row, 2, usage['componentVersionName']),
+                (row, 2, component_version),
                 (row, 3, "None"),
                 (row, 4, "None"),
                 (row, 5, "NA"),
