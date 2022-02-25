@@ -78,7 +78,7 @@ from blackduck.HubRestApi import HubInstance
 __all__ = []
 __version__ = 0.1
 __date__ = '2020-12-21'
-__updated__ = '2021-12-26'
+__updated__ = '2022-02-25'
 
 
 def load_remediation_input(remediation_file):
@@ -99,7 +99,6 @@ def remediation_is_valid(vuln, remediation_data):
 def origin_is_excluded (vuln, exclusion_data):
     if 'componentVersionOriginId' in vuln.keys():
         originId = vuln['componentVersionOriginId']
-        print(f"Origin ID is {originId}")
         for excludedOrigin in exclusion_data:
             if excludedOrigin in originId:
                 return exclusion_data[excludedOrigin]
