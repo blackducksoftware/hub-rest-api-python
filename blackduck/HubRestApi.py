@@ -513,7 +513,7 @@ class HubInstance(object):
         response = self.execute_get(url)
         return response.json()
 
-    def set_vulnerablity_remediation (self, vuln, remediation_status, remediation_comment):
+    def set_vulnerability_remediation (self, vuln, remediation_status, remediation_comment):
         url = vuln['_meta']['href']
         update={}
         update['remediationStatus'] = remediation_status
