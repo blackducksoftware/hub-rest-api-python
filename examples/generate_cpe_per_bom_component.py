@@ -1,7 +1,7 @@
 """
-generate-bom-report-with-CPE-v2.py
+generate-bom-report-with-CPE-v3.py
 
-Created on March 14, 2022
+Created on March 15, 2022
 
 @author: vpedapati
 
@@ -36,63 +36,74 @@ now = now.strftime("%d/%m/%Y %H:%M:%S")
 def get_cpe_from_nvd(cve_id, comp_name, comp_version):
     nvd_url = "https://services.nvd.nist.gov/rest/json/cve/1.0/"
     r = requests.get(nvd_url + cve_id)
-    response = r.json()
-    cpe_list = []
-    print("Extracting CPE data for Component:" + ' ' + comp_name + ' ' + comp_version + ' ' + "and CVE:" + ' ' + cve_id)
-    # print("Processing CVE:" + ' ' + cve_id)
-    for node_info in response['result']['CVE_Items'][0]['configurations']['nodes']:
-        for item in node_info['cpe_match']:
-            cpe_match = item['cpe23Uri']
-            comp_name_split = comp_name.split()
-            if ' ' in comp_name:
-                comp_name_list = comp_name_split[1:]
-                for value in comp_name_list:
-                    # Remove special characters from value
-                    new_string = re.sub(r"[^a-zA-Z0-9]", "", value)
-                    if (cpe_match.find(new_string.lower()) != -1) and (len(new_string) >= 2):
-                        print("Matched CPE =" + ' ' + cpe_match)
-                        cpe_list.append(cpe_match)
-                        break
-                    else:
-                        str_value = ''.join(map(str, new_string))
-                        n = 3
-                        # value_new = [str_value[index: index + n] for index in range(0, len(str_value), n)]
-                        value_new = [str_value[i:i + n] for i in range(0, len(str_value), n)]
-                        if (cpe_match.find(value_new[0].lower()) != -1) and (len(value_new[0]) > 2):
-                            print("Matched CPE =" + ' ' + cpe_match)
-                            cpe_list.append(cpe_match)
-                            # print(cve_id)
-                            break
-                        else:
-                            comp_name_first = comp_name_split[0]
-                            if (cpe_match.find(comp_name_first.lower()) != -1) and (len(comp_name_first) >= 2):
+    # response = r.json()
+    if (
+            r.status_code != 204 and
+            r.headers["content-type"].strip().startswith("application/json")
+    ):
+        try:
+            # return r.json()
+            response = r.json()
+            cpe_list = []
+            print(
+                "Extracting CPE data for Component:" + ' ' + comp_name + ' ' + comp_version + ' ' + "and CVE:" + ' ' + cve_id)
+            # print("Processing CVE:" + ' ' + cve_id)
+            for node_info in response['result']['CVE_Items'][0]['configurations']['nodes']:
+                for item in node_info['cpe_match']:
+                    cpe_match = item['cpe23Uri']
+                    comp_name_split = comp_name.split()
+                    if ' ' in comp_name:
+                        comp_name_list = comp_name_split[1:]
+                        for value in comp_name_list:
+                            # Remove special characters from value
+                            new_string = re.sub(r"[^a-zA-Z0-9]", "", value)
+                            if (cpe_match.find(new_string.lower()) != -1) and (len(new_string) >= 2):
                                 print("Matched CPE =" + ' ' + cpe_match)
                                 cpe_list.append(cpe_match)
                                 break
-            else:
-                comp_name_list = comp_name_split[0]
-                if (cpe_match.find(comp_name_list.lower()) != -1) and (len(comp_name_list) >= 2):
-                    print("Matched CPE =" + ' ' + cpe_match)
-                    cpe_list.append(cpe_match)
-                    break
-                else:
-                    # Remove special characters from value
-                    new_string = re.sub(r"[^a-zA-Z0-9]", "", comp_name_list)
-                    if (cpe_match.find(new_string.lower()) != -1) and (len(new_string) >= 2):
-                        print("Matched CPE =" + ' ' + cpe_match)
-                        cpe_list.append(cpe_match)
-                        return
+                            else:
+                                str_value = ''.join(map(str, new_string))
+                                n = 3
+                                # value_new = [str_value[index: index + n] for index in range(0, len(str_value), n)]
+                                value_new = [str_value[i:i + n] for i in range(0, len(str_value), n)]
+                                if (cpe_match.find(value_new[0].lower()) != -1) and (len(value_new[0]) > 2):
+                                    print("Matched CPE =" + ' ' + cpe_match)
+                                    cpe_list.append(cpe_match)
+                                    # print(cve_id)
+                                    break
+                                else:
+                                    comp_name_first = comp_name_split[0]
+                                    if (cpe_match.find(comp_name_first.lower()) != -1) and (len(comp_name_first) >= 2):
+                                        print("Matched CPE =" + ' ' + cpe_match)
+                                        cpe_list.append(cpe_match)
+                                        break
                     else:
-                        str_value = ''.join(map(str, comp_name_list))
-                        n = 3
-                        # value_new = [str_value[index: index + n] for index in range(0, len(str_value), n)]
-                        value_new = [str_value[i:i + n] for i in range(0, len(str_value), n)]
-                        if (cpe_match.find(value_new[0].lower()) != -1) and (len(value_new[0]) > 2):
+                        comp_name_list = comp_name_split[0]
+                        if (cpe_match.find(comp_name_list.lower()) != -1) and (len(comp_name_list) >= 2):
                             print("Matched CPE =" + ' ' + cpe_match)
                             cpe_list.append(cpe_match)
-                            # print(cve_id)
                             break
-    return ','.join(set(cpe_list))
+                        else:
+                            # Remove special characters from value
+                            new_string = re.sub(r"[^a-zA-Z0-9]", "", comp_name_list)
+                            if (cpe_match.find(new_string.lower()) != -1) and (len(new_string) >= 2):
+                                print("Matched CPE =" + ' ' + cpe_match)
+                                cpe_list.append(cpe_match)
+                                return
+                            else:
+                                str_value = ''.join(map(str, comp_name_list))
+                                n = 3
+                                # value_new = [str_value[index: index + n] for index in range(0, len(str_value), n)]
+                                value_new = [str_value[i:i + n] for i in range(0, len(str_value), n)]
+                                if (cpe_match.find(value_new[0].lower()) != -1) and (len(value_new[0]) > 2):
+                                    print("Matched CPE =" + ' ' + cpe_match)
+                                    cpe_list.append(cpe_match)
+                                    # print(cve_id)
+                                    break
+            return ','.join(set(cpe_list))
+        except ValueError:
+            print("ERROR : NVD API timed out")
+            return "NVD API TIMED OUT"
 
 
 def csv_generator(bd, args):
@@ -146,16 +157,21 @@ def csv_generator(bd, args):
 
         for bom_comp in comp_details_full['items']:
             comp_name = bom_comp['componentName']
-            comp_version = bom_comp['componentVersionName']
+            comp_version = bom_comp.get('componentVersionName', 'None available')
             comp_url = bom_comp['component']
-            comp_version_url = bom_comp['componentVersion']
             comp_license = bom_comp['licenses'][0]['licenseDisplay']
             comp_headers = {'Accept': 'application/vnd.blackducksoftware.component-detail-5+json'}
             comp_home = bd.get_json(comp_url, headers=comp_headers)
             comp_homepage = comp_home.get('url', 'None available')
-            print("--------->Processing Component:" + ' ' + comp_name + ' ' + comp_version)
             vuln_detail_headers = {'Accept': 'application/vnd.blackducksoftware.vulnerability-4+json'}
-            vuln_details = bd.get_json(comp_version_url + "/vulnerabilities", headers=vuln_detail_headers)
+            if comp_version == 'None available':
+                print("--------->Processing Component:" + ' ' + comp_name)
+                vuln_details = bd.get_json(comp_url + "/vulnerabilities", headers=vuln_detail_headers)
+
+            else:
+                print("--------->Processing Component:" + ' ' + comp_name + ' ' + comp_version)
+                comp_version_url = bom_comp['componentVersion']
+                vuln_details = bd.get_json(comp_version_url + "/vulnerabilities", headers=vuln_detail_headers)
             vuln_details_count = str(vuln_details['totalCount'])
             if vuln_details['totalCount'] == 0:
                 print("Found" + ' ' + vuln_details_count + " vulnerabilities, looking for other versions of this "
@@ -312,7 +328,7 @@ def main(argv=None):
     with open(args.token_file, 'r') as tf:
         access_token = tf.readline().strip()
 
-    bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
+    bd = Client(base_url=args.base_url, token=access_token, verify=args.verify, timeout=360.0, retries=4)
 
     if args.csv_file:
         print("Generating CSV Report for: " + args.project_name + ' ' + args.version_name)
