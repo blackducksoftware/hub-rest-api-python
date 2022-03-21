@@ -22,9 +22,17 @@ KIND, either express or implied. See the License for the
 specific language governing permissions and limitations
 under the License.
 
-This scrit will override policies for components that are listed in a CSV file
+This scrit will override policies for components that are listed in a CSV or an EXCEL file
 Cmponents with status IN_VIOLATION will get policy status to IN_VIOLATION_OVERRIDEN
-identification of a project and cmponent wil be done based n following fields in the CSV file
+
+Note: Override will happen only when the Override Date field is blank.
+      Rows with blank Override Date and Ovveride Rationale will be ignored.
+
+Note: EXCEL processing is rather simplistic, it will not process milti-sheet workbooks properly.
+      It will skip all the header rows, until it finds "Name of Software Component" header.
+      Rows after that will be processed according to abovementioned rules.
+
+identification of a project and cmponent wil be done based n following fields in the input file
 
         component_name          = field 0  (Column A in Excel lingo)
         component_version       = field 1 (Column B in Excel lingo)
@@ -41,7 +49,7 @@ OPTIONS:
     -h                              Show help
     -u BASE_URL                     URL of a Blackduck system
     -t TOKEN_FILE                   Authentication token file
-    -i INPUT_FILE                   Input CSV file
+    -i INPUT_FILE                   Input CSV or EXCEL file
     -nv                             Trust TLS certificate
 
 
@@ -78,6 +86,7 @@ import argparse
 import json
 import logging
 import arrow
+import re
 
 from itertools import islice
 from datetime  import timedelta
@@ -124,6 +133,43 @@ def parse_command_args():
 
     return parser.parse_args()
 
+def process_csv_file(filename):
+    file = open(args.input_file)
+    type(file)
+    csvreader = csv.reader(file)
+    for row in csvreader:
+        component_name = row[0]
+        component_version = row[1]
+        policy_violation_status = row[8]
+        override_date = row[10]
+        override_rationale = row[11]
+        project_name = row[13]
+        project_version = row[14]
+        if policy_violation_status == 'IN_VIOLATION' and override_rationale and not override_date:
+            logging.info(f"Attemting to override policy status for {component_name} {component_version} in {project_name} {project_version} with ''{override_rationale}''")
+            override_policy_violaton(project_name, project_version, component_name, component_version, override_rationale)
+
+def process_excel_file(filename):
+    import openpyxl
+    wb = openpyxl.load_workbook(filename)
+    ws = wb.active
+    process = False
+    for row in ws.values:
+        if process:
+            component_name = row[0]
+            component_version = row[1]
+            policy_violation_status = row[8]
+            override_date = row[10]
+            override_rationale = row[11]
+            project_name = row[13]
+            project_version = row[14]
+            if policy_violation_status == 'IN_VIOLATION' and override_rationale and not override_date:
+                print ("overriding")
+                logging.info(f"Attemting to override policy status for {component_name} {component_version} in {project_name} {project_version} with ''{override_rationale}''")
+                override_policy_violaton(project_name, project_version, component_name, component_version, override_rationale)
+        if not process:
+            process = (row[0] == "Name of Software Component")
+
 def main():
     args = parse_command_args()
     with open(args.token_file, 'r') as tf:
@@ -131,21 +177,12 @@ def main():
     global bd
     bd = Client(base_url=args.base_url, token=access_token, verify=args.no_verify, timeout=60.0, retries=4)
 
-    file = open(args.input_file)
-    type(file)
-
-    csvreader = csv.reader(file)
-
-    for row in csvreader:
-        component_name = row[0]
-        component_version = row[1]
-        policy_violation_status = row[8]
-        override_rationale = row[11]
-        project_name = row[13]
-        project_version = row[14]
-        if policy_violation_status == 'IN_VIOLATION':
-            logging.info(f"Attemting to override policy status for {component_name} {component_version} in {project_name} {project_version} with ''{override_rationale}''")
-            override_policy_violaton(project_name, project_version, component_name, component_version, override_rationale)
+    if re.match(".+xlsx?$", args.input_file):
+        print (f"Processing EXCEL file {args.input_file}")
+        process_excel_file(args.input_file)
+    else:
+        print ("Processing as CSV")
+        process_csv_file(args.input_file)
 
 if __name__ == "__main__":
     sys.exit(main())
