@@ -10,6 +10,12 @@ The defect was fixed in version 0.0.53.
 
 Customers using the [blackduck library](https://pypi.org/project/blackduck) should upgrade to version 0.0.53, or later, to implement the fix.
 
+# Paging and Black Duck v2022.2
+
+In v2022.2 of Black Duck the REST API introduced a max page size to protect system resource usage. See the Black Duck [release notes on Synopsys Community](https://community.synopsys.com/s/article/Black-Duck-Release-Notes) for the details of which API endpoints are affected. Users of the the python bindings here should leverage the Client interface which provides automatic paging support to make best use of these endpoints.
+
+**The old HubInstance interface and many of the examples using it do not perform paging and will break as a result of the changes in v2022.2**.
+
 # New in 1.0.0
 
 Introducing the new Client class.
@@ -29,12 +35,10 @@ See [Client versus HubInstance Comparison](https://github.com/blackducksoftware/
 and also read the [Client User Guide](https://github.com/blackducksoftware/hub-rest-api-python/wiki/Client-User-Guide)
 on the [Hub REST API Python Wiki](https://github.com/blackducksoftware/hub-rest-api-python/wiki).
 
-### Important Note
-The old HubInstance (in HubRestApi.py) keeps its existing functionality for backwards compatibility and therefore does
-**not** currently leverage any of the new features in the Client class.
+### Important Notes
+The old HubInstance (in HubRestApi.py) keeps its existing functionality for backwards compatibility and therefore does **not** currently leverage any of the new features in the Client class.
 
-We believe that the new features are compelling enough to strongly encourage users to consider moving from HubInstance
-to Client.
+We believe that the new features are compelling enough to strongly encourage users to consider moving from HubInstance to Client.
 See [Client versus HubInstance Comparison](https://github.com/blackducksoftware/hub-rest-api-python/wiki/Client-versus-HubInstance-Comparison).
 
 
