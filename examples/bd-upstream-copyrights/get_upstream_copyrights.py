@@ -84,12 +84,14 @@ def main():
 
     for component in bd.get_resource("components", project_version):
         try:
-            copyrights = find_copyrights_in_bom_component_origins(component)           \
+            all_copyrights = find_copyrights_in_bom_component_origins(component)       \
                       or find_copyrights_in_github_origins(component)                  \
                       or find_copyrights_in_previous_component_versions(component)
 
-            if copyrights:
-                print_copyrights(component, copyrights)
+            active_copyrights = [c for c in all_copyrights if c['active'] == True]
+
+            if active_copyrights:
+                print_copyrights(component, active_copyrights)
             else:
                 components_with_no_copyrights.append(component)
 
