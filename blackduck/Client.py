@@ -50,11 +50,6 @@ class HubSession(requests.Session):
         self.mount("http://", adapter)
         logger.info("Using a session with a %s second timeout and up to %s retries per request", timeout, retries)
 
-        self.proxies.update({
-            'http': os.environ.get('http_proxy', ''),
-            'https': os.environ.get('https_proxy', '')
-        })
-
     def request(self, method, url, **kwargs):
         kwargs['timeout'] = self._timeout
 
@@ -74,7 +69,7 @@ class HubSession(requests.Session):
 
 class Client:
     """A binding to Blackduck's REST API that provides a robust connection backed by a session object.
-    A base URL, timeout, retries, proxies, and TLS verification are set upon initialization and these
+    A base URL, timeout, retries, and TLS verification are set upon initialization and these
     attributes are persisted across all requests.
 
     At the REST API level, it provides a consistent way to discover and traverse public resources,
