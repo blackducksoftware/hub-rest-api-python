@@ -109,18 +109,21 @@ def override_policy_violaton(project_name, project_version, component_name, comp
                     params = {"q":f"componentOrVersionName:{component_name}"}
                     components = bd.get_resource('components', version, params=params)
                     for component in components:
-                        policy_status = bd.get_resource('policy-status', component, items=False)
-                        url = bd.list_resources(policy_status)['href']
-                        data = {
-                                "approvalStatus" : "IN_VIOLATION_OVERRIDDEN",
-                                "comment" : f"{override_rationale}",
-                                "updatedAt" : datetime.now().isoformat()
-                                }
-                        headers = {"Content-Type": "application/vnd.blackducksoftware.bill-of-materials-6+json",
-                                    "Accept": "application/vnd.blackducksoftware.bill-of-materials-6+json" }
-                        r = bd.session.put(url, headers = headers, json=data)
-                        # r.raise_for_status()
-                        logging.info(f"Policy status update completion code {r.status_code}")
+                        component_version_name = str(component['componentVersionName'])
+                        if str(component_version_name).strip() == str(component_version).strip():
+                            logging.info(f"Overriding violation for {component_name} {component_version} in {project_name} {project_version}")
+                            policy_status = bd.get_resource('policy-status', component, items=False)
+                            url = bd.list_resources(policy_status)['href']
+                            data = {
+                                    "approvalStatus" : "IN_VIOLATION_OVERRIDDEN",
+                                    "comment" : f"{override_rationale}",
+                                    "updatedAt" : datetime.now().isoformat()
+                                    }
+                            headers = {"Content-Type": "application/vnd.blackducksoftware.bill-of-materials-6+json",
+                                        "Accept": "application/vnd.blackducksoftware.bill-of-materials-6+json" }
+                            r = bd.session.put(url, headers = headers, json=data)
+                            # r.raise_for_status()
+                            logging.info(f"Policy status update completion code {r.status_code}")
 
 
 def parse_command_args():
@@ -165,7 +168,7 @@ def process_excel_file(filename):
             project_version = row[14]
             if policy_violation_status == 'IN_VIOLATION' and override_rationale and not override_date:
                 print ("overriding")
-                logging.info(f"Attemting to override policy status for {component_name} {component_version} in {project_name} {project_version} with ''{override_rationale}''")
+                logging.info(f"Processing for batch entry {component_name} {component_version} in {project_name} {project_version} with ''{override_rationale}''")
                 override_policy_violaton(project_name, project_version, component_name, component_version, override_rationale)
         if not process:
             process = (row[0] == "Name of Software Component")
