@@ -60,7 +60,10 @@ def find_kb_component(component_name):
     hit_counts = dict()
     for item in items:
         for hit in item['hits']:
-            if component_name.strip() in hit['fields']['name']:
+            aliases = hit.get('fields').get('aliases', None)
+            if aliases and component_name.strip() in aliases:
+                hit_counts[hit['_meta']['href']] = hit['fields']['release_count']
+            elif component_name.strip() in hit['fields']['name']:
                 hit_counts[hit['_meta']['href']] = hit['fields']['release_count']
     return hit_counts
 
