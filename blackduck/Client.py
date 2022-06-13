@@ -11,7 +11,7 @@ from .Utils import safe_get
 from .Authentication import BearerAuth
 import json
 import logging
-import os
+import requests
 from pprint import pformat
 import requests.packages.urllib3
 from requests.packages.urllib3.util.retry import Retry
