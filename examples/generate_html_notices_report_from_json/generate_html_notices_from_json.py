@@ -2,12 +2,14 @@ from jinja2 import Environment, FileSystemLoader
 import os
 import json
 import argparse
+import datetime
 
 parser = argparse.ArgumentParser("A program to transform a JSON formatted representation of a Black Duck notices file into a standalone HTML document")
 parser.add_argument("json_file", help="The input JSON file to be converted")
 parser.add_argument("output_file_html", help="The file to output the results to")
 
 args = parser.parse_args()
+date = datetime.date.today()
 
 templates_dir = os.path.dirname(os.path.abspath(__file__))
 env = Environment(loader=FileSystemLoader(templates_dir))
@@ -21,4 +23,6 @@ with open(args.output_file_html, 'w+') as fh:
         fh.write(template.render(componentLicenses=fileContent['componentLicenses'],
                                  licenseTexts=fileContent['licenseTexts'],
                                  componentCopyrightTexts=fileContent['componentCopyrightTexts'],
-                                 projectVersion=fileContent['projectVersion']))
+                                 projectVersion=fileContent['projectVersion'],
+                                 date=date
+                                 ))
