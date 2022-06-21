@@ -83,41 +83,23 @@
 
 
 <script>
-    compheader = document.getElementById("comp-header")
-    if (!(compheader === null)) {
-        compheader.addEventListener("click", function() {
-            container = document.getElementById("comp-container")
+    function makeCollapseable(item){
+        header = document.getElementById(item + "-header")
+        if (!(header === null)) {
+            header.addEventListener("click", function() {
+            container = document.getElementById(item + "-container")
             if (container.style.display === "none") {
                 container.style.display = null;
             } else {
                 container.style.display = "none";
             }
         });
+    }
     }
 
-    copyheader = document.getElementById("copyright-header")
-    if (!(copyheader === null)) {
-        copyheader.addEventListener("click", function() {
-            container = document.getElementById("copyright-container")
-            if (container.style.display === "none") {
-                container.style.display = null;
-            } else {
-                container.style.display = "none";
-            }
-        });
-    }
-
-    licenseheader = document.getElementById("license-header")
-    if (!(licenseheader === null)) {
-        licenseheader.addEventListener("click", function() {
-            container = document.getElementById("license-container")
-            if (container.style.display === "none") {
-                container.style.display = null;
-            } else {
-                container.style.display = "none";
-            }
-        });
-    }
+    makeCollapseable("comp");
+    makeCollapseable("copyright");
+    makeCollapseable("license");
 
 </script>
 
