@@ -1,4 +1,5 @@
 from jinja2 import Environment, FileSystemLoader
+from slugify import slugify
 import os
 import json
 import argparse
@@ -13,6 +14,7 @@ date = datetime.date.today()
 
 templates_dir = os.path.dirname(os.path.abspath(__file__))
 env = Environment(loader=FileSystemLoader(templates_dir))
+env.filters['slugify'] = slugify
 template = env.get_template('notices-template.html')
 
 with open(args.output_file_html, 'w+') as fh:

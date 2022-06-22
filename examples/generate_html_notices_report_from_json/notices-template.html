@@ -20,8 +20,8 @@
 <table style="width:100%;border-collapse:collapse;font-family:Open Sans,sans-serif;" id="comp-container">
     <thead>
     <tr style="border-bottom:1px solid black">
-        <th style="text-align:left;background-color:#f6f6f6;font-weight:500">Component</th>
-        <th style="text-align:left;background-color:#f6f6f6;font-weight:500">License</th>
+        <th style="text-align:left;background-color:#f6f6f6;font-weight:500">Component (click for copyrights)</th>
+        <th style="text-align:left;background-color:#f6f6f6;font-weight:500">License (click for license)</th>
     </tr>
     </thead>
     <tbody>
@@ -29,18 +29,29 @@
         <tr style="border-bottom:1px solid black">
             <td>
                 <span>
-                    <span style="font-weight:700">{{ row.component.projectName }}</span>
+                {%  set componentCopyrightFound = (componentCopyrightTexts|length > 0 and 
+                    componentCopyrightTexts | selectattr("componentVersionSummary.projectName", "equalto", row.component.projectName) | selectattr("componentVersionSummary.versionName", "equalto", row.component.versionName) | list | length > 0 ) %}
+                {%  if componentCopyrightFound %}
+                    <a href="#{{ "%s-%s-%s"|format("copyright",row.component.projectName,row.component.versionName) | slugify }}">
+                {% endif %}
+                        <span style="font-weight:700">
+                            {{ row.component.projectName }}</span>
                     <span style="font-weight:500">
                         {% if row.component.versionName %}
                             {{ row.component.versionName }}
                         {% endif %}
                     </span>
+                {%  if componentCopyrightFound %}
+                    </a>
+                {% endif %}
                 </span>
             </td>
             <td>
                 <div>
                     {% if row.licenses|length > 0 %}
+                    <a href="#{{ "%s-%s"|format(row.component.projectName,row.component.versionName) | slugify }}">
                         {{ row.licenses[0]['name'] }}
+                    </a>
                     {% endif %}
                 </div>
             </td>
@@ -53,7 +64,7 @@
     <h1 id="copyright-header" style="cursor:pointer;">Copyright Data</h1>
     <div id="copyright-container">
         {% for row in componentCopyrightTexts %}
-            <h2>
+            <h2 id="{{ "%s-%s-%s"|format("copyright",row.componentVersionSummary.projectName,row.componentVersionSummary.versionName) | slugify}}">
                 {{ row.componentVersionSummary.projectName }} <span>&mdash;</span> {{ row.originFullName }}
             </h2>
             {% for cr in row.copyrightTexts %}
@@ -72,9 +83,12 @@
     {% for row in licenseTexts %}
         <h2>{{ row.name }}</h2>
         <div>
+            <ul>
             {% for comp in row.components %}
-                {{ comp.projectName }} {{ comp.versionName }}{% if not loop.last %},{% endif %}
+                <li id="{{ "%s-%s"|format(comp.projectName,comp.versionName) | slugify }}" style="list-style-type:disc;">
+                    {{ comp.projectName }} {{ comp.versionName }}</li>
             {% endfor %}
+            </ul>
         </div>
         <pre style="background-color:#f6f6f6;border:1px solid black">{{ row.text|e }}</pre>
     {% endfor %}
