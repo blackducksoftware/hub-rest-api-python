@@ -52,9 +52,13 @@
     <h1 id="copyright-header" style="cursor:pointer;">Copyright Data ({{ componentCopyrightTexts|length }})</h1>
     <div id="copyright-container">
         {% for row in componentCopyrightTexts %}
-            <h2 id="{{ "%s-%s-%s"|format("copyright",row.componentVersionSummary.projectName,row.componentVersionSummary.versionName) | slugify}}">
-                {{ row.componentVersionSummary.projectName }} <span>&mdash;</span> {{ row.originFullName }}
-            </h2>
+        <h2 id="{{ "%s-%s-%s"|format("copyright",row.componentVersionSummary.projectName,row.componentVersionSummary.versionName) | slugify}}">
+            {{ row.componentVersionSummary.projectName }} <span>&mdash;</span> {{ row.originFullName }}
+        </h2>
+        <details open>
+            <summary>
+                Details - {{ row.copyrightTexts | length}}
+            </summary>
             {% for cr in row.copyrightTexts %}
                 <ul>
                     <li style="list-style-type:disc;">
@@ -62,23 +66,36 @@
                     </li>
                 </ul>
             {% endfor %}
+        </details>
         {% endfor %}
     </div>
 {% endif %}
 
 <h1 id="license-header" style="cursor:pointer;">Licenses ({{licenseTexts | length}}) </h1>
-<div id="license-container">
+<div id="license-container">  
     {% for row in licenseTexts %}
-        <h2>{{ row.name }}</h2>
-        <div>
-            <ul>
-            {% for comp in row.components %}
-                <li id="{{ "%s-%s"|format(comp.projectName,comp.versionName) | slugify }}" style="list-style-type:disc;">
-                    {{ comp.projectName }} {{ comp.versionName }}</li>
-            {% endfor %}
-            </ul>
-        </div>
-        <pre style="background-color:#f6f6f6;border:1px solid black">{{ row.text|e }}</pre>
+        {%  set rowLength = row.components | length %}
+        {% if rowLength <= 1 %}
+            {%  set rowName = "%s - %s %s" | format(row.name,row.components[0].projectName,row.components[0].versionName) %}
+        {% else %}
+            {%  set rowName = "%s - %s components"| format(row.name,rowLength) %}
+        {% endif %}
+        {% if rowLength > 1 %}
+            <h2>{{ rowName }}</h2>
+            <details open>
+            <div>
+                <ul>
+                {% for comp in row.components %}
+                    <li id="{{ "%s-%s"|format(comp.projectName,comp.versionName) | slugify }}" style="list-style-type:disc;">
+                        {{ comp.projectName }} {{ comp.versionName }}</li>
+                {% endfor %}
+                </ul>
+            </div>
+            </details>
+        {% else %}
+            <h2 id="{{ "%s-%s"|format(row.components[0].projectName,row.components[0].versionName) | slugify }}">{{ rowName }}</h2>
+        {% endif %}
+    <pre style="background-color:#f6f6f6;border:1px solid black">{{ row.text|e }}</pre>
     {% endfor %}
 </div>
 
