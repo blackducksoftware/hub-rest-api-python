@@ -4,7 +4,7 @@
 <body>
 {% include 'intro.html' %}
 
-<h1 id="comp-header" style="cursor:pointer;">Components</h1>
+<h1 id="comp-header" style="cursor:pointer;">Components ({{ componentLicenses | length}})</h1>
 <table style="width:100%;border-collapse:collapse;font-family:Open Sans,sans-serif;" id="comp-container">
     <thead>
     <tr style="border-bottom:1px solid black">
@@ -49,7 +49,7 @@
 </table>
 
 {% if componentCopyrightTexts|length > 0 %}
-    <h1 id="copyright-header" style="cursor:pointer;">Copyright Data</h1>
+    <h1 id="copyright-header" style="cursor:pointer;">Copyright Data ({{ componentCopyrightTexts|length }})</h1>
     <div id="copyright-container">
         {% for row in componentCopyrightTexts %}
             <h2 id="{{ "%s-%s-%s"|format("copyright",row.componentVersionSummary.projectName,row.componentVersionSummary.versionName) | slugify}}">
@@ -66,7 +66,7 @@
     </div>
 {% endif %}
 
-<h1 id="license-header" style="cursor:pointer;">Licenses</h1>
+<h1 id="license-header" style="cursor:pointer;">Licenses ({{licenseTexts | length}}) </h1>
 <div id="license-container">
     {% for row in licenseTexts %}
         <h2>{{ row.name }}</h2>
