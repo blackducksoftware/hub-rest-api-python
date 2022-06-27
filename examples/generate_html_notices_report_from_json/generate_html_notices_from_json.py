@@ -24,7 +24,7 @@ copyrightFilters = [
     re.compile(r"copyright", re.IGNORECASE), # an explicit copyright statement
 ]
 
-def processCopyrightText(copyrightTexts: list, filters:list=[]) -> dict:
+def processCopyrightText(copyrightTexts: list, filters:list=[], noticeComponents:list=[]) -> dict:
     """Sort, filter, and remove duplicates from copyright texts from componentCopyrightTexts.
 
     The algorithm for Copyright Texts in Black Duck are very conservative and result in a lot of potentially false positives. This function will attempt to remove false positives and order the list.
@@ -32,13 +32,23 @@ def processCopyrightText(copyrightTexts: list, filters:list=[]) -> dict:
     Args:
         copyrightTexts (list): Dictionary with list of copyrights in key copyrightTexts
         filters (list, optional): List of regex pattern filters or functions. Matching any filters will keep the item. Defaults to [].
+        noticeComponents (list, optional): List of componentLicenses that are in the notices json. Defaults to [].
 
     Returns:
         dict: A processed version of copyrightTexts.
     """
     from collections import OrderedDict
+    componentDict = {}
+    result=[]
+    if noticeComponents:
+        for component in noticeComponents:
+            componentDict[component["component"]["projectName"]]=component["component"].get("versionName")
     if copyrightTexts:
         for component in copyrightTexts:
+            componentName = component["componentVersionSummary"]["projectName"]
+            componentVersion = component["componentVersionSummary"].get("versionName")
+            if not(componentDict.get(componentName) and componentVersion == componentDict.get(componentName)):
+                continue
             copyrightlist = component.get("copyrightTexts")
             if filters:
                 filteredlist = []
@@ -54,7 +64,10 @@ def processCopyrightText(copyrightTexts: list, filters:list=[]) -> dict:
             if copyrightlist:
                 component["copyrightTexts"] = list(OrderedDict.fromkeys(copyrightlist))
                 component["copyrightTexts"].sort()
-    return copyrightTexts
+            result.append(component)
+    result.sort(key=lambda item: (item["componentProjectName"].lower(), 
+                                item["componentVersionSummary"]["versionName"].lower()))
+    return result
 
 with open(args.output_file_html, 'wb+') as fh:
     with open(args.json_file, 'r') as lj:
@@ -63,7 +76,7 @@ with open(args.output_file_html, 'wb+') as fh:
 
         fh.write(template.render(componentLicenses=fileContent['componentLicenses'],
                                  licenseTexts=fileContent['licenseTexts'],
-                                 componentCopyrightTexts=processCopyrightText(fileContent['componentCopyrightTexts'], copyrightFilters),
+                                 componentCopyrightTexts=processCopyrightText(fileContent['componentCopyrightTexts'], copyrightFilters, fileContent['componentLicenses']),
                                  projectVersion=fileContent['projectVersion'],
                                  date=date
                                  ).encode("utf-8"))
