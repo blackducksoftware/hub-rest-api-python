@@ -24,13 +24,13 @@ copyrightFilters = [
     re.compile(r"copyright", re.IGNORECASE), # an explicit copyright statement
 ]
 
-def processCopyrightText(copyrightTexts: dict, filters:list=[]) -> dict:
+def processCopyrightText(copyrightTexts: list, filters:list=[]) -> dict:
     """Sort, filter, and remove duplicates from copyright texts from componentCopyrightTexts.
 
     The algorithm for Copyright Texts in Black Duck are very conservative and result in a lot of potentially false positives. This function will attempt to remove false positives and order the list.
 
     Args:
-        copyrightTexts (dict): Dictionary with list of copyrights in key copyrightTexts
+        copyrightTexts (list): Dictionary with list of copyrights in key copyrightTexts
         filters (list, optional): List of regex pattern filters or functions. Matching any filters will keep the item. Defaults to [].
 
     Returns:
