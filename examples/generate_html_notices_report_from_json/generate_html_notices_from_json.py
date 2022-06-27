@@ -31,7 +31,7 @@ def processCopyrightText(copyrightTexts: dict, filters:list=[]) -> dict:
 
     Args:
         copyrightTexts (dict): Dictionary with list of copyrights in key copyrightTexts
-        filters (list, optional): List of regex pattern filters. Matching any filters will keep the item. Defaults to [].
+        filters (list, optional): List of regex pattern filters or functions. Matching any filters will keep the item. Defaults to [].
 
     Returns:
         dict: A processed version of copyrightTexts.
@@ -42,9 +42,14 @@ def processCopyrightText(copyrightTexts: dict, filters:list=[]) -> dict:
             copyrightlist = component.get("copyrightTexts")
             if filters:
                 filteredlist = []
-                for filterRegex in filters:
-                    filteredlist += list(filter(lambda x: filterRegex.match(x), copyrightlist))
-                    filteredlist                  
+                testFunc = None
+                for filterItem in filters:
+                    if isinstance(filterItem, re.Pattern):
+                        testFunc = lambda x: filterItem.match(x)
+                    elif isinstance(filterItem, function):
+                        testFunc = filterItem
+                    if testFunc:
+                        filteredlist += list(filter(testFunc, copyrightlist))                  
                 copyrightlist = map(lambda x: x.strip(),filteredlist)
             if copyrightlist:
                 component["copyrightTexts"] = list(OrderedDict.fromkeys(copyrightlist))
