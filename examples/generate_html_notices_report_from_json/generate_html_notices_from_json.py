@@ -17,7 +17,7 @@ env = Environment(loader=FileSystemLoader(templates_dir))
 env.filters['slugify'] = slugify
 template = env.get_template('notices-template.html')
 
-with open(args.output_file_html, 'w+') as fh:
+with open(args.output_file_html, 'wb+') as fh:
     with open(args.json_file, 'r') as lj:
         data = json.load(lj)
         fileContent = data['reportContent'][0]['fileContent']
@@ -27,4 +27,4 @@ with open(args.output_file_html, 'w+') as fh:
                                  componentCopyrightTexts=fileContent['componentCopyrightTexts'],
                                  projectVersion=fileContent['projectVersion'],
                                  date=date
-                                 ))
+                                 ).encode("utf-8"))
