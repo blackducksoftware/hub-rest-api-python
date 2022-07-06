@@ -37,9 +37,11 @@ identification of a project and cmponent wil be done based n following fields in
         component_name          = field 0  (Column A in Excel lingo)
         component_version       = field 1 (Column B in Excel lingo)
         policy_violation_status = field 8 (Column I in Excel lingo)
-        override_rationale      = field 11 (Column L in Excel lingo)
-        project_name            = field 13 (Column N in Excel lingo)
-        project_version         = field 14 (Column O in Excel lingo)
+        override_category       = field 9 (Column J in Excel lingo)
+        override_date           = field 11 (Column L in Excel lingo)
+        override_rationale      = field 12 (Column M in Excel lingo)
+        project_name            = field 14 (Column O in Excel lingo)
+        project_version         = field 15 (Column P in Excel lingo)
 
 Usage: 
 
@@ -65,14 +67,16 @@ Key fields in the Alteryx report that I expect to be relevant to the script:
   Component Policy Status (Column I) - NOT_IN_VIOLATION, IN_VIOLATION, IN_VIOLATION_OVERRIDEN 
                                        as determined by BD (the script would only look for 
                                        components that are shown as “IN_VIOLATION”)
-  Override Rationale (Column L) - Alteryx will export whatever Override comment is already in BD.  
+  Policy Category (Column J) - If componet has multiple policy vialations only ovewrride
+                                  those with this category
+  Override Rationale (Column M) - Alteryx will export whatever Override comment is already in BD.  
                                   For components IN_VIOLATION, this column will be used to work 
                                   iteratively on the draft Override comment.
-  project_name (Column N) - Project name used by the product team for the BD scan
-  version_number (Column O) - Project version used by the product team for the BD scan
+  project_name (Column O) - Project name used by the product team for the BD scan
+  version_number (Column P) - Project version used by the product team for the BD scan
 
 The script would parse the spreadsheet and for each component that has a status of “IN_VIOLATION”, it would:
-Upload the Override Rationale (Column L) into the Override Comment field for that component in BD (for that project name/version).
+Upload the Override Rationale (Column M) into the Override Comment field for that component in BD (for that project name/version).
 Update the Override Date to “now” (not sure of the best way to get the correct date-stamp).
 Update the Overridden Field with the name of the individual running the script (not sure of the best way to get the individual’s identity).
 Not sure if the Component Policy Status field needs to be updated to IN_VIOLATION_OVERRIDEN by the script or if BD will do it automatically once the Override Comment has been added.
@@ -81,6 +85,7 @@ If a BOM containing components from more than one sub-project is highly problema
 
 '''
 import csv
+from posixpath import split
 import sys
 import argparse
 import json
@@ -92,13 +97,14 @@ from itertools import islice
 from datetime  import timedelta
 from datetime import datetime
 from blackduck import Client
+from pprint import pprint
 
 logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', stream=sys.stderr, level=logging.DEBUG)
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("blackduck").setLevel(logging.DEBUG)
 
-def override_policy_violaton(project_name, project_version, component_name, component_version, override_rationale):
+def override_policy_violaton(project_name, project_version, component_name, component_version, override_rationale, override_category):
     params = {"q": f"name:{project_name}"}
     projects = bd.get_resource('projects', params=params)
     for project in projects:
@@ -110,20 +116,27 @@ def override_policy_violaton(project_name, project_version, component_name, comp
                     components = bd.get_resource('components', version, params=params)
                     for component in components:
                         component_version_name = str(component['componentVersionName'])
+                        component_url = bd.list_resources(component)['href']
                         if str(component_version_name).strip() == str(component_version).strip():
                             logging.info(f"Overriding violation for {component_name} {component_version} in {project_name} {project_version}")
                             policy_status = bd.get_resource('policy-status', component, items=False)
-                            url = bd.list_resources(policy_status)['href']
-                            data = {
-                                    "approvalStatus" : "IN_VIOLATION_OVERRIDDEN",
-                                    "comment" : f"{override_rationale}",
-                                    "updatedAt" : datetime.now().isoformat()
-                                    }
-                            headers = {"Content-Type": "application/vnd.blackducksoftware.bill-of-materials-6+json",
-                                        "Accept": "application/vnd.blackducksoftware.bill-of-materials-6+json" }
-                            r = bd.session.put(url, headers = headers, json=data)
-                            # r.raise_for_status()
-                            logging.info(f"Policy status update completion code {r.status_code}")
+                            for item in policy_status['_meta']['links']:
+                                policy_url = item['href']
+                                policy_rule_id = policy_url.split("/")[5]
+                                policy_update_url = f"{component_url}/policy-rules/{policy_rule_id}/policy-status"
+                                policy_rule = bd.session.get(policy_url).json()
+                                policy_category = policy_rule['category']
+                                if override_category == policy_category:
+                                    data = {
+                                            "approvalStatus" : "IN_VIOLATION_OVERRIDDEN",
+                                            "comment" : f"{override_rationale}",
+                                            "updatedAt" : datetime.now().isoformat()
+                                            }
+                                    headers = {"Content-Type": "application/vnd.blackducksoftware.bill-of-materials-6+json",
+                                                "Accept": "application/vnd.blackducksoftware.bill-of-materials-6+json" }
+                                    r = bd.session.put(policy_update_url, headers = headers, json=data)
+                                    r.raise_for_status()
+                                    logging.info(f"Policy status update completion code {r.status_code}")
 
 
 def parse_command_args():
@@ -137,20 +150,21 @@ def parse_command_args():
     return parser.parse_args()
 
 def process_csv_file(filename):
-    file = open(args.input_file)
+    file = open(filename)
     type(file)
     csvreader = csv.reader(file)
     for row in csvreader:
         component_name = row[0]
         component_version = row[1]
         policy_violation_status = row[8]
-        override_date = row[10]
-        override_rationale = row[11]
-        project_name = row[13]
-        project_version = row[14]
+        override_category = row[9]
+        override_date = row[11]
+        override_rationale = row[12]
+        project_name = row[14]
+        project_version = row[15]
         if policy_violation_status == 'IN_VIOLATION' and override_rationale and not override_date:
-            logging.info(f"Attemting to override policy status for {component_name} {component_version} in {project_name} {project_version} with ''{override_rationale}''")
-            override_policy_violaton(project_name, project_version, component_name, component_version, override_rationale)
+            logging.info(f"Processing category {override_category} {component_name} {component_version} in {project_name} {project_version} with ''{override_rationale}''")
+            override_policy_violaton(project_name, project_version, component_name, component_version, override_rationale, override_category)
 
 def process_excel_file(filename):
     import openpyxl
@@ -162,14 +176,14 @@ def process_excel_file(filename):
             component_name = row[0]
             component_version = row[1]
             policy_violation_status = row[8]
-            override_date = row[10]
-            override_rationale = row[11]
-            project_name = row[13]
-            project_version = row[14]
+            override_category = row[9]
+            override_date = row[11]
+            override_rationale = row[12]
+            project_name = row[14]
+            project_version = row[15]
             if policy_violation_status == 'IN_VIOLATION' and override_rationale and not override_date:
-                print ("overriding")
-                logging.info(f"Processing for batch entry {component_name} {component_version} in {project_name} {project_version} with ''{override_rationale}''")
-                override_policy_violaton(project_name, project_version, component_name, component_version, override_rationale)
+                logging.info(f"Processing category {override_category} {component_name} {component_version} in {project_name} {project_version} with ''{override_rationale}''")
+                override_policy_violaton(project_name, project_version, component_name, component_version, override_rationale, override_category)
         if not process:
             process = (row[0] == "Name of Software Component")
 
