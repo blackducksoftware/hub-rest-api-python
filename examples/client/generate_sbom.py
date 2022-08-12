@@ -46,11 +46,8 @@ parser.add_argument("token_file", help="containing access token")
 parser.add_argument("project_name")
 parser.add_argument("version_name")
 parser.add_argument("-z", "--zip_file_name", default="reports.zip")
-# parser.add_argument("-r", "--reports",
-# 	default=",".join(all_reports), 
-# 	help=f"Comma separated list (no spaces) of the reports to generate - {list(version_name_map.keys())}. Default is all reports.")
-# parser.add_argument('--format', default='CSV', choices=["CSV"], help="Report format - only CSV available for now")
-parser.add_argument('-t', '--tries', default=4, type=int, help="How many times to retry downloading the report, i.e. wait for the report to be generated")
+parser.add_argument("-t", "--type", type=str, nargs='?', default="SPDX_22", choices=["SPDX_22", "CYCLONEDX_13"], help="Choose the type of SBOM report")
+parser.add_argument('-r', '--retries', default=4, type=int, help="How many times to retry downloading the report, i.e. wait for the report to be generated")
 parser.add_argument('-s', '--sleep_time', default=5, type=int, help="The amount of time to sleep in-between (re-)tries to download the report")
 parser.add_argument('--no-verify', dest='verify', action='store_false', help="disable TLS certificate verification")
 
@@ -62,7 +59,7 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("blackduck").setLevel(logging.WARNING)
 
 
-def download_report(bd_client, location, filename, retries=args.tries):
+def download_report(bd_client, location, filename, retries=args.retries):
 	report_id = location.split("/")[-1]
 	if retries:
 		logging.debug(f"Retrieving generated report from {location}")
@@ -109,7 +106,7 @@ logging.debug(f"Found {project['name']}:{version['versionName']}")
 post_data = {
         'reportFormat': "JSON",
         'reportType': 'SBOM',
-        'sbomType': "SPDX_22"	
+        'sbomType': args.type,	
 }
 sbom_reports_url = version['_meta']['href'] + "/sbom-reports"
 
@@ -118,6 +115,6 @@ r.raise_for_status()
 location = r.headers.get('Location')
 assert location, "Hmm, this does not make sense. If we successfully created a report then there needs to be a location where we can get it from"
 
-logging.debug(f"Created SBOM report for project {args.project_name}, version {args.version_name} at location {location}")
+logging.debug(f"Created SBOM report of type {args.type} for project {args.project_name}, version {args.version_name} at location {location}")
 download_report(bd, location, args.zip_file_name)
 
