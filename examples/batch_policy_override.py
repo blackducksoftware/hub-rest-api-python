@@ -160,6 +160,8 @@ def process_csv_file(filename):
         override_category = row[9]
         override_date = row[11]
         override_rationale = row[12]
+        if override_rationale:
+            override_rationale = override_rationale.strip()
         project_name = row[14]
         project_version = row[15]
         if policy_violation_status == 'IN_VIOLATION' and override_rationale and not override_date:
@@ -179,6 +181,8 @@ def process_excel_file(filename):
             override_category = row[9]
             override_date = row[11]
             override_rationale = row[12]
+            if override_rationale:
+                override_rationale = override_rationale.strip()
             project_name = row[14]
             project_version = row[15]
             if policy_violation_status == 'IN_VIOLATION' and override_rationale and not override_date:
