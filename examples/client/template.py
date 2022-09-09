@@ -30,8 +30,8 @@ import sys
 from blackduck import Client
 
 parser = argparse.ArgumentParser("Program description")
-parser.add_argument("--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
-parser.add_argument("--token-file", dest='token_file', required=True, help="containing access token")
+parser.add_argument("base_url", help="Hub server URL e.g. https://your.blackduck.url")
+parser.add_argument("token_file", help="containing access token")
 parser.add_argument("--no-verify", dest='verify', action='store_false', help="disable TLS certificate verification")
 parser.add_argument("arg1")
 args = parser.parse_args()
