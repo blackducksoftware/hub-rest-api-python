@@ -52,6 +52,13 @@ for project in bd.get_items("/api/projects", params=params):
         project_url = bd.list_resources(project)['href']
         print(f"project url: {project_url}")
 
+# GET or CREATE
+project = bd.get_or_create_resource(name='projects', field='name', value=project_name)
+if project:
+    print(f"project found with name {args.project}")
+else:
+    print(f"no project with name {args.project}")
+
 # PUT
 project_data = {
     'name': project_name,
@@ -75,3 +82,31 @@ except requests.HTTPError as err:
         print("not found")
     else:
         bd.http_error_handler(err)
+
+# GET OR CREATE
+
+project = bd.get_or_create_resource(
+    name='projects', 
+    field='name', 
+    value=project_name,
+    params={
+        'description': 'My project description',
+        'projectLevelAdjustments': True
+    }
+    )
+project_url = project['_meta']['href']
+
+# DELETE
+try:
+    r = bd.session.delete(project_url)
+    r.raise_for_status()
+    print("deleted project")
+except requests.HTTPError as err:
+    if err.response.status_code == 404:
+        print("not found")
+    else:
+        bd.http_error_handler(err)
+
+
+
+

@@ -73,19 +73,23 @@ bd = Client(
     verify=args.verify
 )
 
-params = {
-    'q': [f"name:{args.project_name}"]
-}
-projects = [p for p in bd.get_resource('projects', params=params) if p['name'] == args.project_name]
-assert len(projects) == 1, f"There should be one, and only one project named {args.project_name}. We found {len(projects)}"
-project = projects[0]
+# params = {
+#     'q': [f"name:{args.project_name}"]
+# }
+# projects = [p for p in bd.get_resource('projects', params=params) if p['name'] == args.project_name]
+# assert len(projects) == 1, f"There should be one, and only one project named {args.project_name}. We found {len(projects)}"
+# project = projects[0]
 
-params = {
-    'q': [f"versionName:{args.version_name}"]
-}
-versions = [v for v in bd.get_resource('versions', project, params=params) if v['versionName'] == args.version_name]
-assert len(versions) == 1, f"There should be one, and only one version named {args.version_name}. We found {len(versions)}"
-version = versions[0]
+project = bd.get_resource_by(name='projects', field='name', value=args.project_name)
+version = bd.get_resource_by(name='versions', field='versionName', value=args.version_name, parent=project)
+import pdb; pdb.set_trace()
+
+# params = {
+#     'q': [f"versionName:{args.version_name}"]
+# }
+# versions = [v for v in bd.get_resource('versions', project, params=params) if v['versionName'] == args.version_name]
+# assert len(versions) == 1, f"There should be one, and only one version named {args.version_name}. We found {len(versions)}"
+# version = versions[0]
 
 logging.debug(f"Found {project['name']}:{version['versionName']}")
 

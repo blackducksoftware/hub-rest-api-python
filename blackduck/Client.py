@@ -257,6 +257,19 @@ class Client:
 
             offset += page_size
 
+    def get_resource_by(self, field, value,  name, parent=None, **kwargs):
+        params = {
+            'q': [f"{field}:{value}"]
+        }
+        filtered = [i for i in self.get_resource(name, parent, params=params, **kwargs) if i.get(field) == value]
+        assert len(filtered) in [0,1], f"We either found the {field} or we didn't, but we should never find this many ({len(filtered)})"
+
+        return filtered[0] if filtered else None
+
+    def get_or_create_resource(self, field, value,  name, parent=None, **kwargs):
+        resource = self.get_resource_by(field, value, name, parent, **kwargs)
+
+        
     @staticmethod
     def http_error_handler(r):
         """Handle an unexpected HTTPError or Response by logging useful information.
