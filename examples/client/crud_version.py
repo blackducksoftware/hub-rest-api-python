@@ -91,11 +91,12 @@ except requests.HTTPError as err:
         bd.http_error_handler(err)
 
 # GET or CREATE version
-params = {
+additional_data = {
     'phase': 'PLANNING',
     'distribution': 'SAAS'
 }
-version = bd.get_or_create_resource(field='versionName', value=args.version, name="versions", parent=project_obj, params=params)
+import pdb; pdb.set_trace()
+version = bd.get_or_create_resource(field='versionName', value=args.version, name="versions", parent=project_obj, additional_data=additional_data)
 print(f"Version {version['versionName']} was either found or created after deleting the version")
 
 # DELETE project

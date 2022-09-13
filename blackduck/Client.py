@@ -266,8 +266,29 @@ class Client:
 
         return filtered[0] if filtered else None
 
-    def get_or_create_resource(self, field, value,  name, parent=None, **kwargs):
-        resource = self.get_resource_by(field, value, name, parent, **kwargs)
+    def get_or_create_resource(self, field, value,  name, parent=None, additional_data={}, **kwargs):
+        the_obj = self.get_resource_by(field, value, name, parent, **kwargs)
+        if the_obj:
+            return the_obj
+        else:
+            post_data = {
+                field: value
+            }
+            post_data.update(additional_data)
+            if parent:
+                url = parent['_meta']['href'] + f"/{name}"
+            else:
+                url = f"/api/{name}"
+            logger.debug(f"Trying to create object using url {url} and post_data {post_data}")
+            try:
+                r = self.session.post(url, json=post_data)
+                r.raise_for_status()
+                the_obj_url = r.headers['Location']
+            except requests.HTTPError as err:
+                self.http_error_handler(err)
+            the_obj = self.session.get(the_obj_url).json()
+            logger.debug(f"Created object at {the_obj_url}")
+            return the_obj
 
         
     @staticmethod
