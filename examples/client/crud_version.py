@@ -95,7 +95,6 @@ additional_data = {
     'phase': 'PLANNING',
     'distribution': 'SAAS'
 }
-import pdb; pdb.set_trace()
 version = bd.get_or_create_resource(field='versionName', value=args.version, name="versions", parent=project_obj, additional_data=additional_data)
 print(f"Version {version['versionName']} was either found or created after deleting the version")
 
@@ -109,4 +108,29 @@ except requests.HTTPError as err:
         print("not found")
     else:
         bd.http_error_handler(err)
+
+
+# GET or CREATE project
+additional_data = {
+    'description': 'The project description, again',
+    'projectLevelAdjustments': True
+}
+
+project = bd.get_or_create_resource(field='name', value=args.project, name='projects', additional_data=additional_data)
+
+project_url = project['_meta']['href']
+
+# DELETE project
+try:
+    r = bd.session.delete(project_url)
+    r.raise_for_status()
+    print("deleted project")
+except requests.HTTPError as err:
+    if err.response.status_code == 404:
+        print("not found")
+    else:
+        bd.http_error_handler(err)
+
+
+
 
