@@ -70,6 +70,25 @@ For example one wants to specify cloning options directly
 python3 scan_docker_image_lite.py <imagespec> --detect-options='--detect.clone.project.version.name=version --detect.project.clone.categories=COMPONENT_DATA,VULN_DATA'
 
 There is not validation of extra parameters passed, use with care.
+
+MK 2022-10-24  Automating grouping.
+By adding specific markers to the Dockerfile, it is possible to enable automating group detection.
+
+In the Dockerfile, once the specific group is complete, add the following command:
+
+RUN echo <groupname>_group_end
+
+e.g.
+
+. . . 
+RUN echo base_group_end
+. . .
+RUN echo app_group_end
+. . .
+
+that will generate grouping as  N:base,N:app
+
+
 '''
 
 from blackduck.HubRestApi import HubInstance
@@ -83,6 +102,7 @@ import subprocess
 import sys
 from argparse import ArgumentParser
 import argparse
+import re
 
 #hub = HubInstance()
 
@@ -129,7 +149,15 @@ class DockerWrapper():
         args.append('pull')
         args.append(image_name)
         return subprocess.run(args)
-        
+
+    def get_container_image_history(self, image_name):
+        args = []
+        args.append(self.docker_path)
+        args.append('history')
+        args.append(image_name)
+        result = subprocess.run(args, capture_output=True)
+        return result
+
     def save_container_image(self, image_name):
         args = []
         args.append(self.docker_path)
@@ -216,9 +244,25 @@ class ContainerImageScanner():
     def prepare_container_image(self):
         self.docker.initdir()
         self.docker.pull_container_image(self.container_image_name)
+        result = self.docker.get_container_image_history(self.container_image_name)
+        history = result.stdout.splitlines()
+        layer_count = 0
+        history_grouping = ''
+        for line in reversed(history):
+            print (line)
+            if not line.rstrip().endswith(b' 0B'):
+                layer_count +=1
+            match = re.search('echo (.+?)_group_end', str(line))
+            if match:
+                found = match.group(1)
+                if len(history_grouping):
+                    history_grouping += ','
+                history_grouping += str(layer_count) + ":" + found
+        if len(history_grouping) and self.grouping == '1024:everything':
+            self.grouping = history_grouping
         self.docker.save_container_image(self.container_image_name)
         self.docker.unravel_container()
-
+    
     def process_container_image_by_user_defined_groups(self):
         self.manifest = self.docker.read_manifest()
         print(self.manifest)
