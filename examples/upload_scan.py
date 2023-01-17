@@ -1,6 +1,10 @@
 #!/usr/local/bin/python3
 # encoding: utf-8
 '''
+************************************************************************************
+DEPRECATED - use examples/upload_bdio.py with Blackduck versions newer than 2022.2.0
+************************************************************************************
+
 examples/upload_scan -- downloads all scans that belong to a project
 
 examples/upload_scan is a program that will download all scan files that belong to a project. Project is specified by project name and version
