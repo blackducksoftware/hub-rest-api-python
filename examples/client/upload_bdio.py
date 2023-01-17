@@ -46,8 +46,15 @@ Blackduck examples collection
 
 import sys
 import argparse
+import logging
 
 from blackduck import Client
+
+logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', stream=sys.stderr, level=logging.DEBUG)
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("blackduck").setLevel(logging.WARNING)
+
 
 def main():
     args = parse_command_args()
@@ -55,7 +62,9 @@ def main():
        access_token = tf.readline().strip()
     global bd
     bd = Client(base_url=args.base_url, token=access_token, verify=args.no_verify, timeout=60.0, retries=4)
-    print (bd.list_resources())
+    files = {"file": open(args.filename,"rb")}
+    response = bd.session.post("/api/scan/data", files = files)
+    logging.info(response)
 
 def parse_command_args():
     parser = argparse.ArgumentParser(prog = "upload_bdio", description="Uploads BDIO file to a Blackduck server", epilog="Blackduck examples collection")
