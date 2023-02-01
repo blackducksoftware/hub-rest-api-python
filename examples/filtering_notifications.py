@@ -59,7 +59,7 @@ import sys
 import json
 import traceback
 import re
-from requests import HTTPError
+from requests import RequestException
 from blackduck import Client
 from ast import literal_eval
 
@@ -120,24 +120,32 @@ def main():
         
         user = get_user(hub_client, user_name)
         if user:
-            number_of_seen = 0
-            for notification in read_notifications(
-                    hub_client,
-                    notification_filters,
-                    user,
-                    vuln_source=vuln_source):
-                user_id = re.split("/", user['_meta']['href'])[-1]
-                res = update_user_notification(hub_client, user_id, notification)
-                number_of_seen += 1
-                content = literal_eval(res.content.decode("UTF-8"))
-                logging.info(f"Notification state is set to SEEN for {content['type']}")
-            logging.info(f"Finished. Number of Notifications which are set to SEEN is {number_of_seen}")
+            set_to_seen = 0
+            failed = 0
+            while True:
+                try:
+                    for notification in read_notifications(
+                            hub_client,
+                            notification_filters,
+                            user,
+                            vuln_source=vuln_source):
+                        user_id = re.split("/", user['_meta']['href'])[-1]
+                        res = update_user_notification(hub_client, user_id, notification)
+                        set_to_seen += 1
+                        content = literal_eval(res.content.decode("UTF-8"))
+                        logging.info(f"Notification state is set to SEEN for {content['type']}")
+                except RequestException as err:
+                    failed += 1
+                    logging.error(f"Failed to read or update notification and the reason is {str(err)}")
+                    continue
+                logging.info(f"=== Updating Notifications Finished ===")
+                logging.info(f"{set_to_seen} Notifications are set to SEEN.")
+                logging.info(f"{failed} Notifications failed to read or update the state.")
+                break
         else:
             logging.error(f"User not found for {user_name}")
-    except HTTPError as err:
-        hub_client.http_error_handler(err)
     except Exception as err:
-        logging.error(f"Failed to perform the task. See the stack trace")
+        logging.error(f"Failed to perform the task with exception {str(err)}. See also the stack trace")
         traceback.print_exc()
 
 if __name__ == '__main__':
