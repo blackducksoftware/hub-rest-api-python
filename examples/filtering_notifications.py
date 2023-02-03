@@ -17,7 +17,7 @@ Note:
    "baseurl": "YOUR_BLACKDUCK_URL",
    "api_token": "YOUR_API_TOKEN",
    "insecure": <true or false>,
-   "timeout": 15,
+   "timeout": 15.0,
    "retries": 3,
    "filters": {
        "type":"VULNERABILITY",
@@ -109,6 +109,7 @@ def main():
     try:
         with open('.restconfig-notifications.json','r') as f:
             config = json.load(f)
+        set_to_seen = 0
         hub_client = Client(token=config['api_token'],
                             base_url=config['baseurl'],
                             verify=not config['insecure'],
@@ -120,33 +121,26 @@ def main():
         
         user = get_user(hub_client, user_name)
         if user:
-            set_to_seen = 0
-            failed = 0
-            while True:
-                try:
-                    for notification in read_notifications(
-                            hub_client,
-                            notification_filters,
-                            user,
-                            vuln_source=vuln_source):
-                        user_id = re.split("/", user['_meta']['href'])[-1]
-                        res = update_user_notification(hub_client, user_id, notification)
-                        set_to_seen += 1
-                        content = literal_eval(res.content.decode("UTF-8"))
-                        logging.info(f"Notification state is set to SEEN for {content['type']}")
-                except RequestException as err:
-                    failed += 1
-                    logging.error(f"Failed to read or update notification and the reason is {str(err)}")
-                    continue
-                logging.info(f"=== Updating Notifications Finished ===")
-                logging.info(f"{set_to_seen} Notifications are set to SEEN.")
-                logging.info(f"{failed} Notifications failed to read or update the state.")
-                break
+            for notification in read_notifications(
+                    hub_client,
+                    notification_filters,
+                    user,
+                    vuln_source=vuln_source):
+                user_id = re.split("/", user['_meta']['href'])[-1]
+                res = update_user_notification(hub_client, user_id, notification)
+                set_to_seen += 1
+                content = literal_eval(res.content.decode("UTF-8"))
+                logging.info(f"Notification state is set to SEEN for {content['type']}")
         else:
             logging.error(f"User not found for {user_name}")
+    except RequestException as err:
+        logging.error(f"Failed to read or update notification and the reason is {str(err)}")
     except Exception as err:
         logging.error(f"Failed to perform the task with exception {str(err)}. See also the stack trace")
         traceback.print_exc()
+    finally:
+        logging.info(f"=== Updating Notifications Finished ===")
+        logging.info(f"{set_to_seen} Notifications are set to SEEN.")
 
 if __name__ == '__main__':
     sys.exit(main())
