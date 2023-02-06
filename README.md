@@ -8,6 +8,10 @@ In v2022.2 of Black Duck the REST API introduced a max page size to protect syst
 
 **The old HubInstance interface and many of the examples using it do not perform paging and will break as a result of the changes in v2022.2**.
 
+Any issues related to the HubInstance Interface will be closed as *Won't Fix*
+
+Any PRs with new or modified example scripts/utilities **must** use the client interface.
+
 # New in 1.0.0
 
 Introducing the new Client class.
@@ -60,6 +64,8 @@ for project in bd.get_resource(name='projects'):
 ### Examples
 
 Example code showing how to work with the new Client can be found in the *examples/client* folder.
+
+**Examples which use the old HubInstance interface -which is not maintained- are not guaranteed to work. Use at your own risk.**
 
 # Test #
 Using [pytest](https://pytest.readthedocs.io/en/latest/contents.html)
