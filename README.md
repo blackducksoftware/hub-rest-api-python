@@ -67,7 +67,16 @@ Example code showing how to work with the new Client can be found in the *exampl
 
 **Examples which use the old HubInstance interface -which is not maintained- are not guaranteed to work. Use at your own risk.**
 
+# Version History
+
+Including a version history on a go-forward basis. 
+
+## v1.1.0
+
+Retries will be attempted for all HTTP verbs, not just GET.
+
 # Test #
+
 Using [pytest](https://pytest.readthedocs.io/en/latest/contents.html)
 
 ```bash
