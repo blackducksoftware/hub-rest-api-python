@@ -42,7 +42,6 @@ class HubSession(requests.Session):
             total=int(retries),
             backoff_factor=2,  # exponential retry 1, 2, 4, 8, 16 sec ...
             status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=['GET']
         )
 
         adapter = HTTPAdapter(max_retries=retry_strategy)
