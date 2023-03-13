@@ -21,7 +21,7 @@ KIND, either express or implied. See the License for the
 specific language governing permissions and limitations
 under the License.
 
-usage: Get all the users [-h] -u BASE_URL -t TOKEN_FILE [-nv] -pn PROJECT_NAME [-mv MAX_VERSIONS] [--dry-run]
+usage: delete_oldest_project_versions.py [-h] -u BASE_URL -t TOKEN_FILE [-nv] -pn PROJECT_NAME [-mv MAX_VERSIONS] [--dry-run]
 
 options:
   -h, --help            show this help message and exit
