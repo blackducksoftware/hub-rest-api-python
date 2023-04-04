@@ -22,46 +22,42 @@ KIND, either express or implied. See the License for the
 specific language governing permissions and limitations
 under the License.
 
-This script will perform bulk update of Project version PHASE
-based on the content of an EXCEL file
-
-Each row of a file is expected to containe a field for Project Name
-Project Version and desired phase
-
-Sript will iterate through the rows of a spreadsheet and issue 
-an API call per row.
+This script will perform bulk update of Project version PHASE based on 
+the content of an EXCEL file. Each row of a file is expected to contain 
+a field for Project Name Project Version and desired phase.
+Script will iterate through the rows of a spreadsheet and issue an API 
+call per row.
 
 Requirements
 
-python3 vresion 3.8 or newer recommended
+- python3 version 3.8 or newer recommended
+- the following packages are used by the script and should be installed 
+  prior to use:	
+    argparse
+    blackduck
+    csv
+    logging
+    re
+    openpyxl
+    sys
+- Blackduck instance
+- API token with sufficient privileges to perform project version phase 
+  change.
 
-the following packages are used by the script and should be installed prior to use:
+Install python packages with the following command:
 
-argparse
-blackduck
-csv
-logging
-re
-openpyxl
-sys
-
-install them with the following command:
-
-pip3 install argparse blackduck csv logging re openpyxl sys
-
-Blackduck instance
-API token with sufficient privileges to perform project version phase change
+ pip3 install argparse blackduck csv logging re openpyxl sys
 
 Using
 
-place the token into a file (token in this example)
+place the token into a file (token in this example) then execute:
 
-execute 
+ python3 batch_update_project_phase.py -u https://blackduck-host -t token -nv -i excel-file-with-data
 
-python3 batch_update_project_phase.py -u https://blackduck-host -t token -nv -i excel-file-with-data
-
-Projects and project versions that are listed in the file but are not present on the blackduck instance will be skipped.
-If a project version is already at a requested phase, no update will be executed
+Projects and project versions that are listed in the file but are not 
+present on the blackduck instance will be skipped.
+If a project version is already at a requested phase, no update will 
+be executed.
 
 '''
 
