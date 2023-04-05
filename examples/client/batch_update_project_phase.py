@@ -81,6 +81,16 @@ project_name_column = 'Project Name'
 project_version_column = 'Version Name'
 project_phase_column = 'Version phase'
 
+summary_report = '''
+
+Summary
+
+'''
+
+def append_to_summary(message):
+    global summary_report
+    summary_report += message + '\n'
+
 def process_csv_file(filename):
     file = open(filename)
     type(file)
@@ -89,13 +99,23 @@ def process_csv_file(filename):
     project_version_idx = None
     project_phase_idx = None
     for row in csvreader:
+        row_number = csvreader.line_num
         if not (project_name_idx and project_version_idx and project_phase_idx):
             project_name_idx = row.index(project_name_column)
             project_version_idx = row.index(project_version_column)
             project_phase_idx = row.index(project_phase_column)
         elif project_name_idx and project_version_idx and project_phase_idx:
-            logging.info(f"Processing {row[project_name_idx]} : {row[project_version_idx]} with {row[project_phase_idx]}")
-            process_project_version(row[project_name_idx], row[project_version_idx], row[project_phase_idx])
+            project_name = row[project_name_idx].strip() if project_name_idx < len(row) else ''
+            version_name = row[project_version_idx].strip() if project_version_idx < len(row) else ''
+            phase = row[project_phase_idx] if project_phase_idx < len(row) else ''
+            if project_name and version_name and phase and phase.strip().upper() in VERSION_PHASES:   
+                logging.info(f"Processing row {row_number:4}: {row[project_name_idx]} : {row[project_version_idx]} with {row[project_phase_idx]}")
+                process_project_version(project_name, version_name, phase.strip().upper())
+            else:
+                message = f"Processing row {row_number:}. Invalid data: Project '{project_name}' version '{version_name}' phase '{phase}', skipping"
+                logging.info(message)
+                append_to_summary(message)
+                continue
         else:
             logging.info("Could not parse input file")
             sys.exit(1)
@@ -107,14 +127,25 @@ def process_excel_file(filename):
     project_name_idx = None
     project_version_idx = None
     project_phase_idx = None
+    row_number = 0
     for row in ws.values:
+        row_number += 1
         if not (project_name_idx and project_version_idx and project_phase_idx):
             project_name_idx = row.index(project_name_column)
             project_version_idx = row.index(project_version_column)
             project_phase_idx = row.index(project_phase_column)
         elif project_name_idx and project_version_idx and project_phase_idx:
-            logging.info(f"Processing {row[project_name_idx]} : {row[project_version_idx]} with {row[project_phase_idx]}")
-            process_project_version(row[project_name_idx], row[project_version_idx], row[project_phase_idx])
+            project_name = row[project_name_idx] if project_name_idx < len(row) else ''
+            version_name = row[project_version_idx] if project_version_idx < len(row) else ''
+            phase = row[project_phase_idx] if project_phase_idx < len(row) else ''
+            if project_name and version_name and phase and phase.strip().upper() in VERSION_PHASES:   
+                logging.info(f"Processing row {row_number:4}: {row[project_name_idx]} : {row[project_version_idx]} with {row[project_phase_idx]}")
+                process_project_version(project_name.strip(), version_name.strip(), phase.strip().upper())
+            else:
+                message = f"Processing row {row_number:}. Invalid data: Project '{project_name}' version '{version_name}' phase '{phase}', skipping"
+                logging.info(message)
+                append_to_summary(message)
+                continue
         else:
             logging.info("Could not parse input file")
             sys.exit(1)
@@ -143,11 +174,6 @@ def process_project_version(project_name, version_name, phase):
         logging.warning(f"Version name {version_name} for project {project_name} was not found, skipping")
         return
     logging.debug(f"Found {project['name']}:{version['versionName']}")
-
-    try:
-        assert phase in VERSION_PHASES, f"Invalid version phase {phase}for {project_name} {version_name}"
-    except AssertionError:
-        logging.warning(f"Invalid version phase {phase}for {project_name} {version_name}. Skipping")
 
     if phase == version['phase' ]:
         logging.info(f"Project {project_name} version {version_name} is already at {phase}. No update")
@@ -186,6 +212,8 @@ def main():
     else:
         logging.info(f"Processing CSV file {args.input_file}")
         process_csv_file(args.input_file)
+
+    print (summary_report)
 
 if __name__ == "__main__":
     sys.exit(main())
