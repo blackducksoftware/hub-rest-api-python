@@ -159,7 +159,9 @@ def process_project_version(project_name, version_name, phase):
         assert len(projects) == 1, f"There should be one, and only one project named {project_name}. We found {len(projects)}"
         project = projects[0]
     except AssertionError:
-        logging.warning(f"Project named {project_name} not found. Skipping")
+        message = f"Project named '{project_name}' not found. Skipping"
+        logging.warning(message)
+        append_to_summary(message)
         return
     
     params = {
@@ -171,7 +173,9 @@ def process_project_version(project_name, version_name, phase):
         assert len(versions) == 1, f"There should be one, and only one version named {version_name}. We found {len(versions)}"
         version = versions[0]
     except AssertionError:
-        logging.warning(f"Version name {version_name} for project {project_name} was not found, skipping")
+        message = f"Version name '{version_name}' for project {project_name} was not found, skipping"
+        logging.warning(message)
+        append_to_summary(message)
         return
     logging.debug(f"Found {project['name']}:{version['versionName']}")
 
