@@ -16,6 +16,7 @@ import json
 import logging
 import sys
 import time
+from pprint import pprint
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -52,33 +53,38 @@ parser.add_argument("-r", "--reports",
 	default=",".join(all_reports), 
 	help=f"Comma separated list (no spaces) of the reports to generate - {list(version_name_map.keys())}. Default is all reports.")
 parser.add_argument('--format', default='CSV', choices=["CSV"], help="Report format - only CSV available for now")
-parser.add_argument('-t', '--tries', default=4, type=int, help="How many times to retry downloading the report, i.e. wait for the report to be generated")
-parser.add_argument('-s', '--sleep_time', default=5, type=int, help="The amount of time to sleep in-between (re-)tries to download the report")
+parser.add_argument('-t', '--tries', default=30, type=int, help="How many times to retry downloading the report, i.e. wait for the report to be generated")
+parser.add_argument('-s', '--sleep_time', default=10, type=int, help="The amount of time to sleep in-between (re-)tries to download the report")
 parser.add_argument('--no-verify', dest='verify', action='store_false', help="disable TLS certificate verification")
 
 args = parser.parse_args()
 
 def download_report(bd_client, location, filename, retries=args.tries):
 	report_id = location.split("/")[-1]
-	download_url = f"{bd_client.base_url}api/reports/{report_id}"
+	base_url = bd_client.base_url if bd_client.base_url.endswith("/") else bd_client.base_url + "/"
+	download_url = f"{base_url}api/reports/{report_id}"
+
+	logging.info(f"Retrieving report list for {location}")
 
 	if retries:
-		print("Retrieving generated report from {}".format(location))
-		response = bd.session.get(download_url, headers={'Content-Type': 'application/zip', 'Accept':'application/zip'})
-		if response.status_code == 200:
-			with open(filename, "wb") as f:
-				f.write(response.content)
-			print(f"Successfully downloaded zip file to {filename} for report {report_id}")
-		else:
-			print(f"Failed to retrieve report {report_id}")
-			print("Probably not ready yet, waiting 5 seconds then retrying...")
-			time.sleep(args.sleep_time)
+		response = bd_client.session.get(location)
+		report_status = response.json().get('status', 'Not Ready')
+		if response.status_code == 200 and report_status == 'COMPLETED':
+			response = bd.session.get(download_url, headers={'Content-Type': 'application/zip', 'Accept':'application/zip'})
+			if response.status_code == 200:
+				with open(filename, "wb") as f:
+					f.write(response.content)
+				logging.info(f"Successfully downloaded zip file to {filename} for report {report_id}")
+			else:
+				logging.error(f"Failed to download report")
+		else:	
 			retries -= 1
-			download_report(location, filename, retries)
+			logging.debug(f"Failed to retrieve report {report_id}, report status: {report_status}")
+			logging.debug(f"Will retry {retries} more times. Sleeping for {args.sleep_time} second(s)")
+			time.sleep(args.sleep_time)
+			download_report(bd_client, location, filename, retries)
 	else:
 		raise FailedReportDownload(f"Failed to retrieve report {report_id} after multiple retries")
-
-# hub = HubInstance()
 
 with open(args.token_file, 'r') as tf:
 	access_token = tf.readline().strip()
