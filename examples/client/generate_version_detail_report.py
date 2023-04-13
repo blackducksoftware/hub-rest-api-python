@@ -34,7 +34,9 @@ version_name_map = {
 	'license_terms': 'LICENSE_TERM_FULFILLMENT',
 	'component_additional_fields': 'BOM_COMPONENT_CUSTOM_FIELDS',
 	'project_version_additional_fields': 'PROJECT_VERSION_CUSTOM_FIELDS',
-	'vulnerability_matches': 'VULNERABILITY_MATCH'
+	'vulnerability_matches': 'VULNERABILITY_MATCH',
+	'upgrade_guidance': 'UPGRADE_GUIDANCE',
+	'license_conflicts': 'LICENSE_CONFLICTS'
 }
 
 all_reports = list(version_name_map.keys())
