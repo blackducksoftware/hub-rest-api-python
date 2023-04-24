@@ -176,7 +176,7 @@ def download_report(location, filename, retries, sleep_time):
     base_url = bd.base_url if bd.base_url.endswith("/") else bd.base_url + "/"
     download_url = f"{base_url}api/reports/{report_id}"
 
-    logging.info(f"Retrieving report list for {location}")
+    logging.info(f"Retrieving report status for {location}")
 
     if retries:
         response = bd.session.get(location)
@@ -196,7 +196,10 @@ def download_report(location, filename, retries, sleep_time):
             time.sleep(sleep_time)
             download_report(location, filename, retries, sleep_time)
     else:
-        raise FailedReportDownload(f"Failed to retrieve report {report_id} after multiple retries")
+        # raise FailedReportDownload(f"Failed to retrieve report {report_id} after multiple retries")
+        message = f"Failed to retrieve {filename} for report {report_id} after multiple retries"
+        logging.error(message)
+        append_to_summary (message)
 
 def process_project_version(project_name, version_name, args):
     params = {

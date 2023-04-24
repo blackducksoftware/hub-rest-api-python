@@ -215,7 +215,10 @@ def download_report(location, filename, retries, sleep_time):
             time.sleep(sleep_time)
             download_report(location, filename, retries, sleep_time)
     else:
-        raise FailedReportDownload(f"Failed to retrieve report {report_id} after multiple retries")
+        # raise FailedReportDownload(f"Failed to retrieve report {report_id} after multiple retries")
+        message = f"Failed to retrieve {filename} for report {report_id} after multiple retries"
+        logging.error(message)
+        append_to_summary (message)
 
 def process_project_version(project_name, version_name, args):
     params = {
