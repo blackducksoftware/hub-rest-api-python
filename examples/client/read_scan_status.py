@@ -9,6 +9,7 @@ import logging
 import sys
 
 from blackduck import Client
+from pprint import pprint
 
 parser = argparse.ArgumentParser("Get all the users")
 parser.add_argument("--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
@@ -31,13 +32,17 @@ bd = Client(
     verify=args.verify
 )
 
-headers = {'Accept': 'application/vnd.blackducksoftware.internal-1+json'}
-status = {"in_progress": 0, "completed": 0, "error": 0, "skipped": 0}
-
-for i in status.keys():
-    params = {"filter": ["codeLocationStatus:{}".format(i)]}
-    codelocations = bd.get_resource('codeLocations', params=params, headers=headers)
-    status[i] = sum(1 for _ in codelocations)
+status = {"STARTED": 0, "SUCCESS": 0, "FAILURE": 0}
+codelocations = bd.get_resource('codeLocations')
+for codelocation in codelocations:
+    latest_summaries = bd.get_resource('scans', codelocation)
+    for summary in latest_summaries:
+        scan_state = summary['scanState']
+        if scan_state in status:
+            status[scan_state] += 1
+        else:
+            status[scan_state] =1
+        break
     
 print (status)
 
