@@ -92,7 +92,12 @@ with open(args.token_file, 'r') as tf:
 
 bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
 
-url = "https://ec2-44-202-86-163.compute-1.amazonaws.com/debug?job=true"
+if args.base_url.endswith("/"):
+    base_url = args.base_url[:-1]
+else:
+    base_url = args.base_url
+
+url = f"{base_url}/debug?job=true"
 
 result = bd.session.get(url)
 
@@ -101,7 +106,7 @@ if args.stdout:
 
 else:
     timestamp = datetime.now().isoformat()
-    filename = f"{args.output_file}-{timestamp}.txt"
+    filename = f"{args.output_file}-{timestamp}.txt".replace(":","-")
     f = open(filename,"w")
     f.write(result.text)
     f.close()
