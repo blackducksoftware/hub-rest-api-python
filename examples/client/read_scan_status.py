@@ -35,14 +35,12 @@ bd = Client(
 status = {"STARTED": 0, "SUCCESS": 0, "FAILURE": 0}
 codelocations = bd.get_resource('codeLocations')
 for codelocation in codelocations:
-    latest_summaries = bd.get_resource('scans', codelocation)
-    for summary in latest_summaries:
-        scan_state = summary['scanState']
-        if scan_state in status:
-            status[scan_state] += 1
-        else:
-            status[scan_state] =1
-        break
+    latest_scan_summary = bd.get_resource('latest-scan',codelocation, items = False)
+    scan_state = latest_scan_summary['scanState']
+    if scan_state in status:
+        status[scan_state] += 1
+    else:
+        status[scan_state] =1
     
 print (status)
 
