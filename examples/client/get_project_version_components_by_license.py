@@ -22,57 +22,23 @@ KIND, either express or implied. See the License for the
 specific language governing permissions and limitations
 under the License.
 
-This script will perform bulk deletion of Project versions based on 
-the content of an EXCEL file. Each row of a file is expected to contain 
-a field for Project Name Project Version.
-Script will iterate through the rows of a spreadsheet and issue an API 
-call per row.
-If the project version is the last in the project, entire project 
-will be deleted.
+This script will tally up project version components by license used and produce output as following
 
-Requirements
-
-- python3 version 3.8 or newer recommended
-- the following packages are used by the script and should be installed 
-  prior to use:	
-    argparse
-    blackduck
-    csv
-    logging
-    re
-    openpyxl
-    requests
-    sys
-- Blackduck instance
-- API token with sufficient privileges to perform project version phase 
-  change.
-
-Install python packages with the following command:
-
- pip3 install argparse blackduck csv logging re openpyxl requests sys
-
-Using
-
-place the token into a file (token in this example) then execute:
-
- python3 batch_delete_project_version.py -u https://blackduck-host -t token -nv -i excel-file-with-data
-
-Projects and project versions that are listed in the file but are not 
-present on the blackduck instance will be flagged in the summary.
-
-usage: python3.10 examples/client/batch_delete_project_version.py [-h] -u BASE_URL -t TOKEN_FILE -i INPUT_FILE [-nv] [--dry-run]
-
-options:
-  -h, --help            show this help message and exit
-  -u BASE_URL, --base-url BASE_URL
-                        Hub server URL e.g. https://your.blackduck.url
-  -t TOKEN_FILE, --token-file TOKEN_FILE
-                        File containing access token
-  -i INPUT_FILE, --input-file INPUT_FILE
-                        Project Name
-  -nv, --no-verify      Disable TLS certificate verification
-  --dry-run             Do not delete, dry run
-
+{'(BSD 2-clause "Simplified" License OR Creative Commons Zero v1.0 Universal OR Public Domain)': [('HdrHistogram',
+                                                                                                   '2.1.9')],
+ '(Common Development and Distribution License 1.1 OR Sun GPL With Classpath Exception v2.0)': [('Jersey '
+                                                                                                 'Apache '
+                                                                                                 'HTTP '
+. . .
+ '(GNU General Public License v3.0 only OR Common Development and Distribution License 1.0)': [('StAX',
+                                                                                                '1.0-2')],
+ 'ANTLR Software Rights Notice': [('antlr', '2.7.7')],
+ 'Apache License 2.0': [('Apache Commons BeanUtils', '1.9.4'),
+                        ('Apache Commons Codec', '1.10'),
+                        ('Apache Commons Collections', '3.1'),
+                        ('Apache Commons Configuration', '1.8'),
+                        ('Apache Commons Digester', '3.2'),
+. . .
 
 '''
 
