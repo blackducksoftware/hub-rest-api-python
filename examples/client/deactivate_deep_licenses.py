@@ -19,18 +19,6 @@ options:
   --active              Status to set deep license to
 
 
-Usage:
-deactivate_deep_licenses.py --base-url https://your.blackduck.url] [--token-file token.txt]
-
-required arguments:
-  --base-url BASE_URL      Hub server URL e.g. https://your.blackduck.url
-  --token-file TOKEN_FILE  containing access token
-  --project PROJECT NAME
-  --version VERSION NAME
-
-optional arguments:
-    --match-type  list of match types for which DL should be deactivated
-
 '''
 
 from blackduck import Client
