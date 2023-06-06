@@ -1,6 +1,24 @@
 '''
 Purpose: Deactivates Deep Licenses that were detected by Deep License search
 
+usage: deactivate_deep_licenses.py [-h] -u BASE_URL -t TOKEN_FILE -p PROJECT_NAME -pv VERSION_NAME [-mt MATCH_TYPE] [-nv] [--active]
+
+options:
+  -h, --help            show this help message and exit
+  -u BASE_URL, --base-url BASE_URL
+                        Hub server URL e.g. https://your.blackduck.url
+  -t TOKEN_FILE, --token-file TOKEN_FILE
+                        File containing access token
+  -p PROJECT_NAME, --project-name PROJECT_NAME
+                        Project Name
+  -pv VERSION_NAME, --version-name VERSION_NAME
+                        Project Version Name
+  -mt MATCH_TYPE, --match-type MATCH_TYPE
+                        Limit the action to components with specific Match Type 
+  -nv, --no-verify      Disable TLS certificate verification
+  --active              Status to set deep license to
+
+
 Usage:
 deactivate_deep_licenses.py --base-url https://your.blackduck.url] [--token-file token.txt]
 
@@ -38,14 +56,14 @@ def set_active(bd, licenses, status=False):
 
 def parse_command_args():
 
-    parser = argparse.ArgumentParser("Generate and download reports for projets in a spreadsheet")
+    parser = argparse.ArgumentParser("deactivate_deep_licenses.py")
     parser.add_argument("-u", "--base-url",     required=True, help="Hub server URL e.g. https://your.blackduck.url")
     parser.add_argument("-t", "--token-file",   required=True, help="File containing access token")
     parser.add_argument("-p", "--project-name",   required=True, help="Project Name")
     parser.add_argument("-pv", "--version-name",   required=True, help="Project Version Name")
-    parser.add_argument("-mt", "--match-type",   required=False, help="Match Type")
+    parser.add_argument("-mt", "--match-type",   required=False, help="Limit the action to components with specific Match Type ")
     parser.add_argument("-nv", "--no-verify",   action='store_false', help="Disable TLS certificate verification")
-    parser.add_argument("--active", action='store_true', help='Dtatus to set deep license to')
+    parser.add_argument("--active", action='store_true', help='Status to set deep license to')
     return parser.parse_args()
 
 def main():
