@@ -28,6 +28,27 @@ from pprint import pprint
 from blackduck import Client
 from collections import defaultdict
 
+def getlicensesfromprojectversion(subproject):
+    subprojecturl=subproject['_meta']['href']
+    x = subprojecturl.split("/")
+    del x[5]
+    del x[5]
+    del x[5]
+    del x[5]
+    subprojecturl = "/".join(x)
+    version = bd.session.get(subprojecturl).json()
+    components = bd.get_resource('components',version)
+    licenselist = []
+    for component in components:
+        for license in component['licenses']:
+            if license.get("licenseType",None) :
+                for innerlicense in license['licenses']:
+                    licenselist.append(innerlicense)
+            else:
+                licenselist.append(license)
+    return licenselist
+    
+
 def parse_command_args():
     parser = argparse.ArgumentParser("update_project_with_component_licenses.py [-h] -u BASE_URL -t TOKEN_FILE [-nv] ")
     parser.add_argument("-u", "--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
@@ -61,73 +82,29 @@ def process_project_version(project_name, version_name, args):
     versions = [v for v in bd.get_resource('versions', project, params=params) if v['versionName'] == args.version_name]
     assert len(versions) == 1, f"There should be one, and only one version named {args.version_name}. We found {len(versions)}"
     version = versions[0]
-    
-    
 
     #Return only sub-projects, not components
-    components = (
+    components = [
         c for c in bd.get_resource('components',version) if c['componentType'] == "SUB_PROJECT"
-        )
-    for components in components:
-        #JSON body
-        body =  defaultdict(list)
-               
-        existing_licenses = []
+    ]
 
-        #Defining subcomponents 
-        body["componentName"]=components['componentName']
-        body["componentVersionName"]=components['componentVersionName']
-        body["component"]=components['component']
-        body["componentVersion"]=components['componentVersion']
-        body["componentType"]="SUB_PROJECT"
-        pprint(components['componentName'])
-        pprint(components['componentVersionName'])
-        url = components['_meta']['href']
-        #Capture current License statement of components to add to
-        if len(components['licenses'][0]['licenses']) > 0:
-            for i, v in enumerate(components['licenses'][0]['licenses']):
-                parent_license_display = components['licenses'][0]['licenses'][i]['licenseDisplay']
-                parent_license = components['licenses'][0]['licenses'][i]['license']
-                addlicense ={"licenseDisplay":parent_license_display,"license": parent_license }
-                body['licenses'].append(addlicense)
-                if parent_license_display not in existing_licenses:
-                    existing_licenses.append(parent_license_display)
-        else:
-            parent_license_display = components['licenses'][0]['licenses'][0]['licenseDisplay']
-            parent_license = components['licenses'][0]['licenses'][0]['license']
-            addlicense ={"licenseDisplay":parent_license_display,"license": parent_license }
-            body['licenses'].append(addlicense)
-            if parent_license_display not in existing_licenses:
-                existing_licenses.append(parent_license_display)
-        #Retrieving componentName values
-        subprojects = [p for p in bd.get_resource('projects') if p['name'] == components['componentName']]
-        subproject = subprojects[0]
-        subversions = [v for v in bd.get_resource('versions', subproject) if v['versionName'] == components['componentVersionName']]
-        subversion = subversions[0]
-        for subcomponent in bd.get_resource('components',subversion):
-            #Parse through multiple licenses
-            if len(subcomponent['licenses'][0]['licenses']) > 0:
-                for i, v in enumerate(subcomponent['licenses'][0]['licenses']):
-                    child_license_display = subcomponent['licenses'][0]['licenses'][i]['licenseDisplay']
-                    child_license = subcomponent['licenses'][0]['licenses'][i]['license']
-                    addlicense ={"licenseDisplay":child_license_display,"license": child_license }
-                    if child_license_display not in existing_licenses:
-                        body['licenses'].append(addlicense)
-                        existing_licenses.append(child_license_display)
-            #When only one license return it
-            else:
-                child_license_display = subcomponent['licenses'][0]['licenseDisplay']
-                child_license = subcomponent['licenses'][0]['license']
-                addlicense ={"licenseDisplay":child_license_display,"license": child_license }
-                if child_license_display not in existing_licenses:
-                        body['licenses'].append(addlicense)
-                        existing_licenses.append(child_license_display)
-        pprint(dict(body))
-        try:
-            r = bd.session.put(url,json=(dict(body)))
-            if r.status_code == 200:
-                print("updated project")
-        except requests.HTTPError as err:
-            bd.http_error_handler(err)
+    for subproject in components:
+    
+        url = subproject['_meta']['href']
+        subprojectlicenses = getlicensesfromprojectversion(subproject)
+        print(subprojectlicenses)
+        licenseblock = [
+        {
+            "licenseType": "CONJUNCTIVE",
+            "licenses": subproject['licenses'][0]['licenses']}]
+        for license in subprojectlicenses:
+            pprint(license)
+            licenseblock[0]['licenses'].append({"licenseDisplay":license['licenseDisplay'],"license":license['license']})
+        subproject['licenses']=licenseblock
+        #pprint(subproject)
+        r = bd.session.put(url,json=subproject)
+        print(r)
+        
+
 if __name__ == "__main__":
     sys.exit(main())
