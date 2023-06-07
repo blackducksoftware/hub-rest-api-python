@@ -76,10 +76,10 @@ for project in projects:
         references = bd.session.get(references_url)
         json_data = references.json()
         reference_count = json_data['totalCount']
-        print (f"{project_name:30} {version_name:30} is ised in {reference_count:4} projects")
+        print (f"{project_name:30} {version_name:30} is used in {reference_count:4} projects")
         if reference_count > 0:
             items = json_data['items']
             for item in items:
                 referencing_version = bd.get_resource('href', item, items=False)
                 referencing_project = bd.get_resource('project', referencing_version, items=False)
-                print (f"           {project_name:30} {version_name:30} is ised in {referencing_project['name']} {referencing_version['versionName']}")
+                print (f"           {project_name:30} {version_name:30} is used in {referencing_project['name']} {referencing_version['versionName']}")
