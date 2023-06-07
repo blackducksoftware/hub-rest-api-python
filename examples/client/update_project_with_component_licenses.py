@@ -92,14 +92,12 @@ def process_project_version(project_name, version_name, args):
     
         url = subproject['_meta']['href']
         subprojectlicenses = getlicensesfromprojectversion(subproject)
-        print(subprojectlicenses)
         licenseblock = [
         {
             "licenseType": "CONJUNCTIVE",
             "licenses": subproject['licenses'][0]['licenses']}]
         for license in subprojectlicenses:
-            pprint(license)
-            licenseblock[0]['licenses'].append({"licenseDisplay":license['licenseDisplay'],"license":license['license']})
+            licenseblock[0]['licenses'].append(license)
         subproject['licenses']=licenseblock
         #pprint(subproject)
         r = bd.session.put(url,json=subproject)
