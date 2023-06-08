@@ -26,16 +26,47 @@ import requests
 
 from pprint import pprint
 from blackduck import Client
-from collections import defaultdict
+
+def getprojects(project_name):
+    params = {
+        'q': [f"name:{project_name}"]
+    }
+    projects = [p for p in bd.get_resource('projects', params=params) if p['name'] == project_name]
+    return projects
+
+def getversions(project, version_name):
+    params = {
+        'q': [f"versionName:{version_name}"]
+    }
+    versions = [v for v in bd.get_resource('versions', project, params=params) if v['versionName'] == version_name]
+    return versions
+
+def returnsubprojecturl(x):
+    xurl=x['_meta']['href']
+    x = xurl.split("/")
+    del x[5]
+    del x[5]
+    del x[5]
+    del x[5]
+    xurl = "/".join(x)
+    return xurl
+
+def getsubprojects(version):
+    subcomponents = [ subcomponents for subcomponents in bd.get_resource('components',version) if subcomponents['componentType'] == "SUB_PROJECT" ]
+    return subcomponents
+
+def checkforsubprojects(subproject):
+    subprojecturl = returnsubprojecturl(subproject)
+    version = bd.session.get(subprojecturl).json()
+    subcomponents = [ subcomponents for subcomponents in bd.get_resource('components',version) if subcomponents['componentType'] == "SUB_PROJECT" ]
+    if len(subcomponents)>0:
+        check = True
+    else:
+        check= False
+    return check
 
 def getlicensesfromprojectversion(subproject):
-    subprojecturl=subproject['_meta']['href']
-    x = subprojecturl.split("/")
-    del x[5]
-    del x[5]
-    del x[5]
-    del x[5]
-    subprojecturl = "/".join(x)
+    subprojecturl = returnsubprojecturl(subproject)
     version = bd.session.get(subprojecturl).json()
     components = bd.get_resource('components',version)
     licenselist = []
@@ -66,30 +97,24 @@ def main():
     bd = Client(base_url=args.base_url, token=access_token, verify=args.no_verify, timeout=60.0, retries=4)
     process_project_version(args.project_name, args.version_name, args)
 
+def process_children(children):
+    sys.exit()
+
 def process_project_version(project_name, version_name, args):
     #Validating only 1 Project
-    params = {
-        'q': [f"name:{args.project_name}"]
-    }
-    projects = [p for p in bd.get_resource('projects', params=params) if p['name'] == args.project_name]
+    projects = getprojects(args.project_name)
     assert len(projects) == 1, f"There should be one, and only one project named {args.project_name}. We found {len(projects)}"
     project = projects[0]
     
     #Validates only 1 Version
-    params = {
-        'q': [f"versionName:{args.version_name}"]
-    }
-    versions = [v for v in bd.get_resource('versions', project, params=params) if v['versionName'] == args.version_name]
+    versions = getversions(project, args.version_name)
     assert len(versions) == 1, f"There should be one, and only one version named {args.version_name}. We found {len(versions)}"
     version = versions[0]
 
     #Return only sub-projects, not components
-    components = [
-        c for c in bd.get_resource('components',version) if c['componentType'] == "SUB_PROJECT"
-    ]
+    components = getsubprojects(version)  
 
     for subproject in components:
-    
         url = subproject['_meta']['href']
         subprojectlicenses = getlicensesfromprojectversion(subproject)
         licenseblock = [
