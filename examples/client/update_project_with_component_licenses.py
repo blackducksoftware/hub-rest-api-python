@@ -1,9 +1,57 @@
 #!/usr/bin/env python
-
 '''
+Created on June 6, 2023
+@author: emcleod
+
+Copyright (C) 2023 Synopsys, Inc.
+http://www.blackducksoftware.com/
+
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+
+This script will perform bulk update of Project version PHASE based on 
+the content of an EXCEL file. Each row of a file is expected to contain 
+a field for Project Name Project Version and desired phase.
+Script will iterate through the rows of a spreadsheet and issue an API 
+call per row.
+
 Purpose: Update project versions with licenses of their subprojects (components)
 
-usage: update_project_with_component_licenses.py [-h] -u BASE_URL -t TOKEN_FILE [-nv] 
+Requirements
+
+- python3 version 3.8 or newer recommended
+- the following packages are used by the script and should be installed 
+  prior to use:	
+    argparse
+    json
+    logging
+    requests
+    sys
+    blackduck
+    pprint
+- Blackduck instance
+- API token with sufficient privileges to perform project version phase 
+  change.
+
+Install python packages with the following command:
+
+ pip3 install argparse json logging requests sys blackduck pprint
+
+Usage: update_project_with_component_licenses.py [-h] -u BASE_URL -t TOKEN_FILE [-nv] -p PROJECT_NAME -pv VERSION_NAME
 
 options:
   -h, --help            show this help message and exit
@@ -123,7 +171,7 @@ def process_project_version(args):
     assert len(versions) == 1, f"There should be one, and only one version named {args.version_name}. We found {len(versions)}"
     version = versions[0]
     
-    pprint("Currently processing SubProjectes of Project " + project['name'] + " version " + version['versionName'])
+    pprint("Currently processing SubProjectes of Project '" + project['name'] + "' version '" + version['versionName'] + "'")
     #Return only sub-projects, not components
     components = getcomponents(version, "Version")  
 
@@ -144,7 +192,7 @@ def process_project_version(args):
         subproject['licenses']=licenseblock
         try: 
             r = bd.session.put(url,json=subproject)
-            print("Updated SubProject " + subproject['componentName'] + " with child licenses")
+            print("Updated SubProject '" + subproject['componentName'] + "' with child licenses")
         except KeyError as err:
             pprint (err)
             
