@@ -55,7 +55,7 @@ def getcomponents(spj, test):
 def getlicensesfromprojectversion(subproject):
     license_components = getcomponents(subproject,"License")
     #check for subprojects
-    if  checkforsubprojects(subproject) == True:
+    if checkforsubprojects(subproject) == True:
         #First Process Licenses of the components
         for license_component in license_components:  
             for license in license_component['licenses']:
@@ -122,7 +122,8 @@ def process_project_version(args):
     versions = getversions(project, args.version_name)
     assert len(versions) == 1, f"There should be one, and only one version named {args.version_name}. We found {len(versions)}"
     version = versions[0]
-
+    
+    pprint("Currently processing SubProjectes of Project " + project['name'] + " version " + version['versionName'])
     #Return only sub-projects, not components
     components = getcomponents(version, "Version")  
 
@@ -141,8 +142,12 @@ def process_project_version(args):
             licenseblock[0]['licenses'].append(license)
         #Adding licenses to JSON body
         subproject['licenses']=licenseblock
-        r = bd.session.put(url,json=subproject)
-        print(r)
+        try: 
+            r = bd.session.put(url,json=subproject)
+            print("Updated SubProject " + subproject['componentName'] + " with child licenses")
+        except KeyError as err:
+            pprint (err)
+            
 
 def returnsubprojecturl(x):
     xurl=x['_meta']['href']
