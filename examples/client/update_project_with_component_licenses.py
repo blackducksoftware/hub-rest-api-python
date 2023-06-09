@@ -27,7 +27,60 @@ import requests
 from pprint import pprint
 from blackduck import Client
 
+licenselist = []
+
+def checkforsubprojects(s):
+    #Simple Check to see if subproject also has child subprojects
+    subcomponents = getcomponents(s,"Sub")
+    if len(subcomponents)>0:
+        check = True
+    else:
+        check= False
+    return check
+
+def getcomponents(spj, test):
+    #Returns Versions of a given project
+    if test == "Version":
+        components = [ sp for sp in bd.get_resource('components',spj) if sp['componentType'] == "SUB_PROJECT" ]
+    #Returns Subprojects for a given Project Version
+    elif test == "Sub":
+        version = bd.session.get(returnsubprojecturl(spj)).json()
+        components = [ sp for sp in bd.get_resource('components',version) if sp['componentType'] == "SUB_PROJECT" ]
+    #Returns license data for a given Project Version
+    elif test == "License":
+        version = bd.session.get(returnsubprojecturl(spj)).json()
+        components = bd.get_resource('components',version)
+    return components
+
+def getlicensesfromprojectversion(subproject):
+    license_components = getcomponents(subproject,"License")
+    #check for subprojects
+    if  checkforsubprojects(subproject) == True:
+        #First Process Licenses of the components
+        for license_component in license_components:  
+            for license in license_component['licenses']:
+                if license.get("licenseType",None) :
+                    for innerlicense in license['licenses']:
+                        licenselist.append(innerlicense)   
+                else:
+                    licenselist.append(license)
+        #Now Loop Through the nested projects
+        loops = getcomponents(subproject,"Sub")
+        for loop in loops:
+            getlicensesfromprojectversion(loop)
+    #When No SubProjects
+    else:
+        for license_component in license_components:
+            for license in license_component['licenses']:
+                if license.get("licenseType",None):
+                    for innerlicense in license['licenses']:
+                        licenselist.append(innerlicense)
+                else:
+                    licenselist.append(license)
+    return licenselist
+
 def getprojects(project_name):
+    #Returns all Projects for a given Project Name
     params = {
         'q': [f"name:{project_name}"]
     }
@@ -35,50 +88,20 @@ def getprojects(project_name):
     return projects
 
 def getversions(project, version_name):
+    #Returns all Versions from a Project with given Version Name
     params = {
         'q': [f"versionName:{version_name}"]
     }
     versions = [v for v in bd.get_resource('versions', project, params=params) if v['versionName'] == version_name]
     return versions
 
-def returnsubprojecturl(x):
-    xurl=x['_meta']['href']
-    x = xurl.split("/")
-    del x[5]
-    del x[5]
-    del x[5]
-    del x[5]
-    xurl = "/".join(x)
-    return xurl
-
-def getsubprojects(version):
-    subcomponents = [ subcomponents for subcomponents in bd.get_resource('components',version) if subcomponents['componentType'] == "SUB_PROJECT" ]
-    return subcomponents
-
-def checkforsubprojects(subproject):
-    subprojecturl = returnsubprojecturl(subproject)
-    version = bd.session.get(subprojecturl).json()
-    subcomponents = [ subcomponents for subcomponents in bd.get_resource('components',version) if subcomponents['componentType'] == "SUB_PROJECT" ]
-    if len(subcomponents)>0:
-        check = True
-    else:
-        check= False
-    return check
-
-def getlicensesfromprojectversion(subproject):
-    subprojecturl = returnsubprojecturl(subproject)
-    version = bd.session.get(subprojecturl).json()
-    components = bd.get_resource('components',version)
-    licenselist = []
-    for component in components:
-        for license in component['licenses']:
-            if license.get("licenseType",None) :
-                for innerlicense in license['licenses']:
-                    licenselist.append(innerlicense)
-            else:
-                licenselist.append(license)
-    return licenselist
-    
+def main():
+    args = parse_command_args()
+    with open(args.token_file, 'r') as tf:
+        access_token = tf.readline().strip()
+    global bd
+    bd = Client(base_url=args.base_url, token=access_token, verify=args.no_verify, timeout=60.0, retries=4)
+    process_project_version(args)
 
 def parse_command_args():
     parser = argparse.ArgumentParser("update_project_with_component_licenses.py [-h] -u BASE_URL -t TOKEN_FILE [-nv] ")
@@ -89,18 +112,7 @@ def parse_command_args():
     parser.add_argument("-v", "--version_name"). help="Provide Project Version here"
     return parser.parse_args()
 
-def main():
-    args = parse_command_args()
-    with open(args.token_file, 'r') as tf:
-        access_token = tf.readline().strip()
-    global bd
-    bd = Client(base_url=args.base_url, token=access_token, verify=args.no_verify, timeout=60.0, retries=4)
-    process_project_version(args.project_name, args.version_name, args)
-
-def process_children(children):
-    sys.exit()
-
-def process_project_version(project_name, version_name, args):
+def process_project_version(args):
     #Validating only 1 Project
     projects = getprojects(args.project_name)
     assert len(projects) == 1, f"There should be one, and only one project named {args.project_name}. We found {len(projects)}"
@@ -112,22 +124,35 @@ def process_project_version(project_name, version_name, args):
     version = versions[0]
 
     #Return only sub-projects, not components
-    components = getsubprojects(version)  
+    components = getcomponents(version, "Version")  
 
     for subproject in components:
+        #Setting URL for API call
         url = subproject['_meta']['href']
+        #Retrieve Licenses
         subprojectlicenses = getlicensesfromprojectversion(subproject)
+        #Defaulting licenseblock to correct format
         licenseblock = [
         {
             "licenseType": "CONJUNCTIVE",
             "licenses": subproject['licenses'][0]['licenses']}]
+        #Adding each license to array
         for license in subprojectlicenses:
             licenseblock[0]['licenses'].append(license)
+        #Adding licenses to JSON body
         subproject['licenses']=licenseblock
-        #pprint(subproject)
         r = bd.session.put(url,json=subproject)
         print(r)
-        
+
+def returnsubprojecturl(x):
+    xurl=x['_meta']['href']
+    x = xurl.split("/")
+    del x[5]
+    del x[5]
+    del x[5]
+    del x[5]
+    xurl = "/".join(x)
+    return xurl
 
 if __name__ == "__main__":
     sys.exit(main())
