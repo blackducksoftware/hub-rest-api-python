@@ -51,4 +51,4 @@ bd = Client(
 )
 
 for user in bd.get_resource("users"):
-    print(f"User: {user['userName']}, First Name: {user['firstName']}, Last Name: {user['lastName']}")
+    print(f"User: {user['userName']}, First Name: {user['firstName']}, Last Name: {user['lastName']}, Active: {user['active']}, Email: {user['email']}")
