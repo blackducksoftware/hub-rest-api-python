@@ -3,7 +3,7 @@ Created on April 13, 2023
 @author: kumykov
 
 ##################### DISCLAIMER ##########################
-##  This script was created for a cpecific purpose and   ##
+##  This script was created for a specific purpose and   ##
 ##   SHOULD NOT BE USED as a general purpose utility.    ##
 ##   For general purpose utility use                     ##
 ##      /examples/client/generate_sbom.py                ##
