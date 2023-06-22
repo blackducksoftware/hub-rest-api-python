@@ -26,7 +26,6 @@ import argparse
 import json
 import logging
 import sys
-from pprint import pprint
 
 from blackduck import Client
 
