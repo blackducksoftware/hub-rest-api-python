@@ -273,9 +273,9 @@ USAGE
             exclusion_data = None
     
 
-        # Retrieve the vulnerabiltites for the project version
-        vulnerable_components = hub.get_vulnerable_bom_components(version)
 
+        # Retrieve the vulnerabiltites for the project version. Newer API versions only allow 1000 items at most.
+        vulnerable_components = hub.get_vulnerable_bom_components(version, 1000)
         process_vulnerabilities(hub, vulnerable_components, remediation_data, exclusion_data, dry_run)
         
         return 0
