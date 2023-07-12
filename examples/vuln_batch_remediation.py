@@ -84,7 +84,9 @@ __updated__ = '2021-12-26'
 
 def load_remediation_input(remediation_file):
     with open(remediation_file, mode='r', encoding="utf-8") as infile:
-        reader = csv.reader(infile)
+        dialect = csv.Sniffer().sniff(infile.read(), delimiters=';,')
+        infile.seek(0)
+        reader = csv.reader(infile, dialect)
         #return {rows[0]:[rows[1],rows[2]] for rows in reader}
         return {rows[0]:rows[1:] for rows in reader}
 
