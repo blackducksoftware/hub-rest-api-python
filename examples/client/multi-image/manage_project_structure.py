@@ -175,6 +175,8 @@ def create_and_add_child_projects(version, args):
         tag = next(i,'latest')
         container_spec = f"{repo}:{tag}"
         scan_param = {'image': container_spec, 'project': child, 'version': args.version_name}
+        if args.clone_from:
+            scan_param['clone_from'] = args.clone_from
         project = find_project_by_name(child)
         if project:
             version = find_project_version_by_name(project,args.version_name)
@@ -207,6 +209,12 @@ def create_project_structure(args):
 def scan_container_images(scan_params):
     from scan_docker_image_lite import scan_container_image
     for params in scan_params:
+        detect_options =    (f"--detect.parent.project.name={params['project']} "
+                            f"--detect.parent.project.version.name={params['version']} " 
+                            f"--detect.project.version.nickname={params['image']}")
+        clone_from = params.get('clone_from', None)
+        if clone_from:
+            detect_options += f" --detect.clone.project.version.name={clone_from}"
         scan_container_image(
             params['image'], 
             None, 
@@ -214,9 +222,7 @@ def scan_container_images(scan_params):
             None, 
             params['project'], 
             params['version'],
-            (f"--detect.parent.project.name={params['project']} "
-             f"--detect.parent.project.version.name={params['version']} " 
-             f"--detect.project.version.nickname={params['image']}")
+            detect_options
         )
 
 
@@ -231,6 +237,7 @@ def parse_command_args():
     parser.add_argument("-sp", "--subproject-list",   required=False, help="List of subprojects to generate with subproject:container:tag")
     parser.add_argument("-nv", "--no-verify",   action='store_false', help="Disable TLS certificate verification")
     parser.add_argument("-rm", "--remove",   action='store_true', required=False, help="Remove project structure with all subprojects (DANGEROUS!)")
+    parser.add_argument("--clone-from", required=False, help="Main project version to use as template for cloning")
     parser.add_argument("--dry-run", action='store_true', required=False, help="Create structure only, do not execute scans")
     return parser.parse_args()
 
