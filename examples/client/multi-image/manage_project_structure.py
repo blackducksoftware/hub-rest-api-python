@@ -34,7 +34,7 @@ Project Name
                         Add on Image Version
 
 usage: python3 manage_project_structure.py [-h] -u BASE_URL -t TOKEN_FILE [-pg PROJECT_GROUP] -p PROJECT_NAME -pv VERSION_NAME
-                                           [-sp SUBPROJECT_LIST] [-nv] [-rm] [--dry-run]
+                                           [-sp SUBPROJECT_LIST] [-nv] [-rm] [--clone-from CLONE_FROM] [--dry-run]
 
 options:
   -h, --help            show this help message and exit
@@ -52,6 +52,8 @@ options:
                         List of subprojects to generate with subproject:container:tag
   -nv, --no-verify      Disable TLS certificate verification
   -rm, --remove         Remove project structure with all subprojects (DANGEROUS!)
+  --clone-from CLONE_FROM
+                        Main project version to use as template for cloning
   --dry-run             Create structure only, do not execute scans
 
 Subprojects ae specified as subproject:[container]:[tag]
