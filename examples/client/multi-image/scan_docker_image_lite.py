@@ -358,7 +358,8 @@ class ContainerImageScanner():
         option_to_adorn = '--detect.clone.project.version.name='
         for option in self.extra_options:
             if option.startswith(option_to_adorn):
-                result.append(option.rstrip() + "_" + layer['group_name'])
+                # result.append(option.rstrip() + "_" + layer['group_name'])
+                result.append(option.rstrip())
             else:
                 result.append(option)
         return result
