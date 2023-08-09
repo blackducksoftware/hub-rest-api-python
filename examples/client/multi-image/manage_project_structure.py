@@ -80,6 +80,8 @@ logging.getLogger("requests").setLevel(logging.INFO)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 logging.getLogger("blackduck").setLevel(logging.INFO)
 
+strict = False
+
 def remove_project_structure(project_name, version_name):
     project = find_project_by_name(project_name)
     if not project:
@@ -108,6 +110,33 @@ def remove_project_structure(project_name, version_name):
     else:
         response = bd.session.delete(project['_meta']['href'])
     logging.info(f"Operation completed with {response}")
+
+def remove_codelocations_recursively(version):
+    components = bd.get_resource('components', version)
+    subprojects = [x for x in components if x['componentType'] == 'SUB_PROJECT']
+    logging.info(f"Found {len(subprojects)} subprojects")
+    unmap_all_codelocations(version)
+    for subproject in subprojects:
+        subproject_name = subproject['componentName']
+        subproject_version_name = subproject['componentVersionName']
+        project = find_project_by_name(subproject_name)
+        if not project:
+            logging.info(f"Project {subproject_name} does not exist.")
+            return
+        subproject_version = find_project_version_by_name(project, subproject_version_name)   
+        if not subproject_version:
+            logging.info(f"Project {subproject_name} with version {subversion_name} does not exist.")
+            return
+        remove_codelocations_recursively(subproject_version)
+
+def unmap_all_codelocations(version):
+    codelocations = bd.get_resource('codelocations',version)
+    for codelocation in codelocations:
+        logging.info(f"Unmapping codelocation {codelocation['name']}")
+        codelocation['mappedProjectVersion'] = ""
+        response = bd.session.put(codelocation['_meta']['href'], json=codelocation)
+        pprint (response)
+
 
 def find_or_create_project_group(group_name):
     url = '/api/project-groups'
@@ -183,16 +212,30 @@ def create_and_add_child_projects(version, args):
         if project:
             version = find_project_version_by_name(project,args.version_name)
             if version:
-                logging.error(f"Child project {project['name']} with version {args.version_name} exists.")
-                return
-        response = create_project_version(child,args.version_name, args, nickname=container_spec)
-        logging.info(f"Creating project {child} : {args.version_name} completed with {response}")
-        if response.ok:
-            child_version = find_project_version_by_name(find_project_by_name(child),args.version_name)
-            child_version_url = child_version['_meta']['href']
-            response = bd.session.post(version_url,json={'component': child_version_url})
-            logging.info(f"Adding {child} : {args.version_name} to parent project completed with {response}")
-            scan_params.append(scan_param)
+                if strict:
+                    logging.error(f"Child project {project['name']} with version {args.version_name} exists.")
+                    sys.exit(1)
+                else:
+                    logging.info(f"Child project {project['name']} with version {args.version_name} found.")
+                    logging.info(f"Recursively removing codelocations for {project['name']} with version {args.version_name} ")
+                    remove_codelocations_recursively(version)
+            else:
+                response = create_project_version(child,args.version_name, args, nickname=container_spec)
+                logging.info(f"Creating project {child} : {args.version_name} completed with {response}")
+                if response.ok:
+                    child_version = find_project_version_by_name(find_project_by_name(child),args.version_name)
+                    child_version_url = child_version['_meta']['href']
+                    response = bd.session.post(version_url,json={'component': child_version_url})
+                    logging.info(f"Adding {child} : {args.version_name} to parent project completed with {response}")
+        else:
+            response = create_project_version(child,args.version_name, args, nickname=container_spec)
+            logging.info(f"Creating project {child} : {args.version_name} completed with {response}")
+            if response.ok:
+                child_version = find_project_version_by_name(find_project_by_name(child),args.version_name)
+                child_version_url = child_version['_meta']['href']
+                response = bd.session.post(version_url,json={'component': child_version_url})
+                logging.info(f"Adding {child} : {args.version_name} to parent project completed with {response}")
+        scan_params.append(scan_param)
 
 def create_project_structure(args):
     project = find_project_by_name(args.project_name)
@@ -200,13 +243,29 @@ def create_project_structure(args):
     if project:
         version = find_project_version_by_name(project,args.version_name)
         if version:
-            logging.error(f"Project {project['name']} with version {args.version_name} exists.")
-            sys.exit(1) 
-    response = create_project_version(args.project_name,args.version_name,args)
-    if response.ok:
-        version = find_project_version_by_name(find_project_by_name(args.project_name),args.version_name)
-        logging.info(f"Project {args.project_name} : {args.version_name} created")
-        create_and_add_child_projects(version, args)
+            if strict:
+                logging.error(f"Project {project['name']} with version {args.version_name} exists.")
+                sys.exit(1) 
+            else:
+                logging.info(f"Found Project {project['name']} with version {args.version_name}.")
+        else:
+            response = create_project_version(args.project_name,args.version_name,args)
+            if response.ok:
+                version = find_project_version_by_name(find_project_by_name(args.project_name),args.version_name)
+                logging.info(f"Project {args.project_name} : {args.version_name} created")
+            else:
+                logging.info(f"Failed to create Project {args.project_name} : {args.version_name} created")
+                sys.exit(1)
+    else:
+        response = create_project_version(args.project_name,args.version_name,args)
+        if response.ok:
+            version = find_project_version_by_name(find_project_by_name(args.project_name),args.version_name)
+            logging.info(f"Project {args.project_name} : {args.version_name} created")
+        else:
+            logging.info(f"Failed to create Project {args.project_name} : {args.version_name} created")
+            sys.exit(1)
+    logging.info(f"Checking/Adding subprojects to {args.project_name} : {version['versionName']}")
+    create_and_add_child_projects(version, args)
 
 def scan_container_images(scan_params):
     from scan_docker_image_lite import scan_container_image
