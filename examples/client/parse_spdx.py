@@ -49,6 +49,7 @@ Requirements
     json
     pprint
     spdx_tools
+    re
 
 - Blackduck instance
 - API token with sufficient privileges to perform project version phase 
@@ -84,10 +85,36 @@ import sys
 import logging
 import time
 import json
+import re
 from pprint import pprint
 from spdx_tools.spdx.model.document import Document
+from spdx_tools.spdx.validation.document_validator import validate_full_spdx_document
 from spdx_tools.spdx.parser.error import SPDXParsingError
 from spdx_tools.spdx.parser.parse_anything import parse_file
+
+# Locate component name + version in BOM
+# Returns True on success, False on failure
+def find_comp_in_bom(bd, compname, compver, projver):
+    have_match = False
+    num_match = 0
+
+    # Lookup existing SBOM for a match (just on name to start)
+    # This is a fuzzy match (see "react" for an example)
+    params = {
+        'q': [f"componentOrVersionName:{compname}"]
+    }
+
+    # Search BOM for specific component name
+    comps = bd.get_resource('components', projver, params=params)
+    for comp in comps:
+        if comp['componentName'] != compname:
+            # The BD API search is inexact. Force our match to be precise.
+            print(f"fuzzy match failed us: {comp['componentName']} vs {compname}")
+            continue
+        # Check component name + version name
+        if comp['componentVersionName'] == compver:
+            return True
+    return False
 
 logging.basicConfig(
     level=logging.INFO,
@@ -114,6 +141,23 @@ try:
 except SPDXParsingError:
     logging.exception("Failed to parse spdx file")
     sys.exit(1)
+
+# TODO also validate the file, which is an extra step once you have a document?
+print("Validating SPDX file...")
+start = time.process_time()
+validation_messages = validate_full_spdx_document(document)
+print(f"SPDX validation took {time.process_time() - start} seconds")
+fatal = False
+for validation_message in validation_messages:
+    if re.match(r'.*WARNING.*', validation_message.validation_message):
+        logging.warning(validation_message.validation_message)
+    if re.match(r'.*ERROR.*', validation_message.validation_message):
+        logging.error(validation_message.validation_message)
+        fatal = True
+
+if fatal:
+    print("we are dead")
+quit()
 
 with open(args.token_file, 'r') as tf:
     access_token = tf.readline().strip()
@@ -158,93 +202,73 @@ logging.debug(f"Found {project['name']}:{version['versionName']}")
 
 # Can now access attributes from the parsed document
 # Note: The SPDX module renames tags slightly from the original json format.
-#print(f"Parsed document name: {document.creation_info.name}")
-#creators_as_str = ", ".join([creator.to_serialized_string() for creator in document.creation_info.creators])
-#print(f"Created on {document.creation_info.created} by {creators_as_str}")
 
-# A test of multiple search params....
-# this works, but it's an OR, not AND
-#  - we'll find everything with name OR version match
-#name = "micromatch"
-#ver = "4.0.2"
-#params = {
-#    'q': [f"componentOrVersionName:{name}"],
-#    'q': [f"componentOrVersionName:{ver}"],
-#}
-#comps = bd.get_resource('components', version, params=params)
-#for comp in comps:
-#    print(comp['componentName'])
-
-# A test of custom comp search params....
-#name = "swrightcomp"
-#params = {
-#    'q': [f"componentOrVersionName:{name}"],
-#}
-#comps = bd.get_resource('components', version, params=params)
-#for comp in comps:
-#    print(comp['componentName'])
-#quit()
-# Some fun stats to track as we go
 matches = 0
 nopurl = 0
 nomatch = 0
 
+# situations to consider + actions
+# 1) No purl available : check SBOM for comp+ver, then add cust comp + add to SBOM
+# 2) Have purl + found in KB 
+#    - In SBOM? -> done
+#    - Else -> add known KB comp to SBOM
+#       *** this shouldn't happen in theory
+# 3) Have purl + not in KB (main case we are concerned with)
+#     - In SBOM? (maybe already added or whatever?) -> done
+#     - Else -> add cust comp + add to SBOM (same as 1)
+
 # Walk through each component in the SPDX file
+package_count = 0
+packages = {}
 for package in document.packages:
+    package_count += 1
     # spdx-tools module says only name, spdx_id, download_location are required
     # We hope we'll have an external reference (pURL), but we might not.
     extref = None
+    purlmatch = False
+    matchname = package.name
+    matchver = package.version
+    packages[package.name+package.version] = packages.get(package.name+package.version, 0) + 1
+    #blah['zzz'] = blah.get('zzz', 0) + 1
 
     # NOTE: BD can mangle the original component name
     # EX: "React" -> "React from Facebook"
     if package.external_references:
-        print(" Found external reference: " + package.external_references[0].locator)
         extref = package.external_references[0].locator
 
-        # TODO lookup KB api here
-        #/api/search/kb-components?filter=pURL:<name>
-
-        # TODO: if lookup successful, next in loop
-        # if <lookup KB API true>:
-        #   continue
+        # KB lookup to check for pURL match
+        params = {
+            'packageUrl': extref
+        }
+        for result in bd.get_items("/api/search/purl-components", params=params):
+            # do we need to worry about more than 1 match?
+            print(f"Found KB match for {extref}")
+            purlmatch = True
+            #pprint(result)
+            # in this event, override the spdx name and use the known KB name
+            # (any concern for version mangling??)
+            if matchname != result['componentName']:
+                print(f"updating {matchname} -> {result['componentName']}")
+                matchname = result['componentName']
+            # Any match means we should already have it
+            # But we will also check to see if the comp is in the BOM i guess
     else:
         nopurl += 1
-        print(" No pURL found for component: ")
+        print("No pURL found for component: ")
         print("  " + package.name)
         print("  " + package.spdx_id)
         print("  " + package.version)
 
-    # Lookup existing SBOM for a match (just on name to start)
-    # This is a fuzzy match (see "react" for an example)
-    params = {
-        'q': [f"componentOrVersionName:{package.name}"]
-    }
-    
-    # Search BOM for specific component name
-    comps = bd.get_resource('components', version, params=params)
-    # TODO investigate searching tag here
-    have_match = False
-    num_match = 0
-    for comp in comps:
-        #pprint(bd.list_resources(comp))
-        #pprint(comp)
-        # Check component name + version name
-        if comp['componentVersionName'] == package.version:
-            have_match = True
-            num_match += 1
-            # TODO need to worry about multiple matches?
-            break
-
-    if have_match:
+    if find_comp_in_bom(bd, matchname, matchver, version):
         matches += 1
-        print("Found comp match in BOM: " + package.name)
+        print(" Found comp match in BOM: " + matchname + matchver)
     else:
         # TODO:
         # 1) check if in custom component list (system-wide)
         # 2) add if not there
         # 3) add to project BOM
         nomatch += 1
-        print("May need to add this custom comp: " + package.name)
+        print(" Need to add custom comp: " + package.name)
         comp_data = {
             "name": package.name,
             "spdx_id": package.spdx_id,
@@ -257,11 +281,15 @@ for package in document.packages:
 json.dump(comps_out, outfile)
 outfile.close()
 
-print("Stats: ")
+print("\nStats: ")
+print("------")
+print(f" SPDX packages processed: {package_count}")
 print(f" Non matches: {nomatch}")
 print(f" Matches: {matches}")
 print(f" Packages missing purl: {nopurl}")
 
+pprint(packages)
+print(f" {len(packages)} unique packages processed")
 # Parsed SPDX package data looks like
 # Package(spdx_id='SPDXRef-Pkg-micromatch-4.0.2-30343', 
 #	name='micromatch', 
