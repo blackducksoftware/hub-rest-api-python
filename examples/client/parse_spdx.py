@@ -147,17 +147,12 @@ print("Validating SPDX file...")
 start = time.process_time()
 validation_messages = validate_full_spdx_document(document)
 print(f"SPDX validation took {time.process_time() - start} seconds")
-fatal = False
-for validation_message in validation_messages:
-    if re.match(r'.*WARNING.*', validation_message.validation_message):
-        logging.warning(validation_message.validation_message)
-    if re.match(r'.*ERROR.*', validation_message.validation_message):
-        logging.error(validation_message.validation_message)
-        fatal = True
 
-if fatal:
-    print("we are dead")
-quit()
+# TODO is there a way to distinguish between something fatal and something
+# BD can deal with?
+# I guess we can just print all the msgs and then also exit when the import fails..
+for validation_message in validation_messages:
+    logging.warning(validation_message.validation_message)
 
 with open(args.token_file, 'r') as tf:
     access_token = tf.readline().strip()
