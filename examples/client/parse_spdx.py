@@ -124,7 +124,7 @@ def spdx_validate(document):
 # Lookup the given matchname in the KB
 # Logs a successful match
 # Return the boolean purlmatch and matchname, which we might change from
-#  its original value -- we will force it to be the same as the name in BD. 
+#  its original value -- we will force it to be the same as the name in the KB
 #  That way we can more accurately search the BOM later.
 def find_comp_in_kb(matchname, extref):
     # KB lookup to check for pURL match
@@ -135,13 +135,12 @@ def find_comp_in_kb(matchname, extref):
     # TODO any other action to take here?
     # We should probably track KB matches?
     for result in bd.get_items("/api/search/purl-components", params=params):
-        # do we need to worry about more than 1 match?
-        #print(f"Found KB match for {extref}")
+        # TODO do we need to worry about more than 1 match?
         purlmatch = True
         # in this event, override the spdx name and use the known KB name
-        # (is version mangling possible??)
+        # TODO: is version mangling possible?
         if matchname != result['componentName']:
-            print(f"updating {matchname} -> {result['componentName']}")
+            print(f"Renaming {matchname} -> {result['componentName']}")
             return(purlmatch, result['componentName'])
     return(purlmatch, matchname)
 
@@ -151,7 +150,7 @@ def find_comp_in_bom(bd, compname, compver, projver):
     have_match = False
     num_match = 0
 
-    # Lookup existing SBOM for a match (just on name to start)
+    # Lookup existing SBOM for a match
     # This is a fuzzy match (see "react" for an example)
     params = {
         'q': [f"componentOrVersionName:{compname}"]
@@ -162,44 +161,47 @@ def find_comp_in_bom(bd, compname, compver, projver):
     for comp in comps:
         if comp['componentName'] != compname:
             # The BD API search is inexact. Force our match to be precise.
-            #print(f"fuzzy match failed us: {comp['componentName']} vs {compname}")
             continue
         # Check component name + version name
-        if comp['componentVersionName'] == compver:
-            return True
+        try:
+            if comp['componentVersionName'] == compver:
+                return True
+        except:
+            # Handle situation where it's missing the version name for some reason
+            print(f"comp {compname} in BOM has no version!")
+            return False
     return False
 
 
 # Returns:
-#  CompMatch - Contains matched component object, None for no match
-#  FoundVer - Boolen: True if matched the custom component version
+#  CompMatch - Contains matched component url, None for no match
+#  VerMatch  - Contains matched component verison url, None for no match
 def find_cust_comp(cust_comp_name, cust_comp_version):
     params = {
         'q': [f"name:{cust_comp_name}"]
     }
 
     matched_comp = None
+    matched_ver = None
     # Relies on internal header
     headers = {'Accept': 'application/vnd.blackducksoftware.internal-1+json'}
-    ver_match = False
     for comp in bd.get_resource('components', params=params, headers=headers):
-        print(f"{comp['name']}")
         if cust_comp_name != comp['name']:
             # Skip it. We want to be precise in our matching, despite the API.
             continue
-        matched_comp = comp
+        matched_comp = comp['_meta']['href']
         # Check version
         for version in bd.get_resource('versions', comp):
             if cust_comp_version == version['versionName']:
                 # Successfully matched both name and version
-                ver_match = True
-                return(matched_comp, ver_match)
+                matched_ver = version['_meta']['href']
+                return(matched_comp, matched_ver)
 
-    return(matched_comp, ver_match)
+    return(matched_comp, matched_ver)
 
 
 # Returns URL of matching license
-# Exits on failure, we assume it must exist - TODO could probably just create this?
+# Exits on failure, we assume it must pre-exist - TODO could probably just create this?
 def get_license_url(license_name):
     params = {
         'q': [f"name:{license_name}"]
@@ -212,6 +214,7 @@ def get_license_url(license_name):
     logging.error(f"Failed to find license {license_name}")
     sys.exit(1)
 
+# Returns the URL for the newly created component version URL if successful
 def create_cust_comp(name, version, license, approval):
     print(f"Adding custom component: {name} {version}")
     license_url = get_license_url(license)
@@ -225,16 +228,19 @@ def create_cust_comp(name, version, license, approval):
         },
         'approvalStatus': approval
     }
-    response = bd.session.post("api/components", json=data)
-    pprint(response)
-
     # TODO validate response
     # looks like a 412 if it already existed
+    response = bd.session.post("api/components", json=data)
+    # should be guaranteed 1 version because we just created it!
+    # TODO put in a fail-safe
+    for version in bd.get_items(response.links['versions']['url']):
+        return(version['_meta']['href'])
+
+    #return(response.links['self']['url'])
 
 # Create a version for a custom component that already exists
-# The comp argument is the component object from previous lookup
-def create_cust_comp_ver(comp, version, license):
-    print(f"Adding version {version} to custom component {comp['name']}")
+# Returns the component version url just created
+def create_cust_comp_ver(comp_url, version, license):
     license_url = get_license_url(license)
     data = {
       'versionName' : version,
@@ -242,9 +248,18 @@ def create_cust_comp_ver(comp, version, license):
           'license' : license_url
       },
     }
-    response = bd.session.post(comp['_meta']['href'] + "/versions", json=data)
-    pprint(response)
+    #response = bd.session.post(comp['_meta']['href'] + "/versions", json=data)
+    response = bd.session.post(comp_url + "/versions", json=data)
     # TODO validate response
+    return(response.links['versions']['url'])
+
+# Add specified component version url to our project+version SBOM
+def add_to_sbom(proj_version_url, comp_ver_url):
+    data = {
+        'component': comp_ver_url
+    }
+    # TODO validate response
+    response = bd.session.post(proj_version_url + "/components", json=data)
 
 parser = argparse.ArgumentParser(description="Parse SPDX file and verify if component names are in current SBOM for given project-version")
 parser.add_argument("--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
@@ -294,7 +309,6 @@ projects = [p for p in bd.get_resource('projects', params=params)
 assert len(projects) == 1, \
   f"There should one project named {args.project_name}. Found {len(projects)}"
 project = projects[0]
-
 # Fetch Version (can only have 1)
 params = {
     'q': [f"versionName:{args.version_name}"]
@@ -304,6 +318,7 @@ versions = [v for v in bd.get_resource('versions', project, params=params)
 assert len(versions) == 1, \
   f"There should be 1 version named {args.version_name}. Found {len(versions)}"
 version = versions[0]
+proj_version_url = version['_meta']['href']
 
 logging.debug(f"Found {project['name']}:{version['versionName']}")
 
@@ -366,26 +381,27 @@ for package in document.packages:
         comps_out.append(comp_data)
         
         # Check if custom component already exists
-        comp_match, found_ver = find_cust_comp(package.name, package.version)
+        comp_url, comp_ver_url = find_cust_comp(package.name, package.version)
         
         # TODO make these optional args with defaults
         license = "NOASSERTION"
         approval = "UNREVIEWED"
-        if not comp_match:
+        if not comp_url:
             cust_comp_count += 1
-            create_cust_comp(package.name, package.version, license, approval)
-        elif comp_match and not found_ver:
+            comp_ver_url = create_cust_comp(package.name, package.version,
+              license, approval)
+        elif comp_url and not comp_ver_url:
             cust_ver_count += 1
-            print("Adding custom component version...")
-            create_cust_comp_ver(comp_match, package.version, license)
+            print(f"Adding version {package.version} to custom component {package.name}")
+            comp_ver_url = create_cust_comp_ver(comp_url, package.version, license)
         else:
-            # nothing to do?
-            print("probably found name and ver")
+            print("Custom component already exists, not in SBOM")
 
-        # TODO write sbom add code
-        #add_to_sbom()
+        # is this possible? i don't think so
+        assert(comp_ver_url), f"No comp_ver URL found for {package.name} {package.version}"
+        print(f"Adding component to SBOM: {package.name} {package.version}")
+        add_to_sbom(proj_version_url, comp_ver_url)
         
-
 # Save unmatched components
 json.dump(comps_out, outfile)
 outfile.close()
@@ -399,6 +415,5 @@ print(f" BOM matches: {bom_matches}")
 print(f" Packages missing purl: {nopurl}")
 print(f" Custom components created: {cust_comp_count}")
 print(f" Custom component versions created: {cust_ver_count}")
-
 #pprint(packages)
 print(f" {len(packages)} unique packages processed")
