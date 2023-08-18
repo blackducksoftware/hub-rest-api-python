@@ -92,6 +92,59 @@ from spdx_tools.spdx.validation.document_validator import validate_full_spdx_doc
 from spdx_tools.spdx.parser.error import SPDXParsingError
 from spdx_tools.spdx.parser.parse_anything import parse_file
 
+
+ # Returns SPDX Document object on success, otherwise exits on parse failure
+def spdx_parse(file):
+    print("Parsing SPDX file...")
+    start = time.process_time()
+    try:
+        document: Document = parse_file(file)
+        print(f"SPDX parsing took {time.process_time() - start} seconds")
+        return(document)
+    except SPDXParsingError:
+        logging.exception("Failed to parse spdx file")
+        sys.exit(1)
+
+# Validates the SPDX file. Logs all validation messages as warnings.
+def spdx_validate(document):
+    print("Validating SPDX file...")
+    start = time.process_time()
+    validation_messages = validate_full_spdx_document(document)
+    print(f"SPDX validation took {time.process_time() - start} seconds")
+
+    # TODO is there a way to distinguish between something fatal and something
+    # BD can deal with?
+    # TODO - this can take forever, so add an optional --skip-validation flag
+    for validation_message in validation_messages:
+        # Just printing these messages intead of exiting. Later when we try to import
+        # the file to BD, let's plan to exit if it fails. Seeing lots of errors in the
+        # sample data.
+        logging.warning(validation_message.validation_message)
+
+# Lookup the given matchname in the KB
+# Logs a successful match
+# Return the boolean purlmatch and matchname, which we might change from
+#  its original value -- we will force it to be the same as the name in BD. 
+#  That way we can more accurately search the BOM later.
+def find_comp_in_kb(matchname, extref):
+    # KB lookup to check for pURL match
+    purlmatch = False
+    params = {
+            'packageUrl': extref
+    }
+    # TODO any other action to take here?
+    # We should probably track KB matches?
+    for result in bd.get_items("/api/search/purl-components", params=params):
+        # do we need to worry about more than 1 match?
+        #print(f"Found KB match for {extref}")
+        purlmatch = True
+        # in this event, override the spdx name and use the known KB name
+        # (is version mangling possible??)
+        if matchname != result['componentName']:
+            print(f"updating {matchname} -> {result['componentName']}")
+            return(purlmatch, result['componentName'])
+    return(purlmatch, matchname)
+
 # Locate component name + version in BOM
 # Returns True on success, False on failure
 def find_comp_in_bom(bd, compname, compver, projver):
@@ -109,17 +162,89 @@ def find_comp_in_bom(bd, compname, compver, projver):
     for comp in comps:
         if comp['componentName'] != compname:
             # The BD API search is inexact. Force our match to be precise.
-            print(f"fuzzy match failed us: {comp['componentName']} vs {compname}")
+            #print(f"fuzzy match failed us: {comp['componentName']} vs {compname}")
             continue
         # Check component name + version name
         if comp['componentVersionName'] == compver:
             return True
     return False
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
-)
+
+# Returns:
+#  CompMatch - Contains matched component object, None for no match
+#  FoundVer - Boolen: True if matched the custom component version
+def find_cust_comp(cust_comp_name, cust_comp_version):
+    params = {
+        'q': [f"name:{cust_comp_name}"]
+    }
+
+    matched_comp = None
+    # Relies on internal header
+    headers = {'Accept': 'application/vnd.blackducksoftware.internal-1+json'}
+    ver_match = False
+    for comp in bd.get_resource('components', params=params, headers=headers):
+        print(f"{comp['name']}")
+        if cust_comp_name != comp['name']:
+            # Skip it. We want to be precise in our matching, despite the API.
+            continue
+        matched_comp = comp
+        # Check version
+        for version in bd.get_resource('versions', comp):
+            if cust_comp_version == version['versionName']:
+                # Successfully matched both name and version
+                ver_match = True
+                return(matched_comp, ver_match)
+
+    return(matched_comp, ver_match)
+
+
+# Returns URL of matching license
+# Exits on failure, we assume it must exist - TODO could probably just create this?
+def get_license_url(license_name):
+    params = {
+        'q': [f"name:{license_name}"]
+    }
+    for result in bd.get_items("/api/licenses", params=params):
+        # Added precise matching in case of a situation like "NOASSERTION" & "NOASSERTION2"
+        if (result['name'] == license_name):
+            return(result['_meta']['href'])
+
+    logging.error(f"Failed to find license {license_name}")
+    sys.exit(1)
+
+def create_cust_comp(name, version, license, approval):
+    print(f"Adding custom component: {name} {version}")
+    license_url = get_license_url(license)
+    data = {
+        'name': name,
+        'version' : {
+          'versionName' : version,
+          'license' : {
+            'license' : license_url
+          },
+        },
+        'approvalStatus': approval
+    }
+    response = bd.session.post("api/components", json=data)
+    pprint(response)
+
+    # TODO validate response
+    # looks like a 412 if it already existed
+
+# Create a version for a custom component that already exists
+# The comp argument is the component object from previous lookup
+def create_cust_comp_ver(comp, version, license):
+    print(f"Adding version {version} to custom component {comp['name']}")
+    license_url = get_license_url(license)
+    data = {
+      'versionName' : version,
+      'license' : {
+          'license' : license_url
+      },
+    }
+    response = bd.session.post(comp['_meta']['href'] + "/versions", json=data)
+    pprint(response)
+    # TODO validate response
 
 parser = argparse.ArgumentParser(description="Parse SPDX file and verify if component names are in current SBOM for given project-version")
 parser.add_argument("--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
@@ -129,30 +254,17 @@ parser.add_argument("--out-file", dest='out_file', required=True, help="Unmatche
 parser.add_argument("--project", dest='project_name', required=True, help="Project that contains the BOM components")
 parser.add_argument("--version", dest='version_name', required=True, help="Version that contains the BOM components")
 parser.add_argument("--no-verify", dest='verify', action='store_false', help="Disable TLS certificate verification")
+parser.add_argument("--no-spdx-validate", dest='spdx_validate', action='store_false', help="Disable SPDX validation")
 args = parser.parse_args()
 
-# Parse SPDX file. This can take a very long time, so do this first.
-# Returns a Document object on success, otherwise raises an SPDXParsingError
-try:
-    print("Reading SPDX file...")
-    start = time.process_time()
-    document: Document = parse_file(args.spdx_file)
-    print(f"SPDX parsing took {time.process_time() - start} seconds")
-except SPDXParsingError:
-    logging.exception("Failed to parse spdx file")
-    sys.exit(1)
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
+)
 
-# TODO also validate the file, which is an extra step once you have a document?
-print("Validating SPDX file...")
-start = time.process_time()
-validation_messages = validate_full_spdx_document(document)
-print(f"SPDX validation took {time.process_time() - start} seconds")
-
-# TODO is there a way to distinguish between something fatal and something
-# BD can deal with?
-# I guess we can just print all the msgs and then also exit when the import fails..
-for validation_message in validation_messages:
-    logging.warning(validation_message.validation_message)
+document = spdx_parse(args.spdx_file)
+if (args.spdx_validate):
+    spdx_validate(document)
 
 with open(args.token_file, 'r') as tf:
     access_token = tf.readline().strip()
@@ -160,7 +272,7 @@ with open(args.token_file, 'r') as tf:
 bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
 
 # Open unmatched component file
-# Will save name, spdxid, version, and origin/purl (if available) like so:
+# Will save name, spdxid, version, and origin/purl for later in json format:
 #    "name": "react-bootstrap",
 #    "spdx_id": "SPDXRef-Pkg-react-bootstrap-2.1.2-30223",
 #    "version": "2.1.2",
@@ -195,12 +307,6 @@ version = versions[0]
 
 logging.debug(f"Found {project['name']}:{version['versionName']}")
 
-# Can now access attributes from the parsed document
-# Note: The SPDX module renames tags slightly from the original json format.
-
-matches = 0
-nopurl = 0
-nomatch = 0
 
 # situations to consider + actions
 # 1) No purl available : check SBOM for comp+ver, then add cust comp + add to SBOM
@@ -212,41 +318,33 @@ nomatch = 0
 #     - In SBOM? (maybe already added or whatever?) -> done
 #     - Else -> add cust comp + add to SBOM (same as 1)
 
-# Walk through each component in the SPDX file
+# Stats to track
+bom_matches = 0
+kb_matches = 0
+nopurl = 0
+nomatch = 0
 package_count = 0
+cust_comp_count = 0
+cust_ver_count = 0
+# Saving all encountered components by their name+version (watching for repeats)
 packages = {}
+
+# Walk through each component in the SPDX file
 for package in document.packages:
     package_count += 1
-    # spdx-tools module says only name, spdx_id, download_location are required
     # We hope we'll have an external reference (pURL), but we might not.
     extref = None
     purlmatch = False
     matchname = package.name
     matchver = package.version
-    packages[package.name+package.version] = packages.get(package.name+package.version, 0) + 1
-    #blah['zzz'] = blah.get('zzz', 0) + 1
+    # Tracking unique package name + version from spdx file 
+    packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
 
-    # NOTE: BD can mangle the original component name
+    # NOTE: BD can change the original component name
     # EX: "React" -> "React from Facebook"
     if package.external_references:
-        extref = package.external_references[0].locator
-
-        # KB lookup to check for pURL match
-        params = {
-            'packageUrl': extref
-        }
-        for result in bd.get_items("/api/search/purl-components", params=params):
-            # do we need to worry about more than 1 match?
-            print(f"Found KB match for {extref}")
-            purlmatch = True
-            #pprint(result)
-            # in this event, override the spdx name and use the known KB name
-            # (any concern for version mangling??)
-            if matchname != result['componentName']:
-                print(f"updating {matchname} -> {result['componentName']}")
-                matchname = result['componentName']
-            # Any match means we should already have it
-            # But we will also check to see if the comp is in the BOM i guess
+        inkb, matchname = find_comp_in_kb(matchname, package.external_references[0].locator)
+        if inkb: kb_matches += 1
     else:
         nopurl += 1
         print("No pURL found for component: ")
@@ -255,15 +353,10 @@ for package in document.packages:
         print("  " + package.version)
 
     if find_comp_in_bom(bd, matchname, matchver, version):
-        matches += 1
-        print(" Found comp match in BOM: " + matchname + matchver)
+        bom_matches += 1
+        #print(" Found comp match in BOM: " + matchname + matchver)
     else:
-        # TODO:
-        # 1) check if in custom component list (system-wide)
-        # 2) add if not there
-        # 3) add to project BOM
         nomatch += 1
-        print(" Need to add custom comp: " + package.name)
         comp_data = {
             "name": package.name,
             "spdx_id": package.spdx_id,
@@ -271,6 +364,27 @@ for package in document.packages:
             "origin": extref
         }
         comps_out.append(comp_data)
+        
+        # Check if custom component already exists
+        comp_match, found_ver = find_cust_comp(package.name, package.version)
+        
+        # TODO make these optional args with defaults
+        license = "NOASSERTION"
+        approval = "UNREVIEWED"
+        if not comp_match:
+            cust_comp_count += 1
+            create_cust_comp(package.name, package.version, license, approval)
+        elif comp_match and not found_ver:
+            cust_ver_count += 1
+            print("Adding custom component version...")
+            create_cust_comp_ver(comp_match, package.version, license)
+        else:
+            # nothing to do?
+            print("probably found name and ver")
+
+        # TODO write sbom add code
+        #add_to_sbom()
+        
 
 # Save unmatched components
 json.dump(comps_out, outfile)
@@ -280,52 +394,11 @@ print("\nStats: ")
 print("------")
 print(f" SPDX packages processed: {package_count}")
 print(f" Non matches: {nomatch}")
-print(f" Matches: {matches}")
+print(f" KB matches: {kb_matches}")
+print(f" BOM matches: {bom_matches}")
 print(f" Packages missing purl: {nopurl}")
+print(f" Custom components created: {cust_comp_count}")
+print(f" Custom component versions created: {cust_ver_count}")
 
-pprint(packages)
+#pprint(packages)
 print(f" {len(packages)} unique packages processed")
-# Parsed SPDX package data looks like
-# Package(spdx_id='SPDXRef-Pkg-micromatch-4.0.2-30343', 
-#	name='micromatch', 
-#	download_location=NOASSERTION, 
-#	version='4.0.2', 
-#	file_name=None, 
-#	supplier=None, 
-#	originator=None, 
-#	files_analyzed=True, 
-#	verification_code=PackageVerificationCode(value='600ce1a1b891b48a20a3d395e4714f854dc6ced4', 
-#	  excluded_files=[]), 
-#	checksums=[], 
-#	homepage='https://www.npmjs.com/package/micromatch', 
-#	source_info=None, 
-#	license_concluded=LicenseSymbol('MIT', 
-#	is_exception=False), 
-#	license_info_from_files=[LicenseSymbol('Apache-2.0', 
-#  	  is_exception=False), 
-#	  LicenseSymbol('BSD-2-Clause', 
-#	  is_exception=False), 
-#	  LicenseSymbol('ISC', 
-#	  is_exception=False), 
-#	  LicenseSymbol('JSON', 
-#	  is_exception=False), 
-#	  LicenseSymbol('LicenseRef-Historical-Permission-Notice-and-Disclaimer---sell-variant', 
-#	  is_exception=False), 
-#	  LicenseSymbol('LicenseRef-MIT-Open-Group-variant', 
-#	  is_exception=False)], 
-#	license_declared=LicenseSymbol('MIT', 
-#	  is_exception=False), 
-#	license_comment=None, 
-#	copyright_text=NOASSERTION, 
-#	summary=None, 
-#	description=None, 
-#	comment=None, 
-#	external_references=[ExternalPackageRef(category=<ExternalPackageRefCategory.PACKAGE_MANAGER: 2>, 
-#	  reference_type='purl', 
-#	  locator='pkg:npm/micromatch@4.0.2', 
-#	  comment=None)], 
-#	attribution_texts=[], 
-#	primary_package_purpose=None, 
-#	release_date=None, 
-#	built_date=None, 
-#	valid_until_date=None)
