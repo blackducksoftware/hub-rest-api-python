@@ -50,6 +50,7 @@ Requirements
     pprint
     spdx_tools
     re
+    pathlib
 
 - Blackduck instance
 - API token with sufficient privileges to perform project version phase 
@@ -87,13 +88,16 @@ import time
 import json
 import re
 from pprint import pprint
+from pathlib import Path
 from spdx_tools.spdx.model.document import Document
 from spdx_tools.spdx.validation.document_validator import validate_full_spdx_document
 from spdx_tools.spdx.parser.error import SPDXParsingError
 from spdx_tools.spdx.parser.parse_anything import parse_file
 
-
- # Returns SPDX Document object on success, otherwise exits on parse failure
+# TODO what happens if file doesn't exist?
+# Returns SPDX Document object on success, otherwise exits on parse failure
+# Input: file = Filename to process
+# Returns: SPDX document object
 def spdx_parse(file):
     print("Parsing SPDX file...")
     start = time.process_time()
@@ -121,6 +125,7 @@ def spdx_validate(document):
         # sample data.
         logging.warning(validation_message.validation_message)
 
+# TODO is it possible to make this a case-insensitive match?
 # Lookup the given matchname in the KB
 # Logs a successful match
 # Return the boolean purlmatch and matchname, which we might change from
@@ -144,6 +149,7 @@ def find_comp_in_kb(matchname, extref):
             return(purlmatch, result['componentName'])
     return(purlmatch, matchname)
 
+# TODO is it possible to make this a case-insensitive match?
 # Locate component name + version in BOM
 # Returns True on success, False on failure
 def find_comp_in_bom(bd, compname, compver, projver):
@@ -173,6 +179,7 @@ def find_comp_in_bom(bd, compname, compver, projver):
     return False
 
 
+# TODO is it possible to make this a case-insensitive match?
 # Returns:
 #  CompMatch - Contains matched component url, None for no match
 #  VerMatch  - Contains matched component verison url, None for no match
@@ -202,6 +209,7 @@ def find_cust_comp(cust_comp_name, cust_comp_version):
 
 # Returns URL of matching license
 # Exits on failure, we assume it must pre-exist - TODO could probably just create this?
+# Note: License name search is case-sensitive
 def get_license_url(license_name):
     params = {
         'q': [f"name:{license_name}"]
@@ -214,8 +222,13 @@ def get_license_url(license_name):
     logging.error(f"Failed to find license {license_name}")
     sys.exit(1)
 
+# Create a custom component
+# Inputs:
+#   name - Name of component to add
+#   version - Version of component to add
+#   license - License name
 # Returns the URL for the newly created component version URL if successful
-def create_cust_comp(name, version, license, approval):
+def create_cust_comp(name, version, license):
     print(f"Adding custom component: {name} {version}")
     license_url = get_license_url(license)
     data = {
@@ -225,21 +238,34 @@ def create_cust_comp(name, version, license, approval):
           'license' : {
             'license' : license_url
           },
-        },
-        'approvalStatus': approval
+        }
     }
-    # TODO validate response
-    # looks like a 412 if it already existed
     response = bd.session.post("api/components", json=data)
-    # should be guaranteed 1 version because we just created it!
-    # TODO put in a fail-safe
+    logging.debug(response)
+    if response.status_code == 412:
+        # Shouldn't be possible. We checked for existence earlier.
+        logging.error(f"Component {name} already exists")
+        sys.exit(1)
+
+    if response.status_code != 201:
+        # Shouldn't be possible. We checked for existence earlier.
+        logging.error(response.json()['errors'][0]['errorMessage'])
+        logging.error(f"Status code {response.status_code}")
+        sys.exit(1)
+
+    # Should be guaranteed 1 version because we just created it!
     for version in bd.get_items(response.links['versions']['url']):
         return(version['_meta']['href'])
 
-    #return(response.links['self']['url'])
 
 # Create a version for a custom component that already exists
-# Returns the component version url just created
+#
+# Inputs:
+#   comp_url - API URL of the component to update
+#   version  - Version to add to existing component
+#   license  - License to use for version
+#
+# Returns: component version url just created
 def create_cust_comp_ver(comp_url, version, license):
     license_url = get_license_url(license)
     data = {
@@ -248,18 +274,33 @@ def create_cust_comp_ver(comp_url, version, license):
           'license' : license_url
       },
     }
-    #response = bd.session.post(comp['_meta']['href'] + "/versions", json=data)
     response = bd.session.post(comp_url + "/versions", json=data)
-    # TODO validate response
-    return(response.links['versions']['url'])
+    logging.debug(response)
+    if response.status_code == 412:
+        # Shouldn't be possible. We checked for existence earlier.
+        logging.error(f"Version {version} already exists for component")
+        sys.exit(1)
+
+    # necessary?
+    if response.status_code != 201:
+        logging.error(f"Failed to add Version {version} to component")
+        sys.exit(1)
+
+    return(response.links['self']['url'])
 
 # Add specified component version url to our project+version SBOM
+# Inputs: 
+#   proj_version_url: API URL for a project+version to update
+#   comp_ver_url: API URL of a component+version to add
 def add_to_sbom(proj_version_url, comp_ver_url):
     data = {
         'component': comp_ver_url
     }
-    # TODO validate response
     response = bd.session.post(proj_version_url + "/components", json=data)
+    if (response.status_code != 200):
+        logging.error(response.json()['errors'][0]['errorMessage'])
+        logging.error(f"Status code {response.status_code}")
+        sys.exit(1)
 
 parser = argparse.ArgumentParser(description="Parse SPDX file and verify if component names are in current SBOM for given project-version")
 parser.add_argument("--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
@@ -268,6 +309,7 @@ parser.add_argument("--spdx-file", dest='spdx_file', required=True, help="SPDX i
 parser.add_argument("--out-file", dest='out_file', required=True, help="Unmatched components file")
 parser.add_argument("--project", dest='project_name', required=True, help="Project that contains the BOM components")
 parser.add_argument("--version", dest='version_name', required=True, help="Version that contains the BOM components")
+parser.add_argument("--license", dest='license_name', required=False, default="NOASSERTION", help="License name to use for custom components")
 parser.add_argument("--no-verify", dest='verify', action='store_false', help="Disable TLS certificate verification")
 parser.add_argument("--no-spdx-validate", dest='spdx_validate', action='store_false', help="Disable SPDX validation")
 args = parser.parse_args()
@@ -277,14 +319,30 @@ logging.basicConfig(
     format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
 )
 
-document = spdx_parse(args.spdx_file)
-if (args.spdx_validate):
-    spdx_validate(document)
+if (Path(args.spdx_file).is_file()):
+    document = spdx_parse(args.spdx_file)
+    if (args.spdx_validate):
+        spdx_validate(document)
+else:
+    logging.error(f"Invalid SPDX file: {args.spdx_file}")
+    sys.exit(1)
 
 with open(args.token_file, 'r') as tf:
     access_token = tf.readline().strip()
 
 bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
+
+# some little debug/test stubs
+# TODO: delete these
+#comp_ver_url = create_cust_comp("MY COMPONENT z", "1", args.license_name)
+#
+#comp_url = "https://purl-validation.saas-staging.blackduck.com/api/components/886c04d4-28ce-4a27-be4c-f083e73a9f69"
+#comp_ver_url = create_cust_comp_ver(comp_url, "701", "NOASSERTION")
+#
+#pv = "https://purl-validation.saas-staging.blackduck.com/api/projects/14b714d0-fa37-4684-86cc-ed4e7cc64b89/versions/b8426ca3-1e27-4045-843b-003eca72f98e"
+#cv = "https://purl-validation.saas-staging.blackduck.com/api/components/886c04d4-28ce-4a27-be4c-f083e73a9f69/versions/56f64b7f-c284-457d-b593-0cf19a272a19"
+#add_to_sbom(pv, cv)
+#quit()
 
 # Open unmatched component file
 # Will save name, spdxid, version, and origin/purl for later in json format:
@@ -292,6 +350,7 @@ bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
 #    "spdx_id": "SPDXRef-Pkg-react-bootstrap-2.1.2-30223",
 #    "version": "2.1.2",
 #    "origin": null
+# TODO this try/except actually isn't right
 try: outfile = open(args.out_file, 'w')
 except:
     logging.exception("Failed to open file for writing: " + args.out_file)
@@ -383,17 +442,18 @@ for package in document.packages:
         # Check if custom component already exists
         comp_url, comp_ver_url = find_cust_comp(package.name, package.version)
         
-        # TODO make these optional args with defaults
-        license = "NOASSERTION"
-        approval = "UNREVIEWED"
         if not comp_url:
+            # Custom component did not exist, so create it
             cust_comp_count += 1
             comp_ver_url = create_cust_comp(package.name, package.version,
-              license, approval)
+              args.license_name, approval)
         elif comp_url and not comp_ver_url:
+            # Custom component existed, but not the version we care about
             cust_ver_count += 1
             print(f"Adding version {package.version} to custom component {package.name}")
-            comp_ver_url = create_cust_comp_ver(comp_url, package.version, license)
+            comp_ver_url = create_cust_comp_ver(comp_url, package.version, args.license_name)
+            # DEBUG
+            quit()
         else:
             print("Custom component already exists, not in SBOM")
 
