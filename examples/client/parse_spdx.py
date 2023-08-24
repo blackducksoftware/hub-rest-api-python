@@ -94,7 +94,6 @@ from spdx_tools.spdx.validation.document_validator import validate_full_spdx_doc
 from spdx_tools.spdx.parser.error import SPDXParsingError
 from spdx_tools.spdx.parser.parse_anything import parse_file
 
-# TODO what happens if file doesn't exist?
 # Returns SPDX Document object on success, otherwise exits on parse failure
 # Input: file = Filename to process
 # Returns: SPDX document object
@@ -110,6 +109,7 @@ def spdx_parse(file):
         sys.exit(1)
 
 # Validates the SPDX file. Logs all validation messages as warnings.
+# Input: SPDX document object
 def spdx_validate(document):
     print("Validating SPDX file...")
     start = time.process_time()
@@ -125,34 +125,153 @@ def spdx_validate(document):
         # sample data.
         logging.warning(validation_message.validation_message)
 
-# TODO is it possible to make this a case-insensitive match?
-# Lookup the given matchname in the KB
-# Logs a successful match
-# Return the boolean purlmatch and matchname, which we might change from
-#  its original value -- we will force it to be the same as the name in the KB
-#  That way we can more accurately search the BOM later.
-def find_comp_in_kb(matchname, extref):
-    # KB lookup to check for pURL match
+# Returns MIME type to provide to scan API
+# Input: filename to check
+def get_sbom_mime_type(filename):
+    with open(filename, 'r') as f:
+        data = f.readlines()
+        content = " ".join(data)
+    if 'CycloneDX' in content:
+        return 'application/vnd.cyclonedx'
+    if 'SPDX' in content:
+        return 'application/spdx'
+    return None
+
+# Poll for successful scan of SBOM.
+# Input: Name of SBOM document (not the filename, the name defined inside the json body)
+# Returns on success. Errors will result in fatal exit.
+def poll_for_upload(sbom_name):
+    max_retries = 30
+    sleep_time = 10
+    matched_scan = False
+
+    # Search for the latest scan matching our SBOM
+    # This might be a risk for a race condition
+    params = {
+        'q': [f"name:{sbom_name}"],
+        'sort': ["updatedAt: ASC"]
+    }
+
+    cls = bd.get_resource('codeLocations', params=params)
+    for cl in cls:
+        # Force exact match of: spdx_doc_name + " spdx/sbom"
+        # BD appends the "spdx/sbom" string to the name.
+        if cl['name'] != sbom_name + " spdx/sbom":
+            continue
+
+        matched_scan = True
+        for link in (cl['_meta']['links']):
+            # Locate the scans URL to check for status
+            if link['rel'] == "scans":
+                summaries_url = link['href']
+                break
+
+        assert(summaries_url)
+        params = {
+            'sort': ["updatedAt: ASC"]
+        }
+
+        while (max_retries):
+            max_retries -= 1
+            for item in bd.get_items(summaries_url, params=params):
+                # Only checking the first item as it's the most recent
+                if item['scanState'] == "SUCCESS":
+                    print("Scan complete")
+                    return
+                elif item['scanState'] == "FAILURE":
+                    logging.error(f"SPDX Scan Failure: {item['statusMessage']}")
+                    sys.exit(1)
+                else:
+                    # Only other state should be "STARTED" -- keep polling
+                    print(f"Waiting for status success, currently: {item['scanState']}")
+                    time.sleep(sleep_time)
+                    # Break out of for loop so we always check the most recent
+                    break
+
+    # Handle various errors that might happen
+    if max_retries == 0:
+        logging.error("Failed to verify successful SPDX Scan in {max_retries * sleep_time} seconds")
+    elif not matched_scan:
+        logging.error(f"No scan found for SBOM: {sbom_name}")
+    else:
+        logging.error(f"Unable to verify successful scan of SBOM: {sbom_name}")
+
+    sys.exit(1)
+
+# TODO do we care about project_groups?
+# Upload provided SBOM file to Black Duck
+# Inputs:
+#   filename - Name of file to upload
+#   project - Project name to map to
+#   version - Version name to map to
+def upload_sbom_file(filename, project, version):
+    mime_type = get_sbom_mime_type(filename)
+    if not mime_type:
+        logging.error(f"Could not identify file content for {filename}")
+        sys.exit(1)
+    files = {"file": (filename, open(filename,"rb"), mime_type)}
+    fields = {"projectName": project, "versionName": version}
+    response = bd.session.post("/api/scan/data", files = files, data=fields)
+    logging.info(response)
+
+    if response.status_code == 409:
+        logging.info(f"File {filename} is already mapped to a different project version")
+
+    if response.status_code != 201:
+        logging.error(f"Failed to upload SPDX file:")
+        try:
+            pprint(response.json()['errorMessage'])
+        except:
+            logging.error(f"Status code {response.status_code}")
+        sys.exit(1)
+
+
+# Lookup the given pURL in the BD KB.
+# If successfully matched, update the associated package name and version with the data from the KB.
+# This will improve the accuracy of later lookups. We are replacing the SPDX input data with the
+# data stored in the KB.
+#
+# Inputs:
+#   matchname - Name of package from the SPDX input file
+#   matchver  - Version of package
+#   extref    - pURL to look up
+#
+# Returns:
+#  purlmatch - boolean (True if successful KB lookup)
+#  matchname - Original parameter OR updated to reflect KB lookup name
+#  matchver  - Original parameter OR updated to reflect KB lookup version
+def find_comp_in_kb(matchname, matchver, extref):
     purlmatch = False
     params = {
             'packageUrl': extref
     }
-    # TODO any other action to take here?
-    # We should probably track KB matches?
     for result in bd.get_items("/api/search/purl-components", params=params):
-        # TODO do we need to worry about more than 1 match?
+        # This query should result in exactly 1 match
         purlmatch = True
-        # in this event, override the spdx name and use the known KB name
-        # TODO: is version mangling possible?
+        # Override the spdx name and use the known KB name
         if matchname != result['componentName']:
             print(f"Renaming {matchname} -> {result['componentName']}")
-            return(purlmatch, result['componentName'])
-    return(purlmatch, matchname)
+            matchname = result['componentName']
+        # Override the spdx version and use the string from KB
+        # for example, v2.8.5 -> 2.8.5
+        if matchver != result['versionName']:
+            print(f"Renaming {matchver} -> {result['versionName']}")
+            matchver = result['versionName']
 
-# TODO is it possible to make this a case-insensitive match?
+        return(purlmatch, matchname, matchver)
+
+    # fall through -- lookup failed, so we keep the original name/ver
+    return(purlmatch, matchname, matchver)
+
+
 # Locate component name + version in BOM
-# Returns True on success, False on failure
-def find_comp_in_bom(bd, compname, compver, projver):
+# Inputs:
+#   compname - Component name to locate
+#   compver  - Component version to locate
+#   projver  - Project version to locate component in BOM
+#
+# Returns: True on success, False on failure
+def find_comp_in_bom(compname, compver, projver):
     have_match = False
     num_match = 0
 
@@ -179,37 +298,49 @@ def find_comp_in_bom(bd, compname, compver, projver):
     return False
 
 
-# TODO is it possible to make this a case-insensitive match?
+# Verifies if a custom component and version already exist in the system
+#
+# Inputs:
+#   compname - Component name to locate
+#   compver  - Component version to locate
 # Returns:
 #  CompMatch - Contains matched component url, None for no match
 #  VerMatch  - Contains matched component verison url, None for no match
-def find_cust_comp(cust_comp_name, cust_comp_version):
+def find_cust_comp(compname, compver):
     params = {
-        'q': [f"name:{cust_comp_name}"]
+        'q': [f"name:{compname}"]
     }
 
     matched_comp = None
     matched_ver = None
-    # Relies on internal header
+    # Warning: Relies on internal header
     headers = {'Accept': 'application/vnd.blackducksoftware.internal-1+json'}
     for comp in bd.get_resource('components', params=params, headers=headers):
-        if cust_comp_name != comp['name']:
-            # Skip it. We want to be precise in our matching, despite the API.
+        if compname == comp['name']:
+            # Force exact match
+            matched_comp = comp['_meta']['href']
+        else:
+            # Keep checking search results
             continue
-        matched_comp = comp['_meta']['href']
+
         # Check version
         for version in bd.get_resource('versions', comp):
-            if cust_comp_version == version['versionName']:
+            if compver == version['versionName']:
                 # Successfully matched both name and version
                 matched_ver = version['_meta']['href']
                 return(matched_comp, matched_ver)
 
+        # If we got this far, break out of the loop
+        # We matched the component, but not the version
+        break
+
     return(matched_comp, matched_ver)
 
-
-# Returns URL of matching license
-# Exits on failure, we assume it must pre-exist - TODO could probably just create this?
-# Note: License name search is case-sensitive
+# Find URL of license to use for custom compnent creation
+# Inputs:
+#   license_name - Name of license to locate (case-sensitive)
+#
+# Returns: URL of license successfully matched. Failures are fatal.
 def get_license_url(license_name):
     params = {
         'q': [f"name:{license_name}"]
@@ -292,6 +423,7 @@ def create_cust_comp_ver(comp_url, version, license):
 # Inputs: 
 #   proj_version_url: API URL for a project+version to update
 #   comp_ver_url: API URL of a component+version to add
+# Prints out any errors encountered. Errors are fatal.
 def add_to_sbom(proj_version_url, comp_ver_url):
     data = {
         'component': comp_ver_url
@@ -302,6 +434,7 @@ def add_to_sbom(proj_version_url, comp_ver_url):
         logging.error(f"Status code {response.status_code}")
         sys.exit(1)
 
+
 parser = argparse.ArgumentParser(description="Parse SPDX file and verify if component names are in current SBOM for given project-version")
 parser.add_argument("--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
 parser.add_argument("--token-file", dest='token_file', required=True,help="Access token file")
@@ -309,7 +442,7 @@ parser.add_argument("--spdx-file", dest='spdx_file', required=True, help="SPDX i
 parser.add_argument("--out-file", dest='out_file', required=True, help="Unmatched components file")
 parser.add_argument("--project", dest='project_name', required=True, help="Project that contains the BOM components")
 parser.add_argument("--version", dest='version_name', required=True, help="Version that contains the BOM components")
-parser.add_argument("--license", dest='license_name', required=False, default="NOASSERTION", help="License name to use for custom components")
+parser.add_argument("--license", dest='license_name', required=False, default="NOASSERTION", help="License name to use for custom components (default: NOASSERTION)")
 parser.add_argument("--no-verify", dest='verify', action='store_false', help="Disable TLS certificate verification")
 parser.add_argument("--no-spdx-validate", dest='spdx_validate', action='store_false', help="Disable SPDX validation")
 args = parser.parse_args()
@@ -324,16 +457,32 @@ if (Path(args.spdx_file).is_file()):
     if (args.spdx_validate):
         spdx_validate(document)
 else:
-    logging.error(f"Invalid SPDX file: {args.spdx_file}")
+    logging.error(f"Could not open SPDX file: {args.spdx_file}")
     sys.exit(1)
 
 with open(args.token_file, 'r') as tf:
     access_token = tf.readline().strip()
 
+global bd
 bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
+
+#pprint(bd.list_resources())
+
+upload_sbom_file(args.spdx_file, args.project_name, args.version_name)
+# This will exit if it fails
+poll_for_upload(document.creation_info.name)
 
 # some little debug/test stubs
 # TODO: delete these
+#matchcomp, matchver = find_cust_comp("ipaddress", "1.0.23")
+#if matchcomp:
+#    print("matched comp")
+#else:
+#    print("no comp match")
+#if matchver:
+#    print("matched ver")
+#else:
+#    print("no ver match")
 #comp_ver_url = create_cust_comp("MY COMPONENT z", "1", args.license_name)
 #
 #comp_url = "https://purl-validation.saas-staging.blackduck.com/api/components/886c04d4-28ce-4a27-be4c-f083e73a9f69"
@@ -350,7 +499,7 @@ bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
 #    "spdx_id": "SPDXRef-Pkg-react-bootstrap-2.1.2-30223",
 #    "version": "2.1.2",
 #    "origin": null
-# TODO this try/except actually isn't right
+# TODO this try/except isn't quite right
 try: outfile = open(args.out_file, 'w')
 except:
     logging.exception("Failed to open file for writing: " + args.out_file)
@@ -368,6 +517,7 @@ projects = [p for p in bd.get_resource('projects', params=params)
 assert len(projects) == 1, \
   f"There should one project named {args.project_name}. Found {len(projects)}"
 project = projects[0]
+
 # Fetch Version (can only have 1)
 params = {
     'q': [f"versionName:{args.version_name}"]
@@ -380,7 +530,6 @@ version = versions[0]
 proj_version_url = version['_meta']['href']
 
 logging.debug(f"Found {project['name']}:{version['versionName']}")
-
 
 # situations to consider + actions
 # 1) No purl available : check SBOM for comp+ver, then add cust comp + add to SBOM
@@ -417,7 +566,7 @@ for package in document.packages:
     # NOTE: BD can change the original component name
     # EX: "React" -> "React from Facebook"
     if package.external_references:
-        inkb, matchname = find_comp_in_kb(matchname, package.external_references[0].locator)
+        inkb, matchname, matchver = find_comp_in_kb(matchname, matchver, package.external_references[0].locator)
         if inkb: kb_matches += 1
     else:
         nopurl += 1
@@ -426,9 +575,9 @@ for package in document.packages:
         print("  " + package.spdx_id)
         print("  " + package.version)
 
-    if find_comp_in_bom(bd, matchname, matchver, version):
+    if find_comp_in_bom(matchname, matchver, version):
         bom_matches += 1
-        #print(" Found comp match in BOM: " + matchname + matchver)
+        print(" Found comp match in BOM: " + matchname + matchver)
     else:
         nomatch += 1
         comp_data = {
@@ -439,6 +588,11 @@ for package in document.packages:
         }
         comps_out.append(comp_data)
         
+        # TODO what about: KB exists but not in BOM??
+        #  find_cust_comp is not generic enough for that situation
+        #if inkb:
+            # TODO handle add KB match to BOM here, short-circuit steps below
+
         # Check if custom component already exists
         comp_url, comp_ver_url = find_cust_comp(package.name, package.version)
         
@@ -446,20 +600,19 @@ for package in document.packages:
             # Custom component did not exist, so create it
             cust_comp_count += 1
             comp_ver_url = create_cust_comp(package.name, package.version,
-              args.license_name, approval)
+              args.license_name)
         elif comp_url and not comp_ver_url:
             # Custom component existed, but not the version we care about
             cust_ver_count += 1
             print(f"Adding version {package.version} to custom component {package.name}")
             comp_ver_url = create_cust_comp_ver(comp_url, package.version, args.license_name)
-            # DEBUG
-            quit()
         else:
             print("Custom component already exists, not in SBOM")
 
-        # is this possible? i don't think so
+        # is this possible?
         assert(comp_ver_url), f"No comp_ver URL found for {package.name} {package.version}"
-        print(f"Adding component to SBOM: {package.name} {package.version}")
+
+        print(f"Adding component to SBOM: {package.name} aka {matchname} {package.version}")
         add_to_sbom(proj_version_url, comp_ver_url)
         
 # Save unmatched components
