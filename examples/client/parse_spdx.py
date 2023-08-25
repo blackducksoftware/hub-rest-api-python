@@ -160,6 +160,9 @@ def poll_for_upload(sbom_name):
     #    -- operatinName: Scanning
     # Search for the latest scan matching our SBOM
     # This might be a risk for a race condition
+    # TODO Annoyingly, the sbom_name is not necessarily precisely our document
+    # name! Found a case where BD swaps a space for a "-" in the
+    # document name.
     params = {
         'q': [f"name:{sbom_name}"],
         'sort': ["updatedAt: ASC"]
@@ -551,11 +554,20 @@ for package in document.packages:
     packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
 
     if package.external_references:
-        # TODO need to handle the possiblity of:
-        # A) multiple extrefs
-        # B) an extref that is not a purl
-        #    --  referenceType should be "purl" - ignore others?
-        kb_match = find_comp_in_kb(package.external_references[0].locator)
+        foundpurl = False
+        kb_match = None
+        for ref in package.external_references:
+            # There can be multiple extrefs - try to locate a purl
+            if (ref.reference_type == "purl"):
+                # TODO are we guaranteed only 1 purl?
+                # what would it mean to have >1?
+                foundpurl = True
+                kb_match = find_comp_in_kb(ref.locator)
+                extref = ref.locator
+                break
+        if not foundpurl:
+            nopurl += 1
+            print(f" No pURL provided for {package.name} {package.version}")
         if (kb_match):
             # Update package name and version to reflect the KB name/ver
             print(f" KB match for {package.name} {package.version}")
