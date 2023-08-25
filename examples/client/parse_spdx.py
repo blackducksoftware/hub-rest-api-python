@@ -211,7 +211,7 @@ def poll_for_upload(sbom_name):
         logging.error(f"No scan found for SBOM: {sbom_name}")
     else:
         logging.error(f"Unable to verify successful scan of SBOM: {sbom_name}")
-
+    # If we got this far, it's a fatal error.
     sys.exit(1)
 
 # TODO do we care about project_groups?
@@ -241,7 +241,6 @@ def upload_sbom_file(filename, project, version):
             logging.error(f"Status code {response.status_code}")
         sys.exit(1)
 
-
 # Lookup the given pURL in the BD KB.
 #
 # Inputs:
@@ -260,7 +259,6 @@ def find_comp_in_kb(extref):
 
     # Fall through -- lookup failed
     return(None)
-
 
 # Locate component name + version in BOM
 # Inputs:
@@ -294,7 +292,6 @@ def find_comp_in_bom(compname, compver, projver):
             print(f"comp {compname} in BOM has no version!")
             return False
     return False
-
 
 # Verifies if a custom component and version already exist in the system
 #
@@ -386,7 +383,6 @@ def create_cust_comp(name, version, license):
     for version in bd.get_items(response.links['versions']['url']):
         return(version['_meta']['href'])
 
-
 # Create a version for a custom component that already exists
 #
 # Inputs:
@@ -410,7 +406,6 @@ def create_cust_comp_ver(comp_url, version, license):
         logging.error(f"Version {version} already exists for component")
         sys.exit(1)
 
-    # necessary?
     if response.status_code != 201:
         logging.error(f"Failed to add Version {version} to component")
         sys.exit(1)
