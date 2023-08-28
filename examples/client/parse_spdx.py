@@ -127,7 +127,6 @@ def spdx_validate(document):
 
     # TODO is there a way to distinguish between something fatal and something
     # BD can deal with?
-    # TODO - this can take forever, so add an optional --skip-validation flag
     for validation_message in validation_messages:
         # Just printing these messages intead of exiting. Later when we try to import
         # the file to BD, let's plan to exit if it fails. Seeing lots of errors in the
@@ -162,7 +161,7 @@ def poll_for_upload(sbom_name):
     # This might be a risk for a race condition
     # TODO Annoyingly, the sbom_name is not necessarily precisely our document
     # name! Found a case where BD swaps a space for a "-" in the
-    # document name.
+    # document name. Need to be more general in the match.
     params = {
         'q': [f"name:{sbom_name}"],
         'sort': ["updatedAt: ASC"]
@@ -280,12 +279,12 @@ def find_comp_in_bom(compname, compver, projver):
     # Search BOM for specific component name
     comps = bd.get_resource('components', projver, params=params)
     for comp in comps:
-        if comp['componentName'] != compname:
+        if comp['componentName'].lower() != compname.lower():
             # The BD API search is inexact. Force our match to be precise.
             continue
         # Check component name + version name
         try:
-            if comp['componentVersionName'] == compver:
+            if comp['componentVersionName'].lower() == compver.lower():
                 return True
         except:
             # Handle situation where it's missing the version name for some reason
@@ -293,7 +292,7 @@ def find_comp_in_bom(compname, compver, projver):
             return False
     return False
 
-# Verifies if a custom component and version already exist in the system
+# Verifies if a custom component and version already exist in the system.
 #
 # Inputs:
 #   compname - Component name to locate
@@ -303,7 +302,7 @@ def find_comp_in_bom(compname, compver, projver):
 #  VerMatch  - Contains matched component verison url, None for no match
 def find_cust_comp(compname, compver):
     params = {
-        'q': [f"name:{compname}"]
+        'q': [f"name:{compname.lower()}"]
     }
 
     matched_comp = None
@@ -311,7 +310,7 @@ def find_cust_comp(compname, compver):
     # Warning: Relies on internal header
     headers = {'Accept': 'application/vnd.blackducksoftware.internal-1+json'}
     for comp in bd.get_resource('components', params=params, headers=headers):
-        if compname == comp['name']:
+        if compname.lower() == comp['name'].lower():
             # Force exact match
             matched_comp = comp['_meta']['href']
         else:
@@ -320,7 +319,7 @@ def find_cust_comp(compname, compver):
 
         # Check version
         for version in bd.get_resource('versions', comp):
-            if compver == version['versionName']:
+            if compver.lower() == version['versionName'].lower():
                 # Successfully matched both name and version
                 matched_ver = version['_meta']['href']
                 return(matched_comp, matched_ver)
@@ -348,7 +347,10 @@ def get_license_url(license_name):
     logging.error(f"Failed to find license {license_name}")
     sys.exit(1)
 
-# Create a custom component
+# Create a custom component. The Name and Version strings are converted to
+# lowercase strings to ensure a reliable experience (avoiding dup names
+# with varying CapItaliZation)
+#
 # Inputs:
 #   name - Name of component to add
 #   version - Version of component to add
@@ -358,7 +360,7 @@ def create_cust_comp(name, version, license):
     print(f"Adding custom component: {name} {version}")
     license_url = get_license_url(license)
     data = {
-        'name': name,
+        'name': name.lower(),
         'version' : {
           'versionName' : version,
           'license' : {
@@ -383,7 +385,8 @@ def create_cust_comp(name, version, license):
     for version in bd.get_items(response.links['versions']['url']):
         return(version['_meta']['href'])
 
-# Create a version for a custom component that already exists
+# Create a version for a custom component that already exists.
+# Force the version string to be lowercase.
 #
 # Inputs:
 #   comp_url - API URL of the component to update
@@ -394,7 +397,7 @@ def create_cust_comp(name, version, license):
 def create_cust_comp_ver(comp_url, version, license):
     license_url = get_license_url(license)
     data = {
-      'versionName' : version,
+      'versionName' : version.lower(),
       'license' : {
           'license' : license_url
       },
@@ -459,37 +462,9 @@ with open(args.token_file, 'r') as tf:
 global bd
 bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
 
-#pprint(bd.list_resources())
-
 upload_sbom_file(args.spdx_file, args.project_name, args.version_name)
 # This will exit if it fails
 poll_for_upload(document.creation_info.name)
-
-# some debug/test stubs
-# TODO: delete these
-#ver="https://purl-validation.saas-staging.blackduck.com/api/projects/c2b4463f-7996-4c45-8443-b69b4f82ef1d/versions/67e4f6f5-2f42-42c4-9b69-e39bad55f907"
-#comp = "https://purl-validation.saas-staging.blackduck.com/api/components/fc0a76fe-70a4-4afa-9a94-c3c22d63454f/versions/fabaabb9-3b9a-4b5f-850a-39fe84c4cfc4"
-#add_to_sbom(ver, comp)
-#quit()
-
-#matchcomp, matchver = find_cust_comp("ipaddress", "1.0.23")
-#if matchcomp:
-#    print("matched comp")
-#else:
-#    print("no comp match")
-#if matchver:
-#    print("matched ver")
-#else:
-#    print("no ver match")
-#comp_ver_url = create_cust_comp("MY COMPONENT z", "1", args.license_name)
-#
-#comp_url = "https://purl-validation.saas-staging.blackduck.com/api/components/886c04d4-28ce-4a27-be4c-f083e73a9f69"
-#comp_ver_url = create_cust_comp_ver(comp_url, "701", "NOASSERTION")
-#
-#pv = "https://purl-validation.saas-staging.blackduck.com/api/projects/14b714d0-fa37-4684-86cc-ed4e7cc64b89/versions/b8426ca3-1e27-4045-843b-003eca72f98e"
-#cv = "https://purl-validation.saas-staging.blackduck.com/api/components/886c04d4-28ce-4a27-be4c-f083e73a9f69/versions/56f64b7f-c284-457d-b593-0cf19a272a19"
-#add_to_sbom(pv, cv)
-#quit()
 
 # Open unmatched component file to save name, spdxid, version, and
 # origin/purl for later in json format
@@ -508,6 +483,8 @@ params = {
 }
 projects = [p for p in bd.get_resource('projects', params=params)
   if p['name'] == args.project_name]
+assert len(projects) != 0, \
+  f"Failed to locate project: {args.project_name}"
 assert len(projects) == 1, \
   f"There should one project named {args.project_name}. Found {len(projects)}"
 project = projects[0]
@@ -518,6 +495,8 @@ params = {
 }
 versions = [v for v in bd.get_resource('versions', project, params=params)
   if v['versionName'] == args.version_name]
+assert len(versions) != 0, \
+  f"Failed to find project version: {args.version_name}"
 assert len(versions) == 1, \
   f"There should be 1 version named {args.version_name}. Found {len(versions)}"
 version = versions[0]
@@ -548,9 +527,9 @@ for package in document.packages:
     # Tracking unique package name + version from spdx file 
     packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
 
+    kb_match = None
     if package.external_references:
         foundpurl = False
-        kb_match = None
         for ref in package.external_references:
             # There can be multiple extrefs - try to locate a purl
             if (ref.reference_type == "purl"):
@@ -573,7 +552,6 @@ for package in document.packages:
             print(f" No KB match for {package.name} {package.version}")
     else:
         nopurl += 1
-        kb_match = None
         print(f"No pURL provided for {package.name} {package.version}")
 
     if find_comp_in_bom(matchname, matchver, version):
