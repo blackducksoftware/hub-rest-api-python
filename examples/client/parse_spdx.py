@@ -153,15 +153,15 @@ def poll_for_upload(sbom_name):
     sleep_time = 10
     matched_scan = False
 
+    # Replace any spaces in the name with a dash to match BD
+    sbom_name = sbom_name.replace(' ', '-')
+
     # TODO also check for api/projects/<ver>/versions/<ver>/codelocations
     # -- status - operationNameCode = ServerScanning, operationName=Scanning, status
     #    -- should be COMPLETED, not IN_PROGRESS
     #    -- operatinName: Scanning
     # Search for the latest scan matching our SBOM
     # This might be a risk for a race condition
-    # TODO Annoyingly, the sbom_name is not necessarily precisely our document
-    # name! Found a case where BD swaps a space for a "-" in the
-    # document name. Need to be more general in the match.
     params = {
         'q': [f"name:{sbom_name}"],
         'sort': ["updatedAt: ASC"]
@@ -237,7 +237,7 @@ def upload_sbom_file(filename, project, version):
         try:
             pprint(response.json()['errorMessage'])
         except:
-            logging.error(f"Status code {response.status_code}")
+            logging.error(f"Status code: {response.status_code}")
         sys.exit(1)
 
 # Lookup the given pURL in the BD KB.
@@ -282,6 +282,9 @@ def find_comp_in_bom(compname, compver, projver):
         if comp['componentName'].lower() != compname.lower():
             # The BD API search is inexact. Force our match to be precise.
             continue
+        if compver == "UNKNOWN":
+            # We did not have a version specified in the first place
+            return True
         # Check component name + version name
         try:
             if comp['componentVersionName'].lower() == compver.lower():
@@ -370,15 +373,10 @@ def create_cust_comp(name, version, license):
     }
     response = bd.session.post("api/components", json=data)
     logging.debug(response)
-    if response.status_code == 412:
-        # Shouldn't be possible. We checked for existence earlier.
-        logging.error(f"Component {name} already exists")
-        sys.exit(1)
-
     if response.status_code != 201:
         # Shouldn't be possible. We checked for existence earlier.
         logging.error(response.json()['errors'][0]['errorMessage'])
-        logging.error(f"Status code {response.status_code}")
+        logging.error(f"Status code: {response.status_code}")
         sys.exit(1)
 
     # Should be guaranteed 1 version because we just created it!
@@ -427,7 +425,7 @@ def add_to_sbom(proj_version_url, comp_ver_url):
     response = bd.session.post(proj_version_url + "/components", json=data)
     if (response.status_code != 200):
         logging.error(response.json()['errors'][0]['errorMessage'])
-        logging.error(f"Status code {response.status_code}")
+        logging.error(f"Status code: {response.status_code}")
         sys.exit(1)
 
 
@@ -521,9 +519,14 @@ for package in document.packages:
     # We hope we'll have an external reference (pURL), but we might not.
     extref = None
     purlmatch = False
+    # matchname/matchver can change, depending on the KB lookup step.
+    # These are stored separately so that we have the original names available.
     matchname = package.name
+    if package.version is None:
+        # Default in case one is not specified in SPDX
+        package.version = "UNKNOWN"
     matchver = package.version
-    print(f"Processing SPDX package: {matchname} {matchver}....")
+    print(f"Processing SPDX package: {matchname} version: {matchver}....")
     # Tracking unique package name + version from spdx file 
     packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
 
