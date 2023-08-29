@@ -156,18 +156,77 @@ def poll_for_upload(sbom_name):
     # Replace any spaces in the name with a dash to match BD
     sbom_name = sbom_name.replace(' ', '-')
 
-    # TODO also check for api/projects/<ver>/versions/<ver>/codelocations
-    # -- status - operationNameCode = ServerScanning, operationName=Scanning, status
-    #    -- should be COMPLETED, not IN_PROGRESS
-    #    -- operatinName: Scanning
     # Search for the latest scan matching our SBOM
-    # This might be a risk for a race condition
     params = {
         'q': [f"name:{sbom_name}"],
         'sort': ["updatedAt: ASC"]
     }
-
     cls = bd.get_resource('codeLocations', params=params)
+    for cl in cls:
+        print(cl['name'])
+        # Force exact match of: spdx_doc_name + " spdx/sbom"
+        # BD appends the "spdx/sbom" string to the name.
+        if cl['name'] != sbom_name + " spdx/sbom":
+            continue
+
+        matched_scan = True
+        for link in (cl['_meta']['links']):
+            # Locate the scans URL to check for status
+            if link['rel'] == "scans":
+                summaries_url = link['href']
+                break
+
+        assert(summaries_url)
+        params = {
+            'sort': ["updatedAt: ASC"]
+        }
+
+        while (max_retries):
+            max_retries -= 1
+            for item in bd.get_items(summaries_url, params=params):
+                # Only checking the first item as it's the most recent
+                if item['scanState'] == "SUCCESS":
+                    print("BOM scan complete")
+                    return
+                elif item['scanState'] == "FAILURE":
+                    logging.error(f"SPDX Scan Failure: {item['statusMessage']}")
+                    sys.exit(1)
+                else:
+                    # Only other state should be "STARTED" -- keep polling
+                    print(f"Waiting for status success, currently: {item['scanState']}")
+                    time.sleep(sleep_time)
+                    # Break out of for loop so we always check the most recent
+                    break
+
+    # Handle various errors that might happen
+    if max_retries == 0:
+        logging.error("Failed to verify successful SPDX Scan in {max_retries * sleep_time} seconds")
+    elif not matched_scan:
+        logging.error(f"No scan found for SBOM: {sbom_name}")
+    else:
+        logging.error(f"Unable to verify successful scan of SBOM: {sbom_name}")
+    # If we got this far, it's a fatal error.
+    sys.exit(1)
+
+# Poll for successful scan of SBOM 
+# Inputs:
+#   sbom_name: Name of SBOM document (not the filename)
+#   version: project version to check
+# Returns on success. Errors will result in fatal exit.
+def poll_for_sbom_scan(sbom_name, projver):
+    max_retries = 30
+    sleep_time = 10
+    matched_scan = False
+
+    # Replace any spaces in the name with a dash to match BD
+    sbom_name = sbom_name.replace(' ', '-')
+
+    # Search for the latest scan matching our SBOM
+    params = {
+        'q': [f"name:{sbom_name}"],
+        'sort': ["updatedAt: ASC"]
+    }
+    cls = bd.get_resource('codelocations', projver, params=params)
     for cl in cls:
         # Force exact match of: spdx_doc_name + " spdx/sbom"
         # BD appends the "spdx/sbom" string to the name.
@@ -213,7 +272,29 @@ def poll_for_upload(sbom_name):
     # If we got this far, it's a fatal error.
     sys.exit(1)
 
-# TODO do we care about project_groups?
+# Poll for BOM completion
+# TODO currently unused, may delete
+# Input: Name of SBOM document (not the filename, the name defined inside the json body)
+# Returns on success. Errors will result in fatal exit.
+def poll_for_bom_complete(proj_version_url):
+    max_retries = 30
+    sleep_time = 10
+
+    while (max_retries):
+        max_retries -= 1
+        json_data = bd.get_json(proj_version_url + "/bom-status")
+        if json_data['status'] == "UP_TO_DATE":
+            return
+        elif json_data['status'] == "FAILURE":
+            logging.error(f"BOM Scan Failed")
+            sys.exit(1)
+        elif json_data['status'] == "NOT_INCLUDED":
+            logging.error(f"BOM scan had no matches")
+            sys.exit(1)
+        else:
+            print(f"Waiting for BOM scan success, currently: {json_data['status']}")
+            time.sleep(sleep_time)
+
 # Upload provided SBOM file to Black Duck
 # Inputs:
 #   filename - Name of file to upload
@@ -460,21 +541,6 @@ with open(args.token_file, 'r') as tf:
 global bd
 bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
 
-upload_sbom_file(args.spdx_file, args.project_name, args.version_name)
-# This will exit if it fails
-poll_for_upload(document.creation_info.name)
-
-# Open unmatched component file to save name, spdxid, version, and
-# origin/purl for later in json format
-# TODO this try/except isn't quite right
-try: outfile = open(args.out_file, 'w')
-except:
-    logging.exception("Failed to open file for writing: " + args.out_file)
-    sys.exit(1)
-
-# Saved component data to write to file
-comps_out = []
-
 # Fetch Project (can only have 1)
 params = {
     'q': [f"name:{args.project_name}"]
@@ -502,6 +568,20 @@ proj_version_url = version['_meta']['href']
 
 logging.debug(f"Found {project['name']}:{version['versionName']}")
 
+upload_sbom_file(args.spdx_file, args.project_name, args.version_name)
+
+# This will exit if it fails
+poll_for_upload(document.creation_info.name)
+# Also exits on failure. This may be somewhat redundant.
+poll_for_sbom_scan(document.creation_info.name, version)
+
+# Open unmatched component file to save name, spdxid, version, and
+# origin/purl for later in json format
+try: outfile = open(args.out_file, 'w')
+except:
+    logging.exception("Failed to open file for writing: " + args.out_file)
+    sys.exit(1)
+
 # Stats to track
 bom_matches = 0
 kb_matches = 0
@@ -512,6 +592,8 @@ cust_comp_count = 0
 cust_ver_count = 0
 # Saving all encountered components by their name+version (watching for repeats)
 packages = {}
+# Saved component data to write to file
+comps_out = []
 
 # Walk through each component in the SPDX file
 for package in document.packages:
@@ -535,9 +617,8 @@ for package in document.packages:
         foundpurl = False
         for ref in package.external_references:
             # There can be multiple extrefs - try to locate a purl
+            # If there should happen to be >1 purls, we only consider the first
             if (ref.reference_type == "purl"):
-                # TODO are we guaranteed only 1 purl?
-                # what would it mean to have >1?
                 foundpurl = True
                 kb_match = find_comp_in_kb(ref.locator)
                 extref = ref.locator
@@ -583,8 +664,6 @@ for package in document.packages:
     if kb_match:
         print(f" WARNING: {matchname} {matchver} in KB but not in SBOM")
         add_to_sbom(proj_version_url, kb_match['version'])
-        # temp debug to find this case
-        quit()
         # short-circuit the rest
         continue
 
