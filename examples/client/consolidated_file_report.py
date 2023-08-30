@@ -785,9 +785,8 @@ def main():
             else:
                 bd_url = config['baseurl']
             bd_token = config['api_token']
-            bd_insecure = config['insecure']
-            if config['debug']:
-                debug = 1
+            bd_insecure = not config['insecure']
+            debug = 1 if config['debug'] else 0
         
         log_config(debug)    
 
