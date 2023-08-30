@@ -36,6 +36,8 @@ Then it will search each component specified in the SPDX file to determine
 if the component was succesfully imported. Any missing components will be
 added as a custom component and then added to the Project+Verion's BOM.
 
+All missing components are saved to a file in JSON format for future reference.
+
 Requirements
 
 - python3 version 3.8 or newer recommended
@@ -53,12 +55,11 @@ Requirements
     pathlib
 
 - Blackduck instance
-- API token with sufficient privileges to perform project version phase 
-  change.
+- API token with sufficient privileges
 
 Install python packages with the following command:
 
- pip3 install argparse blackduck sys logging time json spdx_tools
+ pip3 install argparse blackduck sys logging time json pprint pathlib spdx_tools
 
 usage: parse_spdx.py [-h] --base-url BASE_URL --token-file TOKEN_FILE
                      --spdx-file SPDX_FILE --out-file OUT_FILE --project
@@ -83,10 +84,9 @@ optional arguments:
                         Version that contains the BOM components
   --license LICENSE_NAME
                         License name to use for custom components (default:
-                        NOASSERTION)
+                        "NOASSERTION")
   --no-verify           Disable TLS certificate verification
   --no-spdx-validate    Disable SPDX validation
-
 '''
 
 from blackduck import Client
@@ -103,6 +103,44 @@ from spdx_tools.spdx.validation.document_validator import validate_full_spdx_doc
 from spdx_tools.spdx.parser.error import SPDXParsingError
 from spdx_tools.spdx.parser.parse_anything import parse_file
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
+)
+
+# Validates BD project and version
+# Inputs:
+#   projname - Name of project
+#   vername  - Name of version
+# Returns: Project object, Version object
+def get_proj_ver(projname, vername):
+    # Fetch Project (can only have 1)
+    params = {
+        'q': [f"name:{projname}"]
+    }
+    projects = [p for p in bd.get_resource('projects', params=params)
+      if p['name'] == projname]
+    assert len(projects) != 0, \
+      f"Failed to locate project: {projname}"
+    assert len(projects) == 1, \
+      f"There should one project named {projname}. Found {len(projects)}"
+    project = projects[0]
+
+    # Fetch Version (can only have 1)
+    params = {
+        'q': [f"versionName:{vername}"]
+    }
+    versions = [v for v in bd.get_resource('versions', project, params=params)
+      if v['versionName'] == vername]
+    assert len(versions) != 0, \
+      f"Failed to find project version: {vername}"
+    assert len(versions) == 1, \
+      f"There should be 1 version named {vername}. Found {len(versions)}"
+    version = versions[0]
+
+    logging.debug(f"Found {project['name']}:{version['versionName']}")
+    return(project, version)
+
 # Returns SPDX Document object on success, otherwise exits on parse failure
 # Input: file = Filename to process
 # Returns: SPDX document object
@@ -111,7 +149,7 @@ def spdx_parse(file):
     start = time.process_time()
     try:
         document: Document = parse_file(file)
-        print(f"SPDX parsing took {time.process_time() - start} seconds")
+        print('SPDX parsing took {:.2f}s'.format(time.process_time() - start))
         return(document)
     except SPDXParsingError:
         logging.exception("Failed to parse spdx file")
@@ -123,7 +161,7 @@ def spdx_validate(document):
     print("Validating SPDX file...")
     start = time.process_time()
     validation_messages = validate_full_spdx_document(document)
-    print(f"SPDX validation took {time.process_time() - start} seconds")
+    print('SPDX validation took {:.2f}s'.format(time.process_time() - start))
 
     for validation_message in validation_messages:
         # Just printing these messages intead of exiting.
@@ -183,7 +221,7 @@ def poll_for_upload(sbom_name):
             for item in bd.get_items(summaries_url, params=params):
                 # Only checking the first item as it's the most recent
                 if item['scanState'] == "SUCCESS":
-                    print("BOM scan complete")
+                    print("BOM upload complete")
                     return
                 elif item['scanState'] == "FAILURE":
                     logging.error(f"SPDX Scan Failure: {item['statusMessage']}")
@@ -202,6 +240,7 @@ def poll_for_upload(sbom_name):
         logging.error(f"No scan found for SBOM: {sbom_name}")
     else:
         logging.error(f"Unable to verify successful scan of SBOM: {sbom_name}")
+
     # If we got this far, it's a fatal error.
     sys.exit(1)
 
@@ -247,7 +286,7 @@ def poll_for_sbom_scan(sbom_name, projver):
             for item in bd.get_items(summaries_url, params=params):
                 # Only checking the first item as it's the most recent
                 if item['scanState'] == "SUCCESS":
-                    print("Scan complete")
+                    print("BOM scan complete")
                     return
                 elif item['scanState'] == "FAILURE":
                     logging.error(f"SPDX Scan Failure: {item['statusMessage']}")
@@ -266,6 +305,7 @@ def poll_for_sbom_scan(sbom_name, projver):
         logging.error(f"No scan found for SBOM: {sbom_name}")
     else:
         logging.error(f"Unable to verify successful scan of SBOM: {sbom_name}")
+
     # If we got this far, it's a fatal error.
     sys.exit(1)
 
@@ -483,198 +523,180 @@ def add_to_sbom(proj_version_url, comp_ver_url):
         logging.error(f"Status code: {response.status_code}")
         sys.exit(1)
 
+def parse_command_args():
+    parser = argparse.ArgumentParser(description="Parse SPDX file and verify if component names are in current SBOM for given project-version")
+    parser.add_argument("--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
+    parser.add_argument("--token-file", dest='token_file', required=True,help="Access token file")
+    parser.add_argument("--spdx-file", dest='spdx_file', required=True, help="SPDX input file")
+    parser.add_argument("--out-file", dest='out_file', required=True, help="Unmatched components file")
+    parser.add_argument("--project", dest='project_name', required=True, help="Project that contains the BOM components")
+    parser.add_argument("--version", dest='version_name', required=True, help="Version that contains the BOM components")
+    parser.add_argument("--license", dest='license_name', required=False, default="NOASSERTION", help="License name to use for custom components (default: NOASSERTION)")
+    parser.add_argument("--no-verify", dest='verify', action='store_false', help="Disable TLS certificate verification")
+    parser.add_argument("--no-spdx-validate", dest='spdx_validate', action='store_false', help="Disable SPDX validation")
+    return parser.parse_args()
 
-parser = argparse.ArgumentParser(description="Parse SPDX file and verify if component names are in current SBOM for given project-version")
-parser.add_argument("--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
-parser.add_argument("--token-file", dest='token_file', required=True,help="Access token file")
-parser.add_argument("--spdx-file", dest='spdx_file', required=True, help="SPDX input file")
-parser.add_argument("--out-file", dest='out_file', required=True, help="Unmatched components file")
-parser.add_argument("--project", dest='project_name', required=True, help="Project that contains the BOM components")
-parser.add_argument("--version", dest='version_name', required=True, help="Version that contains the BOM components")
-parser.add_argument("--license", dest='license_name', required=False, default="NOASSERTION", help="License name to use for custom components (default: NOASSERTION)")
-parser.add_argument("--no-verify", dest='verify', action='store_false', help="Disable TLS certificate verification")
-parser.add_argument("--no-spdx-validate", dest='spdx_validate', action='store_false', help="Disable SPDX validation")
-args = parser.parse_args()
+def main():
+    args = parse_command_args()
+    if (Path(args.spdx_file).is_file()):
+        document = spdx_parse(args.spdx_file)
+        if (args.spdx_validate):
+            spdx_validate(document)
+    else:
+        logging.error(f"Could not open SPDX file: {args.spdx_file}")
+        sys.exit(1)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
-)
+    with open(args.token_file, 'r') as tf:
+        access_token = tf.readline().strip()
 
-if (Path(args.spdx_file).is_file()):
-    document = spdx_parse(args.spdx_file)
-    if (args.spdx_validate):
-        spdx_validate(document)
-else:
-    logging.error(f"Could not open SPDX file: {args.spdx_file}")
-    sys.exit(1)
+    global bd
+    bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
 
-with open(args.token_file, 'r') as tf:
-    access_token = tf.readline().strip()
+    # Validate project/version details
+    project, version = get_proj_ver(args.project_name, args.version_name)
+    proj_version_url = version['_meta']['href']
 
-global bd
-bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
+    # Upload the provided SBOM
+    upload_sbom_file(args.spdx_file, args.project_name, args.version_name)
 
-# Fetch Project (can only have 1)
-params = {
-    'q': [f"name:{args.project_name}"]
-}
-projects = [p for p in bd.get_resource('projects', params=params)
-  if p['name'] == args.project_name]
-assert len(projects) != 0, \
-  f"Failed to locate project: {args.project_name}"
-assert len(projects) == 1, \
-  f"There should one project named {args.project_name}. Found {len(projects)}"
-project = projects[0]
+    # Wait for scan completeion. Will exit if it fails.
+    poll_for_upload(document.creation_info.name)
+    # Also exits on failure. This may be somewhat redundant.
+    poll_for_sbom_scan(document.creation_info.name, version)
 
-# Fetch Version (can only have 1)
-params = {
-    'q': [f"versionName:{args.version_name}"]
-}
-versions = [v for v in bd.get_resource('versions', project, params=params)
-  if v['versionName'] == args.version_name]
-assert len(versions) != 0, \
-  f"Failed to find project version: {args.version_name}"
-assert len(versions) == 1, \
-  f"There should be 1 version named {args.version_name}. Found {len(versions)}"
-version = versions[0]
-proj_version_url = version['_meta']['href']
+    # Open unmatched component file to save name, spdxid, version, and
+    # origin/purl for later in json format
+    try: outfile = open(args.out_file, 'w')
+    except:
+        logging.exception("Failed to open file for writing: " + args.out_file)
+        sys.exit(1)
 
-logging.debug(f"Found {project['name']}:{version['versionName']}")
+    # Stats to track
+    bom_matches = 0
+    kb_matches = 0
+    nopurl = 0
+    nomatch = 0
+    package_count = 0
+    cust_comp_count = 0
+    cust_ver_count = 0
+    # Saving all encountered components by their name+version
+    # Used for debugging repeated package data
+    packages = {}
+    # Saved component data to write to file
+    comps_out = []
 
-upload_sbom_file(args.spdx_file, args.project_name, args.version_name)
+    # Walk through each component in the SPDX file
+    for package in document.packages:
+        package_count += 1
+        # We hope we'll have an external reference (pURL), but we might not.
+        extref = None
+        purlmatch = False
+        # matchname/matchver can change, depending on the KB lookup step.
+        # These are stored separately to keep the original names handy
+        matchname = package.name
+        if package.version is None:
+            # Default in case one is not specified in SPDX
+            package.version = "UNKNOWN"
+        matchver = package.version
+        print(f"Processing SPDX package: {matchname} version: {matchver}....")
+        # Tracking unique package name + version combos from spdx file
+        packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
 
-# This will exit if it fails
-poll_for_upload(document.creation_info.name)
-# Also exits on failure. This may be somewhat redundant.
-poll_for_sbom_scan(document.creation_info.name, version)
-
-# Open unmatched component file to save name, spdxid, version, and
-# origin/purl for later in json format
-try: outfile = open(args.out_file, 'w')
-except:
-    logging.exception("Failed to open file for writing: " + args.out_file)
-    sys.exit(1)
-
-# Stats to track
-bom_matches = 0
-kb_matches = 0
-nopurl = 0
-nomatch = 0
-package_count = 0
-cust_comp_count = 0
-cust_ver_count = 0
-# Saving all encountered components by their name+version (watching for repeats)
-packages = {}
-# Saved component data to write to file
-comps_out = []
-
-# Walk through each component in the SPDX file
-for package in document.packages:
-    package_count += 1
-    # We hope we'll have an external reference (pURL), but we might not.
-    extref = None
-    purlmatch = False
-    # matchname/matchver can change, depending on the KB lookup step.
-    # These are stored separately so that we have the original names available.
-    matchname = package.name
-    if package.version is None:
-        # Default in case one is not specified in SPDX
-        package.version = "UNKNOWN"
-    matchver = package.version
-    print(f"Processing SPDX package: {matchname} version: {matchver}....")
-    # Tracking unique package name + version from spdx file 
-    packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
-
-    kb_match = None
-    if package.external_references:
-        foundpurl = False
-        for ref in package.external_references:
-            # There can be multiple extrefs - try to locate a purl
-            # If there should happen to be >1 purls, we only consider the first
-            if (ref.reference_type == "purl"):
-                foundpurl = True
-                kb_match = find_comp_in_kb(ref.locator)
-                extref = ref.locator
-                break
-        if not foundpurl:
-            nopurl += 1
-            print(f" No pURL provided for {package.name} {package.version}")
-        if (kb_match):
-            # Update package name and version to reflect the KB name/ver
-            print(f" KB match for {package.name} {package.version}")
-            kb_matches+=1
-            matchname = kb_match['componentName']
-            matchver = kb_match['versionName']
+        kb_match = None
+        if package.external_references:
+            foundpurl = False
+            for ref in package.external_references:
+                # There can be multiple extrefs - try to locate a purl
+                # If there should happen to be multiple purls,
+                # we only consider the first.
+                if (ref.reference_type == "purl"):
+                    foundpurl = True
+                    kb_match = find_comp_in_kb(ref.locator)
+                    extref = ref.locator
+                    break
+            if not foundpurl:
+                nopurl += 1
+                print(f"  No pURL provided for {package.name} {package.version}")
+            if (kb_match):
+                # Update package name and version to reflect the KB name/ver
+                print(f"  KB match for {package.name} {package.version}")
+                kb_matches+=1
+                matchname = kb_match['componentName']
+                matchver = kb_match['versionName']
+            else:
+                print(f"  No KB match for {package.name} {package.version}")
         else:
-            print(f" No KB match for {package.name} {package.version}")
-    else:
-        nopurl += 1
-        print(f"No pURL provided for {package.name} {package.version}")
+            nopurl += 1
+            print(f"  No pURL provided for {package.name} {package.version}")
 
-    if find_comp_in_bom(matchname, matchver, version):
-        bom_matches += 1
-        print(f" Found component in BOM: {matchname} {matchver}")
-        # It's in the BOM so we are happy
-        # Everything else below is related to adding to the BOM
-        continue
+        if find_comp_in_bom(matchname, matchver, version):
+            bom_matches += 1
+            print(f"  Found component in BOM: {matchname} {matchver}")
+            # It's in the BOM so we are happy
+            # Everything else below is related to adding to the BOM
+            continue
 
-    # If we've gotten this far, the package is not in the BOM.
-    # Now we need to figure out:
-    #  - Is it already in the KB and we need to add it? (should be rare)
-    #  - Do we need to add a custom component?
-    #  - Do we need to add a version to an existing custom component?
-    nomatch += 1
-    print(f" Not present in BOM: {matchname} {matchver}")
-    comp_data = {
-        "name": package.name,
-        "spdx_id": package.spdx_id,
-        "version": package.version,
-        "origin": extref
-    }
-    comps_out.append(comp_data)
+        # If we've gotten this far, the package is not in the BOM.
+        # Now we need to figure out:
+        #  - Is it already in the KB and we need to add it? (should be rare)
+        #  - Do we need to add a custom component?
+        #  - Do we need to add a version to an existing custom component?
+        nomatch += 1
+        print(f"  Not present in BOM: {matchname} {matchver}")
+        comp_data = {
+            "name": package.name,
+            "spdx_id": package.spdx_id,
+            "version": package.version,
+            "origin": extref
+        }
+        comps_out.append(comp_data)
 
-    # KB match was successful, but it wasn't in the BOM for some reason
-    if kb_match:
-        print(f" WARNING: {matchname} {matchver} in KB but not in SBOM")
-        add_to_sbom(proj_version_url, kb_match['version'])
-        # short-circuit the rest
-        continue
+        # KB match was successful, but it wasn't in the BOM for some reason
+        if kb_match:
+            print(f"  WARNING: {matchname} {matchver} in KB but not in SBOM")
+            add_to_sbom(proj_version_url, kb_match['version'])
+            # short-circuit the rest
+            continue
 
-    # Check if custom component already exists
-    comp_url, comp_ver_url = find_cust_comp(package.name, package.version)
+        # Check if custom component already exists
+        comp_url, comp_ver_url = find_cust_comp(package.name, package.version)
 
-    if not comp_url:
-        # Custom component did not exist, so create it
-        cust_comp_count += 1
-        comp_ver_url = create_cust_comp(package.name, package.version,
-          args.license_name)
-    elif comp_url and not comp_ver_url:
-        # Custom component existed, but not the version we care about
-        cust_ver_count += 1
-        print(f" Adding version {package.version} to custom component {package.name}")
-        comp_ver_url = create_cust_comp_ver(comp_url, package.version, args.license_name)
-    else:
-        print(" Custom component already exists, not in SBOM")
+        if not comp_url:
+            # Custom component did not exist, so create it
+            cust_comp_count += 1
+            comp_ver_url = create_cust_comp(package.name, package.version,
+              args.license_name)
+        elif comp_url and not comp_ver_url:
+            # Custom component existed, but not the version we care about
+            cust_ver_count += 1
+            print(f"  Adding version {package.version} to custom component {package.name}")
+            comp_ver_url = create_cust_comp_ver(comp_url, package.version, \
+              args.license_name)
+        else:
+            print("  Custom component already exists, not in SBOM")
 
-    # Shouldn't be possible
-    assert(comp_ver_url), f"No component URL found for {package.name} {package.version}"
+        # Shouldn't be possible
+        assert(comp_ver_url), f"No component URL found for {package.name} {package.version}"
 
-    print(f" Adding component to SBOM: {package.name} aka {matchname} {package.version}")
-    add_to_sbom(proj_version_url, comp_ver_url)
-        
-# Save unmatched components
-json.dump(comps_out, outfile)
-outfile.close()
+        print(f"  Adding component to SBOM: {package.name} aka {matchname} {package.version}")
+        add_to_sbom(proj_version_url, comp_ver_url)
 
-print("\nStats: ")
-print("------")
-print(f" SPDX packages processed: {package_count}")
-print(f" Packages missing from BOM: {nomatch}")
-print(f" BOM matches: {bom_matches}")
-print(f" KB matches: {kb_matches}")
-print(f" Packages missing purl: {nopurl}")
-print(f" Custom components created: {cust_comp_count}")
-print(f" Custom component versions created: {cust_ver_count}")
-#pprint(packages)
-print(f" {len(packages)} unique packages processed")
+    # Save unmatched components
+    json.dump(comps_out, outfile)
+    outfile.close()
+
+    print("\nStats: ")
+    print("------")
+    print(f" SPDX packages processed: {package_count}")
+    print(f" Packages missing from BOM: {nomatch}")
+    print(f" BOM matches: {bom_matches}")
+    print(f" KB matches: {kb_matches}")
+    print(f" Packages missing purl: {nopurl}")
+    print(f" Custom components created: {cust_comp_count}")
+    print(f" Custom component versions created: {cust_ver_count}")
+    #for debugging
+    #pprint(packages)
+    print(f" {len(packages)} unique packages processed")
+
+if __name__ == "__main__":
+    sys.exit(main())
