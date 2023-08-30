@@ -125,12 +125,9 @@ def spdx_validate(document):
     validation_messages = validate_full_spdx_document(document)
     print(f"SPDX validation took {time.process_time() - start} seconds")
 
-    # TODO is there a way to distinguish between something fatal and something
-    # BD can deal with?
     for validation_message in validation_messages:
-        # Just printing these messages intead of exiting. Later when we try to import
-        # the file to BD, let's plan to exit if it fails. Seeing lots of errors in the
-        # sample data.
+        # Just printing these messages intead of exiting.
+        # Later when the file is imported, BD errors will be fatal.
         logging.warning(validation_message.validation_message)
 
 # Returns MIME type to provide to scan API
@@ -271,29 +268,6 @@ def poll_for_sbom_scan(sbom_name, projver):
         logging.error(f"Unable to verify successful scan of SBOM: {sbom_name}")
     # If we got this far, it's a fatal error.
     sys.exit(1)
-
-# Poll for BOM completion
-# TODO currently unused, may delete
-# Input: Name of SBOM document (not the filename, the name defined inside the json body)
-# Returns on success. Errors will result in fatal exit.
-def poll_for_bom_complete(proj_version_url):
-    max_retries = 30
-    sleep_time = 10
-
-    while (max_retries):
-        max_retries -= 1
-        json_data = bd.get_json(proj_version_url + "/bom-status")
-        if json_data['status'] == "UP_TO_DATE":
-            return
-        elif json_data['status'] == "FAILURE":
-            logging.error(f"BOM Scan Failed")
-            sys.exit(1)
-        elif json_data['status'] == "NOT_INCLUDED":
-            logging.error(f"BOM scan had no matches")
-            sys.exit(1)
-        else:
-            print(f"Waiting for BOM scan success, currently: {json_data['status']}")
-            time.sleep(sleep_time)
 
 # Upload provided SBOM file to Black Duck
 # Inputs:
