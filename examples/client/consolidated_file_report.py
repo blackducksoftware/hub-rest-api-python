@@ -1,11 +1,11 @@
 '''
-Created on August 23, 2023
+Created on August 30, 2023
 
 @author: mkoishi
 
 Generate reports which consolidates information on BOM components, versions with license information, BOM files with
 license and copyright information from KB and license search (discoveries - file licenses or file copyrights), 
-and BlackDuck unmatched files.
+and BlackDuck unmatched files in the target source code.
 
 Copyright (C) 2023 Synopsys, Inc.
 http://www.synopsys.com/
@@ -44,9 +44,10 @@ from blackduck import Client
 from zipfile import ZipFile
 
 program_description = \
-'''This script collects BlackDuck reports for version details and discoveries, and it generates new reports.
+'''This script collects BlackDuck reports for version details and discoveries and generates new reports.
 The newly generated reports are a report of BOM component-versions with license information, a report of BOM files that consolidates licenses and copyright texts information from KB and discoveries (e.g., file licenses, file copyrights), and a report of BlackDuck unmatched files.
-Optionally, Synopsys-Detect can be executed from the script, and if it is selected, it runs in synchronous mode. Please consider adjusting the "detect.timeout" detect parameter because completion of Synopsys-Detect is estimated to take longer.
+The generated reports are found in a folder named "blackduck_consolidated_file_report"
+Synopsys-Detect is executed from the script unless skip-detect option is chosen. Synopsys-Detect runs in synchronous mode and please consider adjusting the "detect.timeout" detect parameter if completion of Synopsys-Detect is estimated to take longer.
 
 Config file:
 API Token, hub URL and two more options need to be placed in the .restconfig.json file that must be placed in the same folder where this script resides.
@@ -57,7 +58,7 @@ Pre-requisites:
 2) Install PyPI modules "blackduck", "ijson" and "json2html.
 
 Examples:
-1) If Synopsys-Detect is wanted to execute prior to the HTML report generation that includes file copyright texts, then 
+1) If Synopsys-Detect is wanted to execute prior to the HTML report generation and the report should include file-copyright texts, then
 python3 ./consolidated_file_report.py <YOUR_BD_PROJECT_NAME> <YOUR_BD_PROJECT_VERSION_NAME> \
 -f html -cl 2 -rr 100 \
 -dp detect.blackduck.signature.scanner.snippet.matching=SNIPPET_MATCHING \
@@ -172,7 +173,7 @@ def parse_parameter():
                         metavar="",
                         type=int,
                         default=0,
-                        help="Specify the included copyright text level. Level 0 is no copyright texts included, 1 is only copyright texts from KB included, 2 is copyright texts from KB and discoveries included.")
+                        help="Specify the included copyright text level. Level 0 (default value) is no copyright texts included, 1 is only copyright texts from KB included, 2 is copyright texts from KB and discoveries included.")
     parser.add_argument("-sd",
                         "--skip_detect",
                         action='store_true',
@@ -379,7 +380,7 @@ def get_os_path_for_unmatched(parent_dir, matched_paths):
         'total_files': 0
     }
 
-    log_onerror = lambda err: logging.warn(f"An error reported during folder and file traverse. {str(err)}")
+    log_onerror = lambda err: logging.error(f"An error reported during OS folder and file traverse. OS file report may be uncompleted.{str(err)}")
     for path, folder_names, file_names in os.walk(parent_dir, onerror=log_onerror):
         os_path_stats['total_folders'] = os_path_stats['total_folders'] + len(folder_names)
         os_path_stats['total_files'] = os_path_stats['total_files'] + len(file_names)
@@ -699,11 +700,9 @@ def generate_file_report(hub_client, project_id, version_id, codelocations, copy
                 for license in disc_license['licenses']:
                     file_data['licenses'].append(license)
             else:
-                logging.debug(f"No discovery license found for file with this component: {file_data['projectName']} \
-                              and {file_data['projectVersion']}")
+                logging.debug(f"No discovery license found for file with this component: {file_data['projectName']} and {file_data['projectVersion']}")
             if len(disc_licenses) > 1:
-                logging.warning(f"More than one discovery license: {disc_licenses} found for \
-                                {file_data['projectName']}" and file_data['projectVersion'])
+                logging.warning(f"More than one discovery license: {disc_licenses} found for {file_data['projectName']}" and file_data['projectVersion'])
             
             if copyright_level != 0:
                 origin_name = file_data['channelReleaseExternalNamespace'] + ":" + file_data['channelReleaseExternalId']
@@ -719,8 +718,7 @@ def generate_file_report(hub_client, project_id, version_id, codelocations, copy
                 else:
                     logging.debug(f"No discovery copyright found for file with this origin: {origin_name}")
                 if len(disc_copyrights) > 1:
-                    logging.warning(f"More than one discovery copyright: {disc_copyrights} found \
-                                    for the same origin {origin_name}")
+                    logging.warning(f"More than one discovery copyright: {disc_copyrights} found for the same origin {origin_name}")
     
             report_file_bom['bomFileEntries']['bomFiles'].append(file_data)
         logging.info(f"Number of the reported files {i+1}")        
