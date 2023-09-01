@@ -149,11 +149,12 @@ def spdx_parse(file):
     start = time.process_time()
     try:
         document: Document = parse_file(file)
-        print('SPDX parsing took {:.2f}s'.format(time.process_time() - start))
-        return(document)
     except SPDXParsingError:
         logging.exception("Failed to parse spdx file")
         sys.exit(1)
+
+    print('SPDX parsing took {:.2f}s'.format(time.process_time() - start))
+    return(document)
 
 # Validates the SPDX file. Logs all validation messages as warnings.
 # Input: SPDX document object
@@ -198,7 +199,6 @@ def poll_for_upload(sbom_name):
     }
     cls = bd.get_resource('codeLocations', params=params)
     for cl in cls:
-        print(cl['name'])
         # Force exact match of: spdx_doc_name + " spdx/sbom"
         # BD appends the "spdx/sbom" string to the name.
         if cl['name'] != sbom_name + " spdx/sbom":
@@ -559,7 +559,7 @@ def main():
     # Upload the provided SBOM
     upload_sbom_file(args.spdx_file, args.project_name, args.version_name)
 
-    # Wait for scan completeion. Will exit if it fails.
+    # Wait for scan completion. Will exit if it fails.
     poll_for_upload(document.creation_info.name)
     # Also exits on failure. This may be somewhat redundant.
     poll_for_sbom_scan(document.creation_info.name, version)
@@ -591,14 +591,24 @@ def main():
         # We hope we'll have an external reference (pURL), but we might not.
         extref = None
         purlmatch = False
+
+        if package.name == "":
+            # Strange case where the package name is empty. Skip it.
+            logging.warning("WARNING: package name empty, skipping")
+            continue
+        # Trim any odd leading/trailing space or newlines
+        package.name = package.name.strip()
+
         # matchname/matchver can change, depending on the KB lookup step.
         # These are stored separately to keep the original names handy
         matchname = package.name
-        if package.version is None:
+        if package.version is None or package.version == "":
             # Default in case one is not specified in SPDX
             package.version = "UNKNOWN"
+        package.version = package.version.strip()
         matchver = package.version
-        print(f"Processing SPDX package: {matchname} version: {matchver}....")
+        print(f"Processing SPDX package: {matchname} version: {matchver}...")
+
         # Tracking unique package name + version combos from spdx file
         packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
 
@@ -643,6 +653,8 @@ def main():
         #  - Do we need to add a version to an existing custom component?
         nomatch += 1
         print(f"  Not present in BOM: {matchname} {matchver}")
+
+        # Missing component data to write to a file for reference
         comp_data = {
             "name": package.name,
             "spdx_id": package.spdx_id,
