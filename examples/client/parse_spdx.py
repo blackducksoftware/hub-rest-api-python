@@ -103,6 +103,12 @@ from spdx_tools.spdx.validation.document_validator import validate_full_spdx_doc
 from spdx_tools.spdx.parser.error import SPDXParsingError
 from spdx_tools.spdx.parser.parse_anything import parse_file
 
+# Used when we are polling for successful upload and processing
+global MAX_RETRIES
+global SLEEP
+MAX_RETRIES = 30
+SLEEP = 5
+
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
@@ -181,18 +187,55 @@ def get_sbom_mime_type(filename):
         return 'application/spdx'
     return None
 
+def poll_notifications_for_success(cl, proj_version_url, summaries_url):
+    # We want to locate a notification for
+    # VERSION_BOM_CODE_LOCATION_BOM_COMPUTED
+    # matching our proj_version_url and our codelocation
+    retries = MAX_RETRIES
+    sleep_time = SLEEP
+
+    # current theory: if a scan happened and we matched NOTHING, we
+    # aren't going to get a BOM_COMPUTED notification. so is there any type
+    # of notif that we DO get?
+
+    params = {
+        'filter': ["notificationType:VERSION_BOM_CODE_LOCATION_BOM_COMPUTED"],
+        'sort'  : ["createdAt: ASC"]
+    }
+
+    while (retries):
+        retries -= 1
+        for result in bd.get_items("/api/notifications", params=params):
+            if 'projectVersion' not in result['content']:
+               # skip it (shouldn't be possible due to the filter)
+               continue
+            # We're checking the entire list of notifications, but ours is
+            # likely to be the first. Walking the whole list to make
+            # sure we find an exact match.
+            if result['content']['projectVersion'] == proj_version_url and \
+               result['content']['codeLocation'] == cl['_meta']['href'] and \
+               result['content']['scanSummary'] == summaries_url:
+               print("BOM calculation complete")
+               return
+
+        print("Waiting for BOM calculation to complete")
+        time.sleep(sleep_time)
+
+    logging.error(f"Failed to verify successful BOM computed in {retries * sleep_time} seconds")
+    sys.exit(1)
+
 # Poll for successful scan of SBOM.
 # Input: Name of SBOM document (not the filename, the name defined inside the json body)
 # Returns on success. Errors will result in fatal exit.
-def poll_for_upload(sbom_name):
-    max_retries = 30
-    sleep_time = 10
+def poll_for_sbom_complete(sbom_name, proj_version_url):
+    retries = MAX_RETRIES
+    sleep_time = SLEEP
     matched_scan = False
 
     # Replace any spaces in the name with a dash to match BD
     sbom_name = sbom_name.replace(' ', '-')
 
-    # Search for the latest scan matching our SBOM
+    # Search for the latest scan matching our SBOM name
     params = {
         'q': [f"name:{sbom_name}"],
         'sort': ["updatedAt: ASC"]
@@ -207,107 +250,67 @@ def poll_for_upload(sbom_name):
         matched_scan = True
         for link in (cl['_meta']['links']):
             # Locate the scans URL to check for status
-            if link['rel'] == "scans":
-                summaries_url = link['href']
+            if link['rel'] == "latest-scan":
+                latest_url = link['href']
                 break
 
-        assert(summaries_url)
-        params = {
-            'sort': ["updatedAt: ASC"]
-        }
-
-        while (max_retries):
-            max_retries -= 1
-            for item in bd.get_items(summaries_url, params=params):
-                # Only checking the first item as it's the most recent
-                if item['scanState'] == "SUCCESS":
-                    print("BOM upload complete")
-                    return
-                elif item['scanState'] == "FAILURE":
-                    logging.error(f"SPDX Scan Failure: {item['statusMessage']}")
-                    sys.exit(1)
-                else:
-                    # Only other state should be "STARTED" -- keep polling
-                    print(f"Waiting for status success, currently: {item['scanState']}")
-                    time.sleep(sleep_time)
-                    # Break out of for loop so we always check the most recent
-                    break
-
-    # Handle various errors that might happen
-    if max_retries == 0:
-        logging.error("Failed to verify successful SPDX Scan in {max_retries * sleep_time} seconds")
-    elif not matched_scan:
+    assert latest_url, "Failed to locate latest-scan reference"
+    if not matched_scan:
         logging.error(f"No scan found for SBOM: {sbom_name}")
-    else:
-        logging.error(f"Unable to verify successful scan of SBOM: {sbom_name}")
+        sys.exit(1)
 
-    # If we got this far, it's a fatal error.
-    sys.exit(1)
+    # Wait for scanState = SUCCESS
+    while (retries):
+        json_data = bd.get_json(latest_url)
+        retries -= 1
+        if json_data['scanState'] == "SUCCESS":
+            print("BOM upload complete")
+            break
+        elif json_data['scanState'] == "FAILURE":
+            logging.error(f"SPDX Scan Failure: {json_data['statusMessage']}")
+            sys.exit(1)
+        else:
+            # Only other state should be "STARTED" -- keep polling
+            print(f"Waiting for status success, currently: {json_data['scanState']}")
+            time.sleep(sleep_time)
 
-# Poll for successful scan of SBOM 
-# Inputs:
-#   sbom_name: Name of SBOM document (not the filename)
-#   version: project version to check
-# Returns on success. Errors will result in fatal exit.
-def poll_for_sbom_scan(sbom_name, projver):
-    max_retries = 30
-    sleep_time = 10
-    matched_scan = False
+    # If there were ZERO matches, there will never be a notification of
+    # BOM import success. Short-circuit that check and treat this as success.
+    if json_data['matchCount'] == 0:
+        print("No KB matches in BOM, continuing...")
+        return
 
-    # Replace any spaces in the name with a dash to match BD
-    sbom_name = sbom_name.replace(' ', '-')
+    # Save the codelocation summaries_url
+    summaries_url = json_data['_meta']['href']
 
-    # Search for the latest scan matching our SBOM
-    params = {
-        'q': [f"name:{sbom_name}"],
-        'sort': ["updatedAt: ASC"]
-    }
-    cls = bd.get_resource('codelocations', projver, params=params)
-    for cl in cls:
-        # Force exact match of: spdx_doc_name + " spdx/sbom"
-        # BD appends the "spdx/sbom" string to the name.
-        if cl['name'] != sbom_name + " spdx/sbom":
-            continue
+    # Greedy match - extract the scan id out of the URL
+    #scanid = re.findall(r'.*\/(.*)', json_data['_meta']['href'])
+    # proj_Version_url/bom-status/scanid does NOT WORK
 
-        matched_scan = True
-        for link in (cl['_meta']['links']):
-            # Locate the scans URL to check for status
-            if link['rel'] == "scans":
-                summaries_url = link['href']
-                break
+    # TODO this seems actually fairly pointless - it get stuck in UP_TO_DATE
+    retries = MAX_RETRIES
+    while (retries):
+        json_data = bd.get_json(proj_version_url + "/bom-status")
+        retries -= 1
+        if json_data['status'] == "UP_TO_DATE":
+            print("BOM import complete")
+            break
+        elif json_data['status'] == "FAILURE":
+            logging.error(f"BOM Import failure: {json_data['status']}")
+            sys.exit(1)
+        else:
+            print(f"Waiting for BOM import completion, current status: {json_data['status']}")
+            time.sleep(sleep_time)
 
-        assert(summaries_url)
-        params = {
-            'sort': ["updatedAt: ASC"]
-        }
+    if retries == 0:
+        logging.error("Failed to verify successful SBOM import in {retries * sleep_time} seconds")
+        sys.exit(1)
 
-        while (max_retries):
-            max_retries -= 1
-            for item in bd.get_items(summaries_url, params=params):
-                # Only checking the first item as it's the most recent
-                if item['scanState'] == "SUCCESS":
-                    print("BOM scan complete")
-                    return
-                elif item['scanState'] == "FAILURE":
-                    logging.error(f"SPDX Scan Failure: {item['statusMessage']}")
-                    sys.exit(1)
-                else:
-                    # Only other state should be "STARTED" -- keep polling
-                    print(f"Waiting for status success, currently: {item['scanState']}")
-                    time.sleep(sleep_time)
-                    # Break out of for loop so we always check the most recent
-                    break
+    # Finally check notifications
+    poll_notifications_for_success(cl, proj_version_url, summaries_url)
 
-    # Handle various errors that might happen
-    if max_retries == 0:
-        logging.error("Failed to verify successful SPDX Scan in {max_retries * sleep_time} seconds")
-    elif not matched_scan:
-        logging.error(f"No scan found for SBOM: {sbom_name}")
-    else:
-        logging.error(f"Unable to verify successful scan of SBOM: {sbom_name}")
-
-    # If we got this far, it's a fatal error.
-    sys.exit(1)
+    # Any errors above already resulted in fatal exit
+    return
 
 # Upload provided SBOM file to Black Duck
 # Inputs:
@@ -328,7 +331,7 @@ def upload_sbom_file(filename, project, version):
         logging.error(f"File {filename} is already mapped to a different project version")
 
     if response.status_code != 201:
-        logging.error(f"Failed to upload SPDX file:")
+        logging.error(f"Failed to upload SPDX file")
         try:
             pprint(response.json()['errorMessage'])
         except:
@@ -560,9 +563,7 @@ def main():
     upload_sbom_file(args.spdx_file, args.project_name, args.version_name)
 
     # Wait for scan completion. Will exit if it fails.
-    poll_for_upload(document.creation_info.name)
-    # Also exits on failure. This may be somewhat redundant.
-    poll_for_sbom_scan(document.creation_info.name, version)
+    poll_for_sbom_complete(document.creation_info.name, proj_version_url)
 
     # Open unmatched component file to save name, spdxid, version, and
     # origin/purl for later in json format
@@ -630,7 +631,7 @@ def main():
             if (kb_match):
                 # Update package name and version to reflect the KB name/ver
                 print(f"  KB match for {package.name} {package.version}")
-                kb_matches+=1
+                kb_matches += 1
                 matchname = kb_match['componentName']
                 matchver = kb_match['versionName']
             else:
@@ -667,6 +668,8 @@ def main():
         if kb_match:
             print(f"  WARNING: {matchname} {matchver} in KB but not in SBOM")
             add_to_sbom(proj_version_url, kb_match['version'])
+            # TODO TEMP DEBUG TO CATCH THIS
+            quit()
             # short-circuit the rest
             continue
 
