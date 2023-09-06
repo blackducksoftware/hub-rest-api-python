@@ -107,12 +107,14 @@ from spdx_tools.spdx.parser.parse_anything import parse_file
 global MAX_RETRIES
 global SLEEP
 MAX_RETRIES = 30
-SLEEP = 5
+SLEEP = 10
 
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] {%(module)s:%(lineno)d} %(levelname)s - %(message)s"
 )
+
+logging.getLogger("blackduck").setLevel(logging.CRITICAL)
 
 # Validates BD project and version
 # Inputs:
@@ -187,16 +189,17 @@ def get_sbom_mime_type(filename):
         return 'application/spdx'
     return None
 
-def poll_notifications_for_success(cl, proj_version_url, summaries_url):
-    # We want to locate a notification for
-    # VERSION_BOM_CODE_LOCATION_BOM_COMPUTED
-    # matching our proj_version_url and our codelocation
+# Poll for notification alerting us of successful BOM computation
+#
+# Inputs:
+#  cl_url - Code Loction URL to match
+#  proj_version_url - Project Version URL to match
+#  summaries_url - Summaries URL from codelocation
+#
+# Returns on success. Errors are fatal.
+def poll_notifications_for_success(cl_url, proj_version_url, summaries_url):
     retries = MAX_RETRIES
     sleep_time = SLEEP
-
-    # current theory: if a scan happened and we matched NOTHING, we
-    # aren't going to get a BOM_COMPUTED notification. so is there any type
-    # of notif that we DO get?
 
     params = {
         'filter': ["notificationType:VERSION_BOM_CODE_LOCATION_BOM_COMPUTED"],
@@ -207,13 +210,12 @@ def poll_notifications_for_success(cl, proj_version_url, summaries_url):
         retries -= 1
         for result in bd.get_items("/api/notifications", params=params):
             if 'projectVersion' not in result['content']:
-               # skip it (shouldn't be possible due to the filter)
+               # Shouldn't be possible due to the filter
                continue
-            # We're checking the entire list of notifications, but ours is
-            # likely to be the first. Walking the whole list to make
-            # sure we find an exact match.
+            # We're checking the entire list of notifications, but ours should
+            # be near the top.
             if result['content']['projectVersion'] == proj_version_url and \
-               result['content']['codeLocation'] == cl['_meta']['href'] and \
+               result['content']['codeLocation'] == cl_url and \
                result['content']['scanSummary'] == summaries_url:
                print("BOM calculation complete")
                return
@@ -221,16 +223,22 @@ def poll_notifications_for_success(cl, proj_version_url, summaries_url):
         print("Waiting for BOM calculation to complete")
         time.sleep(sleep_time)
 
-    logging.error(f"Failed to verify successful BOM computed in {retries * sleep_time} seconds")
+    logging.error(f"Failed to verify successful BOM computed in {MAX_RETRIES * sleep_time} seconds")
     sys.exit(1)
 
 # Poll for successful scan of SBOM.
-# Input: Name of SBOM document (not the filename, the name defined inside the json body)
+# Inputs:
+#
+#   sbom_name: Name of SBOM document (not the filename, the name defined
+#     inside the json body)
+#    proj_version_url: Project version url
+#
 # Returns on success. Errors will result in fatal exit.
 def poll_for_sbom_complete(sbom_name, proj_version_url):
     retries = MAX_RETRIES
     sleep_time = SLEEP
     matched_scan = False
+    cl_url = None
 
     # Replace any spaces in the name with a dash to match BD
     sbom_name = sbom_name.replace(' ', '-')
@@ -242,22 +250,28 @@ def poll_for_sbom_complete(sbom_name, proj_version_url):
     }
     cls = bd.get_resource('codeLocations', params=params)
     for cl in cls:
+        if matched_scan:
+            break
         # Force exact match of: spdx_doc_name + " spdx/sbom"
         # BD appends the "spdx/sbom" string to the name.
         if cl['name'] != sbom_name + " spdx/sbom":
             continue
 
         matched_scan = True
+        cl_url = cl['_meta']['href']
+
         for link in (cl['_meta']['links']):
             # Locate the scans URL to check for status
             if link['rel'] == "latest-scan":
                 latest_url = link['href']
                 break
 
-    assert latest_url, "Failed to locate latest-scan reference"
     if not matched_scan:
         logging.error(f"No scan found for SBOM: {sbom_name}")
         sys.exit(1)
+
+    assert latest_url, "Failed to locate latest-scan reference"
+    assert cl_url, "Failed to locate codelocation reference"
 
     # Wait for scanState = SUCCESS
     while (retries):
@@ -271,23 +285,19 @@ def poll_for_sbom_complete(sbom_name, proj_version_url):
             sys.exit(1)
         else:
             # Only other state should be "STARTED" -- keep polling
-            print(f"Waiting for status success, currently: {json_data['scanState']}")
+            print(f"Waiting for scan completion, currently: {json_data['scanState']}")
             time.sleep(sleep_time)
 
     # If there were ZERO matches, there will never be a notification of
-    # BOM import success. Short-circuit that check and treat this as success.
+    # BOM import success. Short-circuit the check and treat this as success.
     if json_data['matchCount'] == 0:
-        print("No KB matches in BOM, continuing...")
+        print("No BOM KB matches, continuing...")
         return
 
     # Save the codelocation summaries_url
     summaries_url = json_data['_meta']['href']
 
-    # Greedy match - extract the scan id out of the URL
-    #scanid = re.findall(r'.*\/(.*)', json_data['_meta']['href'])
-    # proj_Version_url/bom-status/scanid does NOT WORK
-
-    # TODO this seems actually fairly pointless - it get stuck in UP_TO_DATE
+    # Check the bom-status endpoint for success
     retries = MAX_RETRIES
     while (retries):
         json_data = bd.get_json(proj_version_url + "/bom-status")
@@ -295,19 +305,20 @@ def poll_for_sbom_complete(sbom_name, proj_version_url):
         if json_data['status'] == "UP_TO_DATE":
             print("BOM import complete")
             break
-        elif json_data['status'] == "FAILURE":
-            logging.error(f"BOM Import failure: {json_data['status']}")
+        elif json_data['status'] == "UP_TO_DATE_WITH_ERRORS" or \
+          json_data['status'] == "PROCESSING_WITH_ERRORS":
+            logging.error(f"BOM Import failure: status is {json_data['status']}")
             sys.exit(1)
         else:
             print(f"Waiting for BOM import completion, current status: {json_data['status']}")
             time.sleep(sleep_time)
 
     if retries == 0:
-        logging.error("Failed to verify successful SBOM import in {retries * sleep_time} seconds")
+        logging.error(f"Failed to verify successful SBOM import in {retries * sleep_time} seconds")
         sys.exit(1)
 
     # Finally check notifications
-    poll_notifications_for_success(cl, proj_version_url, summaries_url)
+    poll_notifications_for_success(cl_url, proj_version_url, summaries_url)
 
     # Any errors above already resulted in fatal exit
     return
@@ -580,8 +591,7 @@ def main():
     package_count = 0
     cust_comp_count = 0
     cust_ver_count = 0
-    # Saving all encountered components by their name+version
-    # Used for debugging repeated package data
+    # Used for tracking repeated package data
     packages = {}
     # Saved component data to write to file
     comps_out = []
@@ -595,8 +605,10 @@ def main():
 
         if package.name == "":
             # Strange case where the package name is empty. Skip it.
-            logging.warning("WARNING: package name empty, skipping")
+            logging.warning("WARNING: Skipping empty package name. Package info:")
+            pprint(package)
             continue
+
         # Trim any odd leading/trailing space or newlines
         package.name = package.name.strip()
 
@@ -617,9 +629,8 @@ def main():
         if package.external_references:
             foundpurl = False
             for ref in package.external_references:
-                # There can be multiple extrefs - try to locate a purl
-                # If there should happen to be multiple purls,
-                # we only consider the first.
+                # There can be multiple extrefs; try to locate a purl.
+                # If there are multiple purls, use the first one.
                 if (ref.reference_type == "purl"):
                     foundpurl = True
                     kb_match = find_comp_in_kb(ref.locator)
@@ -668,8 +679,6 @@ def main():
         if kb_match:
             print(f"  WARNING: {matchname} {matchver} in KB but not in SBOM")
             add_to_sbom(proj_version_url, kb_match['version'])
-            # TODO TEMP DEBUG TO CATCH THIS
-            quit()
             # short-circuit the rest
             continue
 
