@@ -341,7 +341,7 @@ def upload_sbom_file(filename, project, version):
     if response.status_code == 409:
         logging.error(f"File {filename} is already mapped to a different project version")
 
-    if response.status_code != 201:
+    if not response.ok:
         logging.error(f"Failed to upload SPDX file")
         try:
             pprint(response.json()['errorMessage'])
@@ -482,7 +482,7 @@ def create_cust_comp(name, version, license):
     }
     response = bd.session.post("api/components", json=data)
     logging.debug(response)
-    if response.status_code != 201:
+    if not response.ok:
         # Shouldn't be possible. We checked for existence earlier.
         logging.error(response.json()['errors'][0]['errorMessage'])
         logging.error(f"Status code: {response.status_code}")
@@ -516,7 +516,7 @@ def create_cust_comp_ver(comp_url, version, license):
         logging.error(f"Version {version} already exists for component")
         sys.exit(1)
 
-    if response.status_code != 201:
+    if not response.ok:
         logging.error(f"Failed to add Version {version} to component")
         sys.exit(1)
 
@@ -532,7 +532,7 @@ def add_to_sbom(proj_version_url, comp_ver_url):
         'component': comp_ver_url
     }
     response = bd.session.post(proj_version_url + "/components", json=data)
-    if (response.status_code != 200):
+    if not response.ok:
         logging.error(response.json()['errors'][0]['errorMessage'])
         logging.error(f"Status code: {response.status_code}")
         sys.exit(1)
