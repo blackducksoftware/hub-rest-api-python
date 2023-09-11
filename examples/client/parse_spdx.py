@@ -626,15 +626,20 @@ def main():
         packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
 
         kb_match = None
+        bd_proj = False
         if package.external_references:
             foundpurl = False
             for ref in package.external_references:
-                # There can be multiple extrefs; try to locate a purl.
-                # If there are multiple purls, use the first one.
+                # There can be multiple extrefs; try to locate a pURL.
+                # If there are multiple pURLs, use the first one.
                 if (ref.reference_type == "purl"):
                     foundpurl = True
                     kb_match = find_comp_in_kb(ref.locator)
                     extref = ref.locator
+                    break
+                # Skip BD project/versions. These occur in BD-generated BOMs.
+                if (ref.reference_type == "BlackDuck-Version"):
+                    bd_proj = True
                     break
             if not foundpurl:
                 nopurl += 1
@@ -648,14 +653,17 @@ def main():
             else:
                 print(f"  No KB match for {package.name} {package.version}")
         else:
+            # No external references field was provided
             nopurl += 1
             print(f"  No pURL provided for {package.name} {package.version}")
+
+        if bd_proj:
+            print(f"  Skipping BD project/version in BOM: {package.name} {package.version}")
+            continue
 
         if find_comp_in_bom(matchname, matchver, version):
             bom_matches += 1
             print(f"  Found component in BOM: {matchname} {matchver}")
-            # It's in the BOM so we are happy
-            # Everything else below is related to adding to the BOM
             continue
 
         # If we've gotten this far, the package is not in the BOM.
