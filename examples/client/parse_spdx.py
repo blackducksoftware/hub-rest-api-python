@@ -359,9 +359,9 @@ def upload_sbom_file(filename, project, version):
 #  No match: None
 def find_comp_in_kb(extref):
     params = {
-            'packageUrl': extref
+            'purl': extref
     }
-    for result in bd.get_items("/api/search/purl-components", params=params):
+    for result in bd.get_items("/api/search/kb-purl-component", params=params):
         # Should be exactly 1 match when successful
         return(result)
 
