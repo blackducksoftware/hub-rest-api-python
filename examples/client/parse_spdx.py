@@ -550,38 +550,60 @@ def parse_command_args():
     parser.add_argument("--no-spdx-validate", dest='spdx_validate', action='store_false', help="Disable SPDX validation")
     return parser.parse_args()
 
-def main():
+# Stub to support invocation as a standalone script
+# Parses the command-line args, creates a BD object, and inokes import_sbom
+def spdx_main_parse_args():
     args = parse_command_args()
-    if (Path(args.spdx_file).is_file()):
-        document = spdx_parse(args.spdx_file)
-        if (args.spdx_validate):
-            spdx_validate(document)
-    else:
-        logging.error(f"Could not open SPDX file: {args.spdx_file}")
-        sys.exit(1)
-
     with open(args.token_file, 'r') as tf:
         access_token = tf.readline().strip()
+    bdobj = Client(base_url=args.base_url, token=access_token, verify=args.verify)
+    import_sbom(bdobj, args.project_name, args.version_name, args.spdx_file, \
+      args.out_file, args.license_name, args.spdx_validate)
+
+# Main entry point
+#
+# Inputs:
+#  bdobj - BD Client Object
+#  projname - Name of project
+#  vername - Name of version
+#  spdxfile - SPDX file location
+#  outfile (Optional) - Name of file to write missing component data to in JSON.
+#                       Default: No file written
+#  license_name - Name of license to use for custom components
+#                 Default: NOASSERTION
+#  do_spdx_validate - Validate the SPDX file? (Boolean)
+#                     Default: True
+def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
+  license_name="NOASSERTION", do_spdx_validate=True):
 
     global bd
-    bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
+    bd = bdobj
+
+    if (Path(spdxfile).is_file()):
+        document = spdx_parse(spdxfile)
+        if (do_spdx_validate):
+            spdx_validate(document)
+    else:
+        logging.error(f"Could not open SPDX file: {spdxfile}")
+        sys.exit(1)
 
     # Validate project/version details
-    project, version = get_proj_ver(args.project_name, args.version_name)
+    project, version = get_proj_ver(projname, vername)
     proj_version_url = version['_meta']['href']
 
     # Upload the provided SBOM
-    upload_sbom_file(args.spdx_file, args.project_name, args.version_name)
+    upload_sbom_file(spdxfile, projname, vername)
 
     # Wait for scan completion. Will exit if it fails.
     poll_for_sbom_complete(document.creation_info.name, proj_version_url)
 
     # Open unmatched component file to save name, spdxid, version, and
     # origin/purl for later in json format
-    try: outfile = open(args.out_file, 'w')
-    except:
-        logging.exception("Failed to open file for writing: " + args.out_file)
-        sys.exit(1)
+    if outfile:
+        try: outfile = open(outfile, 'w')
+        except:
+            logging.exception("Failed to open file for writing: " + outfile)
+            sys.exit(1)
 
     # Stats to track
     bom_matches = 0
@@ -697,13 +719,13 @@ def main():
             # Custom component did not exist, so create it
             cust_comp_count += 1
             comp_ver_url = create_cust_comp(package.name, package.version,
-              args.license_name)
+              license_name)
         elif comp_url and not comp_ver_url:
             # Custom component existed, but not the version we care about
             cust_ver_count += 1
             print(f"  Adding version {package.version} to custom component {package.name}")
             comp_ver_url = create_cust_comp_ver(comp_url, package.version, \
-              args.license_name)
+              license_name)
         else:
             print("  Custom component already exists, not in SBOM")
 
@@ -714,8 +736,9 @@ def main():
         add_to_sbom(proj_version_url, comp_ver_url)
 
     # Save unmatched components
-    json.dump(comps_out, outfile)
-    outfile.close()
+    if outfile:
+        json.dump(comps_out, outfile)
+        outfile.close()
 
     print("\nStats: ")
     print("------")
@@ -731,4 +754,4 @@ def main():
     print(f" {len(packages)} unique packages processed")
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(spdx_main_parse_args())
