@@ -238,6 +238,7 @@ def poll_for_sbom_complete(sbom_name, proj_version_url):
     retries = MAX_RETRIES
     sleep_time = SLEEP
     matched_scan = False
+    latest_url = None
     cl_url = None
 
     # Replace any spaces in the name with a dash to match BD
@@ -248,32 +249,56 @@ def poll_for_sbom_complete(sbom_name, proj_version_url):
         'q': [f"name:{sbom_name}"],
         'sort': ["updatedAt: ASC"]
     }
-    cls = bd.get_resource('codeLocations', params=params)
-    for cl in cls:
+
+    while (retries):
+        cls = bd.get_resource('codeLocations', params=params)
+        retries -= 1
         if matched_scan:
+            # Exit the while()
             break
-        # Force exact match of: spdx_doc_name + " spdx/sbom"
-        # BD appends the "spdx/sbom" string to the name.
-        if cl['name'] != sbom_name + " spdx/sbom":
-            continue
-
-        matched_scan = True
-        cl_url = cl['_meta']['href']
-
-        for link in (cl['_meta']['links']):
-            # Locate the scans URL to check for status
-            if link['rel'] == "latest-scan":
-                latest_url = link['href']
+        # Save the CL data as we go for debugging
+        backupcls = []
+        for cl in cls:
+            backupcls.append(cl)
+            if matched_scan:
+                # Exit the inner for()
                 break
+            print(f"Searching scans for {sbom_name}...")
+            # Force exact match of: spdx_doc_name + " spdx/sbom"
+            # BD appends the "spdx/sbom" string to the name.
+            if cl['name'] != sbom_name + " spdx/sbom":
+                # No match, keep searching
+                print(f"  {cl['name']} != {sbom_name}" + " spdx/sbom")
+                continue
+
+            print("  Scan located")
+            matched_scan = True
+            cl_url = cl['_meta']['href']
+
+            print("Checking for latest-scan info...")
+            for link in (cl['_meta']['links']):
+                # Locate the scans URL to check for status
+                if link['rel'] == "latest-scan":
+                    print("  Located latest-scan")
+                    latest_url = link['href']
+                    break
+
+        # We walked the list of code locations and didn't find a match
+        if not matched_scan:
+            print(f"  Waiting to locate scan...")
+            time.sleep(sleep_time)
 
     if not matched_scan:
         logging.error(f"No scan found for SBOM: {sbom_name}")
+        print("\nCodelocations API data:\n")
+        pprint(backupcls)
         sys.exit(1)
 
     assert latest_url, "Failed to locate latest-scan reference"
     assert cl_url, "Failed to locate codelocation reference"
 
     # Wait for scanState = SUCCESS
+    retries = MAX_RETRIES
     while (retries):
         json_data = bd.get_json(latest_url)
         retries -= 1
@@ -288,6 +313,7 @@ def poll_for_sbom_complete(sbom_name, proj_version_url):
             print(f"Waiting for scan completion, currently: {json_data['scanState']}")
             time.sleep(sleep_time)
 
+    assert json_data, "Failed to locate scanState data"
     # If there were ZERO matches, there will never be a notification of
     # BOM import success. Short-circuit the check and treat this as success.
     if json_data['matchCount'] == 0:
