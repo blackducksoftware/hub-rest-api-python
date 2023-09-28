@@ -89,6 +89,7 @@ ENV_DETECT_VERSION = "DETECT_LATEST_RELEASE_VERSION"
 BLACKDUCK_REPORT_MEDIATYPE = "application/vnd.blackducksoftware.report-4+json"
 blackduck_report_download_api = "/api/projects/{projectId}/versions/{projectVersionId}/reports/{reportId}/download"
 blackduck_link_component_ui_api = "/api/projects/{projectId}/versions/{projectVersionId}/components"
+blackduck_link_snippet_ui_api = "/api/projects/{projectId}/versions/{projectVersionId}/source-trees"
 # BD version details report
 blackduck_create_version_report_api = "/api/versions/{projectVersionId}/reports"
 blackduck_version_report_filename = "./blackduck_version_report_for_{projectVersionId}.zip"
@@ -105,6 +106,7 @@ REPORT_OS_FILE = "/os_file_report"
 REPORT_COMPONENT_BOM = "/component_bom_report"
 REPORT_FILE_BOM = "/file_bom_report"
 REPORT_DISCOVERY = "/discovery"
+BLACKDUCK_SNIPPET_FILTER = "?filter=bomMatchType%3Asnippet&offset=0&limit=100"
 # Retries to wait for BD report creation. RETRY_LIMIT can be overwritten by the script parameter. 
 RETRY_LIMIT = 30
 RETRY_TIMER = 30
@@ -115,7 +117,8 @@ report_content = {
         'detectParameters': [],
         'scanDateTime': '',
         'blackDuckVersion': '',
-        'linkToBlackDuckProjectVersionInUI': ''
+        'linkToBlackDuckProjectVersionInUI': '',
+        'linkToBlackDuckSnippetMatchInUI': ''
     },
     'fileInventory': {
         'linkToUnmatchedOsFileData': "",
@@ -632,6 +635,9 @@ def generate_file_report(hub_client, project_id, version_id, codelocations, copy
     blackduck_link_component_ui_api.replace("{projectId}", project_id).replace("{projectVersionId}", version_id)
     report_content['configurationSettings']['linkToBlackDuckProjectVersionInUI'] = \
         hub_client.base_url + blackduck_link_component_ui_api.replace("{projectId}", project_id).replace("{projectVersionId}", version_id)
+    report_content['configurationSettings']['linkToBlackDuckSnippetMatchInUI'] = \
+        hub_client.base_url + blackduck_link_snippet_ui_api.replace("{projectId}", project_id).replace("{projectVersionId}", version_id) \
+        + BLACKDUCK_SNIPPET_FILTER
 
     # Report body - Component BOM, file BOM with Discoveries data
     version_report_zip = get_version_detail_report(hub_client, project_id, version_id, retries)
