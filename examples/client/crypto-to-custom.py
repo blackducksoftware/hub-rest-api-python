@@ -27,8 +27,8 @@ based on BOM components crypto information.
 The goal is to enable policy functionality that would be triggered by 
 cryptographic features of a component.
 
-The scriot will analyze ciphers included in a component and will set 
-a BOM Component custom field value to reflec that.
+The script will analyze ciphers included in a component and will set 
+a BOM Component custom field value to reflect that a known weakness is present.
 
 Requirements
 
@@ -52,7 +52,7 @@ Install python packages with the following command:
 Using
 
 Script expects a boolean custom field labeled "BadCrypto" on a BOM Component.
-A policy that is triggered by BadCrypto custom field value used to visualise 
+A policy that is triggered by BadCrypto custom field value used to visualize 
 results.
 
 usage: crypto-to-custom.py [-h] -u BASE_URL -t TOKEN_FILE -pn PROJECT_NAME -vn VERSION_NAME [-nv] [--reset]
