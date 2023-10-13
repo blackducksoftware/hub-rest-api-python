@@ -68,7 +68,7 @@ options:
   -vn VERSION_NAME, --version-name VERSION_NAME
                         Version Name
   -nv, --no-verify      Disable TLS certificate verification
-  --reset               Undo the changes made by thjis script 
+  --reset               Undo the changes made by this script 
 
 
 '''
@@ -113,7 +113,7 @@ def parse_command_args():
     parser.add_argument("-pn", "--project-name",   required=True, help="Project Name")
     parser.add_argument("-vn", "--version-name",   required=True, help="Version Name")
     parser.add_argument("-nv", "--no-verify",   action='store_false', help="Disable TLS certificate verification")
-    parser.add_argument("--reset",   action='store_true', help="Undo the changes made by thjis script")
+    parser.add_argument("--reset",   action='store_true', help="Undo the changes made by this script")
     return parser.parse_args()
 
 def set_custom_field(field, url, value):
