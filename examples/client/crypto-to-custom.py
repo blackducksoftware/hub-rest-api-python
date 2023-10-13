@@ -1,3 +1,78 @@
+'''
+Created on October 12, 2023
+@author: kumykov
+
+Copyright (C) 2023 Synopsys, Inc.
+http://www.synopsys.com/
+
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied. See the License for the
+specific language governing permissions and limitations
+under the License.
+
+This script is provided as an example of populating custom field data 
+based on BOM components crypto information. 
+The goal is to enable policy functionality that would be triggered by 
+cryptographic features of a component.
+
+The scriot will analyze ciphers included in a component and will set 
+a BOM Component custom field value to reflec that.
+
+Requirements
+
+- python3 version 3.8 or newer recommended
+- the following packages are used by the script and should be installed 
+  prior to use:	
+    argparse
+    blackduck
+    logging
+    sys
+    json
+    pprint
+- Blackduck instance
+- API token with sufficient privileges to perform project version phase 
+  change.
+
+Install python packages with the following command:
+
+ pip3 install argparse blackduck logging sys json pprint
+
+Using
+
+Script expects a boolean custom field labeled "BadCrypto" on a BOM Component.
+A policy that is triggered by BadCrypto custom field value used to visualise 
+results.
+
+usage: crypto-to-custom.py [-h] -u BASE_URL -t TOKEN_FILE -pn PROJECT_NAME -vn VERSION_NAME [-nv] [--reset]
+
+options:
+  -h, --help            show this help message and exit
+  -u BASE_URL, --base-url BASE_URL
+                        Hub server URL e.g. https://your.blackduck.url
+  -t TOKEN_FILE, --token-file TOKEN_FILE
+                        File containing access token
+  -pn PROJECT_NAME, --project-name PROJECT_NAME
+                        Project Name
+  -vn VERSION_NAME, --version-name VERSION_NAME
+                        Version Name
+  -nv, --no-verify      Disable TLS certificate verification
+  --reset               Undo the changes made by thjis script 
+
+
+'''
+
 import argparse
 from blackduck import Client
 from pprint import pprint
@@ -32,13 +107,13 @@ def find_project_version_by_name(project, version_name):
 
 def parse_command_args():
 
-    parser = argparse.ArgumentParser("product-from-bom.py")
+    parser = argparse.ArgumentParser("crypto-to-custom.py")
     parser.add_argument("-u", "--base-url",     required=True, help="Hub server URL e.g. https://your.blackduck.url")
     parser.add_argument("-t", "--token-file",   required=True, help="File containing access token")
     parser.add_argument("-pn", "--project-name",   required=True, help="Project Name")
     parser.add_argument("-vn", "--version-name",   required=True, help="Version Name")
     parser.add_argument("-nv", "--no-verify",   action='store_false', help="Disable TLS certificate verification")
-    parser.add_argument("--reset",   action='store_true')
+    parser.add_argument("--reset",   action='store_true', help="Undo the changes made by thjis script")
     return parser.parse_args()
 
 def set_custom_field(field, url, value):
