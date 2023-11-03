@@ -37,7 +37,7 @@ Version History
 1.2 2023-11-03 - Handle BD component with no version
                - Fix bug related to extrefs with both purl and BD component data
                - Check if project every had a "non-SBOM" scan and exit if so
-               - Fix some invalid sort parmaeter formatting
+               - Fix some invalid sort parameter formatting
                - Limit notification checking to last 24 hours
 
 Requirements
