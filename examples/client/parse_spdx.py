@@ -34,6 +34,11 @@ All missing components are saved to a file in JSON format for future reference.
 Version History
 1.0 2023-09-26 Initial Release
 1.1 2023-10-13 Updates to improve component matching of BD Component IDs
+1.2 2023-11-03 - Handle BD component with no version
+               - Fix bug related to extrefs with both purl and BD component data
+               - Check if project every had a "non-SBOM" scan and exit if so
+               - Fix some invalid sort parmaeter formatting
+               - Limit notification checking to last 24 hours
 
 Requirements
 
@@ -50,13 +55,14 @@ Requirements
     spdx_tools
     re
     pathlib
+    datetime
 
 - Blackduck instance
 - API token with sufficient privileges
 
 Install python packages with the following command:
 
- pip3 install argparse blackduck sys logging time json pprint pathlib spdx_tools
+ pip3 install datetime argparse blackduck sys logging time json pprint pathlib spdx_tools
 
 usage: parse_spdx.py [-h] --base-url BASE_URL --token-file TOKEN_FILE
                      --spdx-file SPDX_FILE --out-file OUT_FILE --project
@@ -92,6 +98,7 @@ import sys
 import logging
 import time
 import json
+from datetime import datetime,timedelta,timezone
 import re
 from pprint import pprint
 from pathlib import Path
@@ -103,7 +110,7 @@ from spdx_tools.spdx.parser.parse_anything import parse_file
 # Used when we are polling for successful upload and processing
 global MAX_RETRIES
 global SLEEP
-MAX_RETRIES = 30
+MAX_RETRIES = 60
 SLEEP = 10
 
 logging.basicConfig(
@@ -198,9 +205,15 @@ def poll_notifications_for_success(cl_url, proj_version_url, summaries_url):
     retries = MAX_RETRIES
     sleep_time = SLEEP
 
+    # Limit the query to the last 24 hours (very conservative but also
+    # keeps us from having to walk thousands of notifications every time)
+    today=datetime.now().astimezone(timezone.utc)
+    yesterday=today - timedelta(days=1)
+    start=yesterday.strftime("%Y-%m-%dT%H:%M:%S.000Z")
     params = {
         'filter': ["notificationType:VERSION_BOM_CODE_LOCATION_BOM_COMPUTED"],
-        'sort'  : ["createdAt: ASC"]
+        'sort'  : ["createdAt DESC"],
+        'startDate' : [start]
     }
 
     while (retries):
@@ -211,17 +224,32 @@ def poll_notifications_for_success(cl_url, proj_version_url, summaries_url):
                continue
             # We're checking the entire list of notifications, but ours should
             # be near the top.
-            if result['content']['projectVersion'] == proj_version_url and \
-               result['content']['codeLocation'] == cl_url and \
-               result['content']['scanSummary'] == summaries_url:
-               print("BOM calculation complete")
-               return
+            if (result['content']['projectVersion'] == proj_version_url and
+              result['content']['codeLocation'] == cl_url and
+              result['content']['scanSummary'] == summaries_url):
+                print("BOM calculation complete")
+                return
 
         print("Waiting for BOM calculation to complete")
+        # For debugging
+        #print(f"Searching Notifications for:\n Proj_version: {proj_version_url}\n" +
+        #  f" CodeLocation: {cl_url}\n Summaries: {summaries_url}")
         time.sleep(sleep_time)
 
     logging.error(f"Failed to verify successful BOM computed in {MAX_RETRIES * sleep_time} seconds")
     sys.exit(1)
+
+# Check if this project-version ever had a non-SBOM scan
+# If so, we do not want to step on any toes and exit the script before
+# attempting any SBOM import.
+# Note: Uses an internal API for simplicity
+def check_for_existing_scan(projver):
+    headers = {'Accept': 'application/vnd.blackducksoftware.internal-1+json'}
+    for source in bd.get_items(f"{projver}/source-trees", headers=headers):
+        if not re.fullmatch(r".+spdx/sbom$", source['name']):
+            logging.error(f"Project has a non-SBOM scan. Details:")
+            pprint(source)
+            sys.exit(1)
 
 # Poll for successful scan of SBOM.
 # Inputs:
@@ -244,7 +272,7 @@ def poll_for_sbom_complete(sbom_name, proj_version_url):
     # Search for the latest scan matching our SBOM name
     params = {
         'q': [f"name:{sbom_name}"],
-        'sort': ["updatedAt: ASC"]
+        'sort': ["updatedAt DESC"]
     }
 
     while (retries):
@@ -411,6 +439,14 @@ def find_comp_id_in_kb(comp, ver):
         # No component match
         return None
     kb_match['componentName'] = json_data['name']
+    if ver is None:
+        # Special case where a component was provided but no version.
+        # Stick the component URL in the version field which we will later use
+        # to update the BOM. The name of this field is now overloaded but
+        # reusing it to stay generic.
+        kb_match['version'] = json_data['_meta']['href']
+        kb_match['versionName'] = "UNKNOWN"
+        return kb_match
 
     try:
         json_data = bd.get_json(f"/api/components/{comp}/versions/{ver}")
@@ -656,6 +692,7 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
     # Validate project/version details
     project, version = get_proj_ver(projname, vername)
     proj_version_url = version['_meta']['href']
+    check_for_existing_scan(proj_version_url)
 
     # Upload the provided SBOM
     upload_sbom_file(spdxfile, projname, vername)
@@ -727,12 +764,15 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
 
             if "purl" in extrefs:
                 # purl is the preferred lookup
-                kb_match = find_comp_in_kb(ref.locator)
-                extref = ref.locator
+                kb_match = find_comp_in_kb(extrefs['purl'])
+                extref = extrefs['purl']
             elif "BlackDuck-Component" in extrefs:
                 compid = normalize_id(extrefs['BlackDuck-Component'])
-                verid = normalize_id(extrefs['BlackDuck-ComponentVersion'])
-
+                try:
+                    verid = normalize_id(extrefs['BlackDuck-ComponentVersion'])
+                except:
+                    print("  BD Component specified with no version")
+                    verid = None
                 # Lookup by KB ID
                 kb_match = find_comp_id_in_kb(compid, verid)
                 extref = extrefs['BlackDuck-Component']
@@ -783,7 +823,7 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
         if kb_match:
             kb_match_added_to_bom += 1
             print(f"  WARNING: {matchname} {matchver} found in KB but not in SBOM - adding it")
-            # kb_match['version'] contains the url of the component-version to add
+            # kb_match['version'] contains the component url to add
             add_to_sbom(proj_version_url, kb_match['version'])
             # short-circuit the rest
             continue
