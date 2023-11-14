@@ -39,9 +39,19 @@ Version History
                - Check if project every had a "non-SBOM" scan and exit if so
                - Fix some invalid sort parameter formatting
                - Limit notification checking to last 24 hours
+1.3 2023-11-14 - Force encoding utf8 when opening file
+               - Use the component URL from API call in the version query - resolves
+                 some situations where the KB version lookup fails
+               - Update find_comp_in_bom to return the matching URL instead of
+                 True/False
+               - Track unique BOM matches by tracking the matched component URL
+                 returned by find_comp_in_com
+               - Track the count of skipped items from the SPDX
+               - Make the unique package tracking more accurate - do not include skipped items
+               - Create fall-through matching. First check BD component, then the purl info
+                 (rather than only checking the purl)
 
 Requirements
-
 - python3 version 3.8 or newer recommended
 - The following packages are used by the script and should be installed 
   prior to use:	
@@ -184,7 +194,7 @@ def spdx_validate(document):
 # Returns MIME type to provide to scan API
 # Input: filename to check
 def get_sbom_mime_type(filename):
-    with open(filename, 'r') as f:
+    with open(filename, 'r', encoding="utf8") as f:
         data = f.readlines()
         content = " ".join(data)
     if 'CycloneDX' in content:
@@ -448,8 +458,10 @@ def find_comp_id_in_kb(comp, ver):
         kb_match['versionName'] = "UNKNOWN"
         return kb_match
 
+    # Update the component url to match the one returned by API
+    comp_url = json_data['_meta']['href']
     try:
-        json_data = bd.get_json(f"/api/components/{comp}/versions/{ver}")
+        json_data = bd.get_json(f"{comp_url}/versions/{ver}")
     except:
         # No component version match
         return None
@@ -466,7 +478,7 @@ def find_comp_id_in_kb(comp, ver):
 #   compver  - Component version to locate
 #   projver  - Project version to locate component in BOM
 #
-# Returns: True on success, False on failure
+# Returns: Component match URL on success, None on failure
 def find_comp_in_bom(compname, compver, projver):
     have_match = False
     num_match = 0
@@ -485,16 +497,16 @@ def find_comp_in_bom(compname, compver, projver):
             continue
         if compver == "UNKNOWN":
             # We did not have a version specified in the first place
-            return True
+            return comp['component']
         # Check component name + version name
         try:
             if comp['componentVersionName'].lower() == compver.lower():
-                return True
+                return comp['componentVersion']
         except:
             # Handle situation where it's missing the version name for some reason
             print(f"comp {compname} in BOM has no version!")
-            return False
-    return False
+            return None
+    return None
 
 # Verifies if a custom component and version already exist in the system.
 #
@@ -718,8 +730,11 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
     package_count = 0
     cust_comp_count = 0
     cust_ver_count = 0
-    # Used for tracking repeated package data
+    skip_count = 0
+    # Used for tracking repeated package data, not including skips
     packages = {}
+    # Used for tracking unique BOM matches
+    bom_packages = {}
     # Saved component data to write to file
     comps_out = []
 
@@ -733,6 +748,7 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
         if package.name == "":
             # Strange case where the package name is empty. Skip it.
             logging.warning("WARNING: Skipping empty package name. Package info:")
+            skip_count += 1
             pprint(package)
             continue
 
@@ -749,10 +765,6 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
         matchver = package.version
         print(f"Processing SPDX package: {matchname} version: {matchver}...")
 
-        # Tracking unique package name + version combos from spdx file
-        # This is only used for debugging and stats purposes
-        packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
-
         kb_match = None
         if package.external_references:
             # Build dictionary of extrefs for easy access
@@ -762,11 +774,8 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
                 reftype = ref.reference_type.lstrip("LocationRef-")
                 extrefs[reftype] = ref.locator
 
-            if "purl" in extrefs:
-                # purl is the preferred lookup
-                kb_match = find_comp_in_kb(extrefs['purl'])
-                extref = extrefs['purl']
-            elif "BlackDuck-Component" in extrefs:
+            if "BlackDuck-Component" in extrefs:
+                # Prefer BD component lookup if available
                 compid = normalize_id(extrefs['BlackDuck-Component'])
                 try:
                     verid = normalize_id(extrefs['BlackDuck-ComponentVersion'])
@@ -776,8 +785,18 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
                 # Lookup by KB ID
                 kb_match = find_comp_id_in_kb(compid, verid)
                 extref = extrefs['BlackDuck-Component']
+                if not kb_match:
+                    # BD comp lookup failed, so try purl instead
+                    if "purl" in extrefs:
+                        kb_match = find_comp_in_kb(extrefs['purl'])
+                        extref = extrefs['purl']
+            elif "purl" in extrefs:
+                # If no BD component details are available
+                kb_match = find_comp_in_kb(extrefs['purl'])
+                extref = extrefs['purl']
             elif "BlackDuck-Version" in extrefs:
                 # Skip BD project/versions. These occur in BD-generated BOMs.
+                skip_count += 1
                 print(f"  Skipping BD project/version in BOM: {package.name} {package.version}")
                 continue
             else:
@@ -797,7 +816,10 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
             nopurl += 1
             print(f"  No pURL provided for {package.name} {package.version}")
 
-        if find_comp_in_bom(matchname, matchver, version):
+        bom_comp = find_comp_in_bom(matchname, matchver, version)
+        if bom_comp:
+            bom_packages[bom_comp] = bom_packages.get(bom_comp, 0) + 1
+            packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
             bom_matches += 1
             print(f"  Found component in BOM: {matchname} {matchver}")
             continue
@@ -809,6 +831,7 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
         #  - Do we need to add a version to an existing custom component?
         not_in_bom += 1
         print(f"  Not present in BOM: {matchname} {matchver}")
+        packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
 
         # Missing component data to write to a file for reference
         comp_data = {
@@ -862,16 +885,18 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
     print(f" SPDX packages processed: {package_count}")
     # package_count above could have repeated packages in it
     print(f" Unique packages processed: {len(packages)}")
+    print(f" Skipped: {skip_count}")
     print(f" Packages missing purl or KBID: {nopurl}")
     print(f" BOM matches: {bom_matches}")
+    print(f" Unique BOM matches: {len(bom_packages)}")
     print(f" KB matches: {kb_matches}")
     print(f" Custom components created: {cust_comp_count}")
     print(f" Custom component versions created: {cust_ver_count}")
     print(f" Packages missing from BOM: {not_in_bom}")
     print(f"   Custom components added to BOM: {cust_added_to_bom}")
     print(f"   KB matches added to BOM: {kb_match_added_to_bom}")
-    #for debugging
     #pprint(packages)
+    #pprint(bom_packages)
 
 if __name__ == "__main__":
     sys.exit(spdx_main_parse_args())
