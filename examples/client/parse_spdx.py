@@ -45,11 +45,13 @@ Version History
                - Update find_comp_in_bom to return the matching URL instead of
                  True/False
                - Track unique BOM matches by tracking the matched component URL
-                 returned by find_comp_in_com
+                 returned by find_comp_in_bom
                - Track the count of skipped items from the SPDX
                - Make the unique package tracking more accurate - do not include skipped items
                - Create fall-through matching. First check BD component, then the purl info
                  (rather than only checking the purl)
+1.4 2023-11-21 - Check the component-import-events API for improved BOM
+                 component searching accuracy
 
 Requirements
 - python3 version 3.8 or newer recommended
@@ -268,7 +270,8 @@ def check_for_existing_scan(projver):
 #     inside the json body)
 #    proj_version_url: Project version url
 #
-# Returns on success. Errors will result in fatal exit.
+# Returns summaries_url on success (used for processing the import events later)
+# Errors will result in fatal exit.
 def poll_for_sbom_complete(sbom_name, proj_version_url):
     retries = MAX_RETRIES
     sleep_time = SLEEP
@@ -382,7 +385,7 @@ def poll_for_sbom_complete(sbom_name, proj_version_url):
     poll_notifications_for_success(cl_url, proj_version_url, summaries_url)
 
     # Any errors above already resulted in fatal exit
-    return
+    return summaries_url
 
 # Upload provided SBOM file to Black Duck
 # Inputs:
@@ -472,13 +475,21 @@ def find_comp_id_in_kb(comp, ver):
 
     return kb_match
 
+# Locate component name + version in component-import-events
+# Returns matched name+version on success, None on failure
+def find_comp_import_events(match_dict, compname, compver):
+    key = compname+compver
+    if key in match_dict:
+        return match_dict[key]
+    return None
+
 # Locate component name + version in BOM
 # Inputs:
 #   compname - Component name to locate
 #   compver  - Component version to locate
 #   projver  - Project version to locate component in BOM
 #
-# Returns: Component match URL on success, None on failure
+# Returns: Component name+version string on success, None on failure
 def find_comp_in_bom(compname, compver, projver):
     have_match = False
     num_match = 0
@@ -496,14 +507,14 @@ def find_comp_in_bom(compname, compver, projver):
             # The BD API search is inexact. Force our match to be precise.
             continue
         if compver == "UNKNOWN":
-            # We did not have a version specified in the first place
-            return comp['component']
+            # No version specified in SPDX, so treat it as a match
+            return comp['componentName']+"NOVERSION"
         # Check component name + version name
         try:
             if comp['componentVersionName'].lower() == compver.lower():
-                return comp['componentVersion']
+                return comp['componentName']+comp['componentVersionName']
         except:
-            # Handle situation where it's missing the version name for some reason
+            # Handle situation where it's missing the version name
             print(f"comp {compname} in BOM has no version!")
             return None
     return None
@@ -641,6 +652,34 @@ def add_to_sbom(proj_version_url, comp_ver_url):
         logging.error(f"Status code: {response.status_code}")
         sys.exit(1)
 
+# Get matched component data from component import events
+# Input: Summaries URL
+# Output: Dictionary containing components added to BOM
+#         Key=<import component name> + <import component version>
+#         Value=<matched name> + <matched version>
+def get_matched_comps(summaries_url):
+    match_dict = {} # dictionary to be returned
+
+    summary_data = bd.get_json(summaries_url)
+    links = summary_data['_meta']['links']
+    for link in links:
+        # Locate the component-import-events link
+        if link['rel'] == "component-import-events":
+            cie_link = link['href']
+            break
+
+    # Only consider successful matches
+    params = {
+        'filter': ["eventName:component_mapping_succeeded"]
+    }
+    for comp in bd.get_items(cie_link, params=params):
+        key = comp['importComponentName']+comp['importComponentVersionName']
+        val = comp['componentName']+comp['componentVersionName']
+        match_dict[key] = val
+
+    return(match_dict)
+
+
 def parse_command_args():
     parser = argparse.ArgumentParser(description="Parse SPDX file and verify if component names are in current SBOM for given project-version")
     parser.add_argument("--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
@@ -710,7 +749,9 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
     upload_sbom_file(spdxfile, projname, vername)
 
     # Wait for scan completion. Will exit if it fails.
-    poll_for_sbom_complete(document.creation_info.name, proj_version_url)
+    summaries_url = poll_for_sbom_complete(document.creation_info.name, proj_version_url)
+    # Collect the matched component data for later processing
+    match_dict = get_matched_comps(summaries_url)
 
     # Open unmatched component file to save name, spdxid, version, and
     # origin/purl for later in json format
@@ -812,17 +853,30 @@ def import_sbom(bdobj, projname, vername, spdxfile, outfile=None, \
             else:
                 print(f"  No KB match for {package.name} {package.version}")
         else:
-            # No external references field was provide
+            # No external references field was provided
             nopurl += 1
             print(f"  No pURL provided for {package.name} {package.version}")
 
-        bom_comp = find_comp_in_bom(matchname, matchver, version)
+        # find_comp_import_events checks the imported name-version
+        bom_comp = find_comp_import_events(match_dict, package.name, package.version)
         if bom_comp:
+            # bom_comp is the matched comp/ver string
             bom_packages[bom_comp] = bom_packages.get(bom_comp, 0) + 1
             packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
             bom_matches += 1
-            print(f"  Found component in BOM: {matchname} {matchver}")
+            print(f"  Found component in bom import-events: {matchname} {matchver}")
             continue
+        else:
+            # Next look for the matchname-matchver in the BOM
+            # component search. The component name-version may have been
+            # updated above to reflect the pURL or KB matched name.
+            bom_comp = find_comp_in_bom(matchname, matchver, version)
+            if bom_comp:
+                bom_packages[bom_comp] = bom_packages.get(bom_comp, 0) + 1
+                packages[matchname+matchver] = packages.get(matchname+matchver, 0) + 1
+                bom_matches += 1
+                print(f"  Found component in BOM: {matchname} {matchver}")
+                continue
 
         # If we've gotten this far, the package is not in the BOM.
         # Now we need to figure out:
