@@ -75,7 +75,7 @@ def download_report(bd_client, location, filename, retries=args.retries):
 				logging.error("Ruh-roh, not sure what happened here")
 		else:
 			logging.debug(f"Failed to retrieve report {report_id}, report status: {report_status}")
-			logging.debug(f"Probably not ready yet, waiting {sleep_seconds} seconds then retrying...")
+			logging.debug(f"Probably not ready yet, waiting {args.sleep_seconds} seconds then retrying...")
 			time.sleep(args.sleep_seconds)
 			retries -= 1
 			download_report(bd_client, location, filename, retries)
