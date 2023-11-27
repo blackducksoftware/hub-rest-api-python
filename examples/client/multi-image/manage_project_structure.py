@@ -205,7 +205,7 @@ def create_and_add_child_projects(version, args):
         repo = next(i, child)
         tag = next(i,'latest')
         container_spec = f"{repo}:{tag}"
-        scan_param = {'image': container_spec, 'project': child, 'version': args.version_name}
+        scan_param = {'image': container_spec, 'project': child, 'version': args.version_name, 'project_group': args.project_group}
         if args.clone_from:
             scan_param['clone_from'] = args.clone_from
         project = find_project_by_name(child)
@@ -267,7 +267,7 @@ def create_project_structure(args):
     logging.info(f"Checking/Adding subprojects to {args.project_name} : {version['versionName']}")
     create_and_add_child_projects(version, args)
 
-def scan_container_images(scan_params):
+def scan_container_images(scan_params, hub):
     from scan_docker_image_lite import scan_container_image
     for params in scan_params:
         detect_options =    (f"--detect.parent.project.name={params['project']} "
@@ -276,6 +276,9 @@ def scan_container_images(scan_params):
         clone_from = params.get('clone_from', None)
         if clone_from:
             detect_options += f" --detect.clone.project.version.name={clone_from}"
+        project_group = params.get('project_group', None)
+        if project_group:
+            detect_options += f" --detect.project.group.name={project_group}"
         scan_container_image(
             params['image'], 
             None, 
@@ -283,7 +286,8 @@ def scan_container_images(scan_params):
             None, 
             params['project'], 
             params['version'],
-            detect_options
+            detect_options,
+            hub=hub
         )
 
 
@@ -320,7 +324,9 @@ def main():
             logging.info(f"{pformat(scan_params)}")
         else:
             logging.info("Now execution scans")
-            scan_container_images(scan_params)
+            from blackduck.HubRestApi import HubInstance
+            hub = HubInstance(args.base_url, api_token=access_token, insecure=True, debug=False)
+            scan_container_images(scan_params, hub)
 
 
 if __name__ == "__main__":

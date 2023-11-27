@@ -192,7 +192,8 @@ class Detector():
     def __init__(self, hub):
         # self.detecturl = 'https://blackducksoftware.github.io/hub-detect/hub-detect.sh'
         # self.detecturl = 'https://detect.synopsys.com/detect.sh'
-        self.detecturl = 'https://detect.synopsys.com/detect7.sh'
+        # self.detecturl = 'https://detect.synopsys.com/detect7.sh'
+        self.detecturl = 'https://detect.synopsys.com/detect8.sh'
         self.baseurl = hub.config['baseurl']
         self.filename = '/tmp/hub-detect.sh'
         self.token=hub.config['api_token']
@@ -402,9 +403,12 @@ class ContainerImageScanner():
 
 def scan_container_image(
     imagespec, grouping=None, base_image=None, dockerfile=None, 
-    project_name=None, project_version=None, detect_options=None):
+    project_name=None, project_version=None, detect_options=None, hub=None):
     
-    hub = HubInstance()
+    if hub:
+        hub = hub
+    else:
+        hub = HubInstance()
     scanner = ContainerImageScanner(
         hub, imagespec, grouping=grouping, base_image=base_image, 
         dockerfile=dockerfile, detect_options=detect_options)
