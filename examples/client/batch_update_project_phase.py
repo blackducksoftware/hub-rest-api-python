@@ -100,11 +100,11 @@ def process_csv_file(filename):
     project_phase_idx = None
     for row in csvreader:
         row_number = csvreader.line_num
-        if not (project_name_idx and project_version_idx and project_phase_idx):
+        if (project_name_idx == None and project_version_idx == None and project_phase_idx == None):
             project_name_idx = row.index(project_name_column)
             project_version_idx = row.index(project_version_column)
             project_phase_idx = row.index(project_phase_column)
-        elif project_name_idx and project_version_idx and project_phase_idx:
+        elif project_name_idx != None and project_version_idx != None and project_phase_idx != None:
             project_name = row[project_name_idx].strip() if project_name_idx < len(row) else ''
             version_name = row[project_version_idx].strip() if project_version_idx < len(row) else ''
             phase = row[project_phase_idx] if project_phase_idx < len(row) else ''
@@ -130,11 +130,11 @@ def process_excel_file(filename):
     row_number = 0
     for row in ws.values:
         row_number += 1
-        if not (project_name_idx and project_version_idx and project_phase_idx):
+        if (project_name_idx == None and project_version_idx == None and project_phase_idx == None):
             project_name_idx = row.index(project_name_column)
             project_version_idx = row.index(project_version_column)
             project_phase_idx = row.index(project_phase_column)
-        elif project_name_idx and project_version_idx and project_phase_idx:
+        elif project_name_idx != None and project_version_idx != None and project_phase_idx != None:
             project_name = row[project_name_idx] if project_name_idx < len(row) else ''
             version_name = row[project_version_idx] if project_version_idx < len(row) else ''
             phase = row[project_phase_idx] if project_phase_idx < len(row) else ''
