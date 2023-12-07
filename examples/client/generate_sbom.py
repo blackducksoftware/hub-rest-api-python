@@ -110,7 +110,7 @@ post_data = {
 }
 sbom_reports_url = version['_meta']['href'] + "/sbom-reports"
 
-bd.session.headers["Content-Type"] = "application/vnd.blackducksoftware.report-4.json"
+bd.session.headers["Content-Type"] = "application/vnd.blackducksoftware.report-4+json"
 r = bd.session.post(sbom_reports_url, json=post_data)
 if (r.status_code == 403):
 	logging.debug("Authorization Error - Please ensure the token you are using has write permissions!")
