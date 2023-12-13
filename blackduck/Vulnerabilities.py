@@ -28,6 +28,7 @@ def get_vulnerable_bom_components(self, version_obj, limit=9999):
     param_string = self._get_parameter_string({'limit': limit})
     url = "{}{}".format(url, param_string)
     response = self.execute_get(url, custom_headers=custom_headers)
+    response.raise_for_status()
     return response.json()
 
 # TODO: Remove or refactor this
