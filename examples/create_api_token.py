@@ -3,7 +3,7 @@ Created on January 1, 2024
 
 @author: dnichol
 
-Create a new user
+Create an API token with either readonly or read and write access.
 
 To use this script. Firstly create a .restconfig.json file with either API token or basic auth (username/password) as per the examples :
 https://github.com/blackducksoftware/hub-rest-api-python/blob/master/restconfig.json.example
