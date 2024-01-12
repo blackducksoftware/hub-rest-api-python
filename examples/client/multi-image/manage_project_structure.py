@@ -278,7 +278,7 @@ def scan_container_images(scan_params, hub):
             detect_options += f" --detect.clone.project.version.name={clone_from}"
         project_group = params.get('project_group', None)
         if project_group:
-            detect_options += f" --detect.project.group.name={project_group}"
+            detect_options += f" --detect.project.group.name=\"{project_group}\""
         scan_container_image(
             params['image'], 
             None, 
