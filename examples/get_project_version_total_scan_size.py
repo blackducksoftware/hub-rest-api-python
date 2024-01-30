@@ -50,8 +50,9 @@ if project:
                 print(f"       size:{'{0:.2f}'.format(size)} MB")
             
             totalsize=sizeTrack/1024/1024
+            print("===============================")
             print(f"Project Total size:{'{0:.2f}'.format(totalsize)} MB")
-            
+            print("===============================")
 
             # print(json.dumps(
             #     {
