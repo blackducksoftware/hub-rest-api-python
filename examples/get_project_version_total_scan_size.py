@@ -18,7 +18,7 @@ if project:
 
     if version:
         codelocation_url = hub.get_link(version, "codelocations")
-        codelocation_url += "?limit={}".format(10000)
+        codelocation_url += "?limit={}".format(1000000)
         response = hub.execute_get(codelocation_url)
         if response.status_code == 200:
             # codelocation and scan are synonymous
