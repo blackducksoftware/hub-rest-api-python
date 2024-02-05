@@ -208,7 +208,7 @@ def get_child_spec_list(args):
     if args.subproject_list:
         return args.subproject_list.split(',')
     else:
-        print("processing excel")
+        logging.info(f"Processing excel file {args.subproject_spec_file}")
         import openpyxl
         wb = openpyxl.load_workbook(args.subproject_spec_file)
         ws = wb.active
@@ -221,7 +221,7 @@ def get_child_spec_list(args):
                 row[1] == 'Image ID' and
                 row[2] == 'Version' and
                 row[3] == 'Project Name'):
-                print("File Format checks out (kind of)")
+                logging.info(f"File Format checks out (ind of)")
                 continue
             elif row_number > 1:
                 project_list.append(f"{row[3]}:{row[0]}:{row[2]}")
