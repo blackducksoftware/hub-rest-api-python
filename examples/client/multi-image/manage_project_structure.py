@@ -50,6 +50,8 @@ options:
                         Project Version Name
   -sp SUBPROJECT_LIST, --subproject-list SUBPROJECT_LIST
                         List of subprojects to generate with subproject:container:tag
+  -ssf SUBPROJECT_SPEC_FILE, --subproject-spec-file SUBPROJECT_SPEC_FILE
+                        Excel file containing subproject specification
   -nv, --no-verify      Disable TLS certificate verification
   -rm, --remove         Remove project structure with all subprojects (DANGEROUS!)
   --clone-from CLONE_FROM
@@ -59,6 +61,11 @@ options:
 Subprojects ae specified as subproject:[container]:[tag]
 if container name omited it will be set to subproject
 if tag omited it would be set to 'latest'
+
+Subprojects an be specified in excel file with -ssf --subproject-spec-file parameter.
+Excel file should contain one worksheet with first row containing column names as following:
+Container Name, Image ID, Version, Project Name
+and subsequent rows containing data
 
 Container image name scanned will be written into project version nickname field
 
@@ -197,9 +204,36 @@ def add_component_to_version_bom(child_version, version):
     data = { 'component': child_version['_meta']['href']}
     return bd.session.post(url, json=data)
 
+def get_child_spec_list(args):
+    if args.subproject_list:
+        return args.subproject_list.split(',')
+    else:
+        print("processing excel")
+        import openpyxl
+        wb = openpyxl.load_workbook(args.subproject_spec_file)
+        ws = wb.active
+        project_list = []
+        row_number = 0
+        for row in ws.values:
+            row_number += 1
+            if (row_number == 1 and
+                row[0] == 'Container Name' and
+                row[1] == 'Image ID' and
+                row[2] == 'Version' and
+                row[3] == 'Project Name'):
+                print("File Format checks out (kind of)")
+                continue
+            elif row_number > 1:
+                project_list.append(f"{row[3]}:{row[0]}:{row[2]}")
+            else:
+                logging.error(f"Could not parse input file {args.subproject_spec_file}")
+                sys.exit(1)
+        return (project_list)
+
 def create_and_add_child_projects(version, args):
     version_url = version['_meta']['href'] + '/components'
-    for child_spec in [x.split(':') for x in args.subproject_list.split(",")]:
+    child_spec_list = get_child_spec_list(args)
+    for child_spec in [x.split(':') for x in child_spec_list]:
         i = iter(child_spec)
         child = next(i)
         repo = next(i, child)
@@ -299,7 +333,9 @@ def parse_command_args():
     parser.add_argument("-pg", "--project_group", required=False, default='Multi-Image', help="Project Group to be used")
     parser.add_argument("-p", "--project-name",   required=True, help="Project Name")
     parser.add_argument("-pv", "--version-name",   required=True, help="Project Version Name")
-    parser.add_argument("-sp", "--subproject-list",   required=False, help="List of subprojects to generate with subproject:container:tag")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-sp", "--subproject-list",   required=False, help="List of subprojects to generate with subproject:container:tag")
+    group.add_argument("-ssf", "--subproject-spec-file",   required=False, help="Excel file containing subproject specification")
     parser.add_argument("-nv", "--no-verify",   action='store_false', help="Disable TLS certificate verification")
     parser.add_argument("-rm", "--remove",   action='store_true', required=False, help="Remove project structure with all subprojects (DANGEROUS!)")
     parser.add_argument("--clone-from", required=False, help="Main project version to use as template for cloning")
