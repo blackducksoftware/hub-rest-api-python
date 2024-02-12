@@ -252,6 +252,14 @@ def create_and_add_child_projects(version, args):
                 else:
                     logging.info(f"Child project {project['name']} with version {args.version_name} found.")
                     logging.info(f"Recursively removing codelocations for {project['name']} with version {args.version_name} ")
+                    try:
+                        logging.info(f"Adding project {child} {args.version_name} to the parent project")
+                        child_version_url = version['_meta']['href']
+                        response = bd.session.post(version_url,json={'component': child_version_url})
+                        logging.info(f"Adding {child} : {args.version_name} to parent project completed with {response}")
+                    except Exception as e:
+                        logging.info(f"Adding {child} : {args.version_name} to parent project completed with exception {e}")
+
                     remove_codelocations_recursively(version)
             else:
                 response = create_project_version(child,args.version_name, args, nickname=container_spec)
