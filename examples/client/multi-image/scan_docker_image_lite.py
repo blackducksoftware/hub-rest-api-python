@@ -241,7 +241,7 @@ class ContainerImageScanner():
             self.extra_options = detect_options.split(" ")
         print ("<--{}-->".format(self.grouping))
 
-    def prepare_container_image_old(self):
+    def prepare_container_image(self):
         self.docker.initdir()
         self.docker.pull_container_image(self.container_image_name)
         self.docker.save_container_image(self.container_image_name)
