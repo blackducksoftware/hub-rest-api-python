@@ -240,8 +240,29 @@ class ContainerImageScanner():
         if detect_options:
             self.extra_options = detect_options.split(" ")
         print ("<--{}-->".format(self.grouping))
-              
-    def prepare_container_image(self):
+
+    def prepare_container_image_old(self):
+        self.docker.initdir()
+        self.docker.pull_container_image(self.container_image_name)
+        self.docker.save_container_image(self.container_image_name)
+        self.docker.unravel_container()
+        # result = self.docker.get_container_image_history(self.container_image_name)
+        history = self.docker.read_config()['history']
+        layer_count = 0
+        history_grouping = ''
+        for item in history:
+            if not item.get('empty_layer', None):
+                layer_count += 1
+            match = re.search('echo (.+?)_group_end', item['created_by'])
+            if match:
+                found = match.group(1)
+                if len(history_grouping):
+                    history_grouping += ','
+                history_grouping += str(layer_count) + ":" + found
+        if len(history_grouping) and self.grouping == '1024:everything':
+            self.grouping = history_grouping
+
+    def prepare_container_image_old(self):
         self.docker.initdir()
         self.docker.pull_container_image(self.container_image_name)
         result = self.docker.get_container_image_history(self.container_image_name)

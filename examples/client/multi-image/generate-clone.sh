@@ -15,6 +15,6 @@ ls -l $SPECFILE
 
 COMMAND="python3 examples/client/multi-image/manage_project_structure.py"
 
-# $COMMAND -u $BD_URL -t token -nv -pg "Test Group" -p P3 -pv 2.4 -sp $SUBPROJECTS --clone-from 2.3 $@
-$COMMAND -u $BD_URL -t token -nv -pg "Test Group" -p P3 -pv 2.4 -ssf $SPECFILE --clone-from 2.3 $@
+$COMMAND -u $BD_URL -t token -nv -pg "Test Group" -p P3 -pv 2.4 -sp $SUBPROJECTS --clone-from 2.3 $@
+# $COMMAND -u $BD_URL -t token -nv -pg "Test Group" -p P3 -pv 2.4 -ssf $SPECFILE --clone-from 2.3 $@
 
