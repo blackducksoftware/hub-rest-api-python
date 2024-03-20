@@ -1,4 +1,5 @@
 from blackduck import Client
+from blackduck.constants import PROJECT_VERSION_SETTINGS, VERSION_DISTRIBUTION, VERSION_PHASES
 
 import argparse
 import logging
@@ -13,7 +14,8 @@ parser = argparse.ArgumentParser("Create, read, update, and delete a project")
 parser.add_argument("--base-url", required=True, help="Hub server URL e.g. https://your.blackduck.url")
 parser.add_argument("--token-file", dest='token_file', required=True, help="containing access token")
 parser.add_argument("--no-verify", dest='verify', action='store_false', help="disable TLS certificate verification")
-parser.add_argument("--project", required=True, help="Project name")
+parser.add_argument("project", help="Project name")
+parser.add_argument("version", help="Version name")
 args = parser.parse_args()
 
 with open(args.token_file, 'r') as tf:
@@ -27,7 +29,7 @@ bd = Client(
 
 project_name = args.project
 
-# POST
+# POST project
 project_data = {
     'name': project_name,
     'description': "some description",
@@ -42,37 +44,61 @@ except requests.HTTPError as err:
     # more fine grained error handling here; otherwise:
     bd.http_error_handler(err)
 
-# GET
+# GET project
 params = {
     'q': [f"name:{project_name}"]
 }
+
+project_obj = None
 project_url = None
 for project in bd.get_items("/api/projects", params=params):
     if project['name'] == project_name:
+        project_obj = project
         project_url = bd.list_resources(project)['href']
         print(f"project url: {project_url}")
 
-# GET or CREATE
-project = bd.get_or_create_resource(name='projects', field='name', value=project_name)
-if project:
-    print(f"project found with name {args.project}")
-else:
-    print(f"no project with name {args.project}")
-
-# PUT
-project_data = {
-    'name': project_name,
-    'description': "a different description"
+# POST version
+version_data = {
+    'versionName': args.version,
+    'distribution': 'EXTERNAL',
+    'phase': 'PLANNING'
 }
 
+versions_url = project_url + "/versions"
 try:
-    r = bd.session.put(project_url, json=project_data)
+    r = bd.session.post(versions_url, json=version_data)
     r.raise_for_status()
-    print("updated project")
+    version_url = r.headers['Location']
+    print(f"created version {version_url}")
 except requests.HTTPError as err:
+    # more fine grained error handling here; otherwise:
     bd.http_error_handler(err)
 
-# DELETE
+# GET or CREATE version
+
+version = bd.get_or_create_resource(field='versionName', value=args.version, name="versions", parent=project_obj)
+print(f"Version {version['versionName']} was either found or created after initial POST")
+
+# DELETE version
+try:
+    r = bd.session.delete(version_url)
+    r.raise_for_status()
+    print(f"deleted version {args.version}")
+except requests.HTTPError as err:
+    if err.response.status_code == 404:
+        print("not found")
+    else:
+        bd.http_error_handler(err)
+
+# GET or CREATE version
+additional_data = {
+    'phase': 'PLANNING',
+    'distribution': 'SAAS'
+}
+version = bd.get_or_create_resource(field='versionName', value=args.version, name="versions", parent=project_obj, additional_data=additional_data)
+print(f"Version {version['versionName']} was either found or created after deleting the version")
+
+# DELETE project
 try:
     r = bd.session.delete(project_url)
     r.raise_for_status()
@@ -83,20 +109,18 @@ except requests.HTTPError as err:
     else:
         bd.http_error_handler(err)
 
-# GET OR CREATE
 
-project = bd.get_or_create_resource(
-    name='projects', 
-    field='name', 
-    value=project_name,
-    params={
-        'description': 'My project description',
-        'projectLevelAdjustments': True
-    }
-    )
+# GET or CREATE project
+additional_data = {
+    'description': 'The project description, again',
+    'projectLevelAdjustments': True
+}
+
+project = bd.get_or_create_resource(field='name', value=args.project, name='projects', additional_data=additional_data)
+
 project_url = project['_meta']['href']
 
-# DELETE
+# DELETE project
 try:
     r = bd.session.delete(project_url)
     r.raise_for_status()

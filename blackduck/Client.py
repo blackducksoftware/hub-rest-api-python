@@ -256,6 +256,40 @@ class Client:
 
             offset += page_size
 
+    def get_resource_by(self, field, value,  name, parent=None, **kwargs):
+        params = {
+            'q': [f"{field}:{value}"]
+        }
+        filtered = [i for i in self.get_resource(name, parent, params=params, **kwargs) if i.get(field) == value]
+        assert len(filtered) in [0,1], f"We either found the {field} or we didn't, but we should never find this many ({len(filtered)})"
+
+        return filtered[0] if filtered else None
+
+    def get_or_create_resource(self, field, value,  name, parent=None, additional_data={}, **kwargs):
+        the_obj = self.get_resource_by(field, value, name, parent, **kwargs)
+        if the_obj:
+            return the_obj
+        else:
+            post_data = {
+                field: value
+            }
+            post_data.update(additional_data)
+            if parent:
+                url = parent['_meta']['href'] + f"/{name}"
+            else:
+                url = f"/api/{name}"
+            logger.debug(f"Trying to create object using url {url} and post_data {post_data}")
+            try:
+                r = self.session.post(url, json=post_data)
+                r.raise_for_status()
+                the_obj_url = r.headers['Location']
+            except requests.HTTPError as err:
+                self.http_error_handler(err)
+            the_obj = self.session.get(the_obj_url).json()
+            logger.debug(f"Created object at {the_obj_url}")
+            return the_obj
+
+        
     @staticmethod
     def http_error_handler(r):
         """Handle an unexpected HTTPError or Response by logging useful information.
