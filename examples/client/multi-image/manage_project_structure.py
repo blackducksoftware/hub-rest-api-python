@@ -204,31 +204,53 @@ def add_component_to_version_bom(child_version, version):
     data = { 'component': child_version['_meta']['href']}
     return bd.session.post(url, json=data)
 
+def process_excel_spec_file(wb):
+    ws = wb.active
+    project_list = []
+    row_number = 0
+    for row in ws.values:
+        row_number += 1
+        if (row_number == 1 and
+            row[0] == 'Container Name' and
+            row[1] == 'Image ID' and
+            row[2] == 'Version' and
+            row[3] == 'Project Name'):
+            logging.info(f"File Format checks out (kind of)")
+            continue
+        elif row_number > 1:
+            project_list.append(f"{row[3]}:{row[0]}:{row[2]}")
+        else:
+            logging.error(f"Could not parse input file {args.subproject_spec_file}")
+            sys.exit(1)
+    return (project_list)
+
+def process_text_spec_file(args):
+    project_list = []
+    prefix = args.string_to_put_in_front_of_subproject_name
+    if not prefix:
+        prefix = args.project_name
+    with open(args.subproject_spec_file, "r") as f:
+        lines = f.read().splitlines()
+    for line in lines:
+        image_name = line.split('/')[-1].split(':')[0]   # Don't look at me, you wrote it!
+        sub_project_name = "_".join((prefix, image_name))
+        spec_line = ":".join((sub_project_name, line))
+        if "ciena.com" in spec_line:
+            project_list.append(spec_line)    
+    return (project_list)
+
 def get_child_spec_list(args):
     if args.subproject_list:
         return args.subproject_list.split(',')
     else:
+        # Excel and plaintext
         logging.info(f"Processing excel file {args.subproject_spec_file}")
         import openpyxl
-        wb = openpyxl.load_workbook(args.subproject_spec_file)
-        ws = wb.active
-        project_list = []
-        row_number = 0
-        for row in ws.values:
-            row_number += 1
-            if (row_number == 1 and
-                row[0] == 'Container Name' and
-                row[1] == 'Image ID' and
-                row[2] == 'Version' and
-                row[3] == 'Project Name'):
-                logging.info(f"File Format checks out (kind of)")
-                continue
-            elif row_number > 1:
-                project_list.append(f"{row[3]}:{row[0]}:{row[2]}")
-            else:
-                logging.error(f"Could not parse input file {args.subproject_spec_file}")
-                sys.exit(1)
-        return (project_list)
+        try:
+            wb = openpyxl.load_workbook(args.subproject_spec_file)
+            return process_excel_spec_file(wb)
+        except Exception:
+            return process_text_spec_file(args)
 
 def create_and_add_child_projects(version, args):
     version_url = version['_meta']['href'] + '/components'
@@ -321,16 +343,20 @@ def scan_container_images(scan_params, hub):
         project_group = params.get('project_group', None)
         if project_group:
             detect_options += f" --detect.project.group.name=\"{project_group}\""
-        scan_container_image(
-            params['image'], 
-            None, 
-            None, 
-            None, 
-            params['project'], 
-            params['version'],
-            detect_options,
-            hub=hub
-        )
+        try:
+            scan_container_image(
+                params['image'], 
+                None, 
+                None, 
+                None, 
+                params['project'], 
+                params['version'],
+                detect_options,
+                hub=hub
+            )
+        except Exception:
+            logging.error(f"Scanning of {params['image']} failed, skipping")
+            skipped_scans.append(params)
 
 
 def parse_command_args():
@@ -343,11 +369,12 @@ def parse_command_args():
     parser.add_argument("-pv", "--version-name",   required=True, help="Project Version Name")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-sp", "--subproject-list",   required=False, help="List of subprojects to generate with subproject:container:tag")
-    group.add_argument("-ssf", "--subproject-spec-file",   required=False, help="Excel file containing subproject specification")
+    group.add_argument("-ssf", "--subproject-spec-file",   required=False, help="Excel or txt file containing subproject specification")
     parser.add_argument("-nv", "--no-verify",   action='store_false', help="Disable TLS certificate verification")
     parser.add_argument("-rm", "--remove",   action='store_true', required=False, help="Remove project structure with all subprojects (DANGEROUS!)")
     parser.add_argument("--clone-from", required=False, help="Main project version to use as template for cloning")
     parser.add_argument("--dry-run", action='store_true', required=False, help="Create structure only, do not execute scans")
+    parser.add_argument("-str", "--string-to-put-in-front-of-subproject-name", required=False, help="Prefix string for subproject names" )
     return parser.parse_args()
 
 def main():
@@ -355,8 +382,9 @@ def main():
     with open(args.token_file, 'r') as tf:
         access_token = tf.readline().strip()
     global bd
-    global scan_params
+    global scan_params, skipped_scans
     scan_params = []
+    skipped_scans = []
     bd = Client(base_url=args.base_url, token=access_token, verify=args.no_verify, timeout=60.0, retries=4)
     logging.info(f"{args}")
 
@@ -367,10 +395,14 @@ def main():
         if args.dry_run:
             logging.info(f"{pformat(scan_params)}")
         else:
-            logging.info("Now execution scans")
+            logging.info("Now executing scans")
             from blackduck.HubRestApi import HubInstance
             hub = HubInstance(args.base_url, api_token=access_token, insecure=True, debug=False)
             scan_container_images(scan_params, hub)
+            if len(skipped_scans) > 0:
+                logging.info(f"The following images were not scanned")
+                logging.info(f"{pformat(skipped_scans)}")
+                
 
 
 if __name__ == "__main__":
