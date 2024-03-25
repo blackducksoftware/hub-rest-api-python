@@ -34,7 +34,8 @@ Project Name
                         Add on Image Version
 
 usage: python3 manage_project_structure.py [-h] -u BASE_URL -t TOKEN_FILE [-pg PROJECT_GROUP] -p PROJECT_NAME -pv VERSION_NAME
-                                           [-sp SUBPROJECT_LIST] [-nv] [-rm] [--clone-from CLONE_FROM] [--dry-run]
+                                           [-sp SUBPROJECT_LIST | -ssf SUBPROJECT_SPEC_FILE] [-nv] [-rm] [--clone-from CLONE_FROM]
+                                           [--dry-run] [-str STRING_TO_PUT_IN_FRONT_OF_SUBPROJECT_NAME]
 
 options:
   -h, --help            show this help message and exit
@@ -51,12 +52,13 @@ options:
   -sp SUBPROJECT_LIST, --subproject-list SUBPROJECT_LIST
                         List of subprojects to generate with subproject:container:tag
   -ssf SUBPROJECT_SPEC_FILE, --subproject-spec-file SUBPROJECT_SPEC_FILE
-                        Excel file containing subproject specification
+                        Excel or txt file containing subproject specification
   -nv, --no-verify      Disable TLS certificate verification
   -rm, --remove         Remove project structure with all subprojects (DANGEROUS!)
   --clone-from CLONE_FROM
                         Main project version to use as template for cloning
   --dry-run             Create structure only, do not execute scans
+  -str STRING_TO_PUT_IN_FRONT_OF_SUBPROJECT_NAME, --string-to-put-in-front-of-subproject-name STRING_TO_PUT_IN_FRONT_OF_SUBPROJECT_NAME
 
 Subprojects ae specified as subproject:[container]:[tag]
 if container name omited it will be set to subproject
@@ -66,6 +68,12 @@ Subprojects an be specified in excel file with -ssf --subproject-spec-file param
 Excel file should contain one worksheet with first row containing column names as following:
 Container Name, Image ID, Version, Project Name
 and subsequent rows containing data
+
+Sublrojects could be specified in a text file with -ssf --subproject-spec-file parameter
+Each line will have to contain full image specification.
+Specification will be parsed and image name prefixed by -str parameter will be used as a subproject name
+In this mode any image that is not residing on ciena.com repository will be skipped.
+If -str parameter is empty, Project Name will be used instead.
 
 Container image name scanned will be written into project version nickname field
 
