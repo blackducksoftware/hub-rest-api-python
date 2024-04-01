@@ -106,32 +106,6 @@ def remove_project_version_structure(project_name, version_name):
         response = bd.session.delete(project['_meta']['href'])
     logging.info(f"Operation completed with {response}")
 
-def remove_codelocations_recursively(version):
-    components = bd.get_resource('components', version)
-    subprojects = [x for x in components if x['componentType'] == 'SUB_PROJECT']
-    logging.info(f"Found {len(subprojects)} subprojects")
-    unmap_all_codelocations(version)
-    for subproject in subprojects:
-        subproject_name = subproject['componentName']
-        subproject_version_name = subproject['componentVersionName']
-        project = find_project_by_name(subproject_name)
-        if not project:
-            logging.info(f"Project {subproject_name} does not exist.")
-            return
-        subproject_version = find_project_version_by_name(project, subproject_version_name)   
-        if not subproject_version:
-            logging.info(f"Project {subproject_name} with version {subversion_name} does not exist.")
-            return
-        remove_codelocations_recursively(subproject_version)
-
-def unmap_all_codelocations(version):
-    codelocations = bd.get_resource('codelocations',version)
-    for codelocation in codelocations:
-        logging.info(f"Unmapping codelocation {codelocation['name']}")
-        codelocation['mappedProjectVersion'] = ""
-        response = bd.session.put(codelocation['_meta']['href'], json=codelocation)
-        pprint (response)
-
 def find_project_by_name(project_name):
     params = {
         'q': [f"name:{project_name}"]

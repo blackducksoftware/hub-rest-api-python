@@ -27,7 +27,7 @@ logging.basicConfig(
 )
 
 def strip_newline(str):
-    return str.replace('\r', '').replace('\n', ' ')
+    return str.replace('\r', '').replace('\n', '\\n')
 
 def match_component(selected_components, component):
     if (len(selected_components) == 0):

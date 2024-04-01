@@ -56,7 +56,7 @@ class BearerAuth(AuthBase):
             logger.warning("ssl verification disabled, connection insecure. do NOT use verify=False in production!")
 
         response = self.session.post(
-            url="/api/tokens/authenticate",
+            url="api/tokens/authenticate",
             auth=NoAuth(),  # temporarily strip authentication to avoid infinite recursion
             headers={"Authorization": f"token {self.access_token}"}
         )
