@@ -5,7 +5,7 @@ Created on March 25, 2021
 
 Alternative version if Docker image layer by layer scan.
 
-This program will download docker image and scan it into Blackduck server layer by layer
+This program will download docker image and scan it into Black Duck server layer by layer
 Each layer will be scanned as a separate scan with a signature scan.
 
 Layers in the container images could be grouped into groups of contiguous layers.
@@ -50,16 +50,16 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --grouping GROUPING   Group layers into user defined provect versions (can't be used with --base-image)
+  --grouping GROUPING   Group layers into user defined project versions (can't be used with --base-image)
   --base-image BASE_IMAGE
                         Use base image spec to determine base image/layers (can't be used with --grouping or
                         --dockerfile)
   --dockerfile DOCKERFILE
                         Use Dockerfile to determine base image/layers (can't be used with --grouping or ---base-image)
   --project-name        Specify project name (default is container image spec)
-  --project-verson      Specify project version (default is container image tag/version)
+  --project-version      Specify project version (default is container image tag/version)
   --detect-options DETECT_OPTIONS
-                        Extra detect options to be passed directlyto the detect
+                        Extra detect options to be passed directly to the detect
 
 
 Using --detect-options
@@ -188,12 +188,24 @@ class DockerWrapper():
         with open(configFile) as fp:
             data = json.load(fp)
         return data
+    
+    def read_oci_layout(self):
+        oci_layout_file = self.imagedir + "/" + 'oci-layout'
+        if os.path.exists(oci_layout_file) and os.path.isfile(oci_layout_file):
+            with open(oci_layout_file) as fp:
+                data = json.load(fp)
+            return data
+        else:
+            return None
+
  
 class Detector():
     def __init__(self, hub):
         # self.detecturl = 'https://blackducksoftware.github.io/hub-detect/hub-detect.sh'
         # self.detecturl = 'https://detect.synopsys.com/detect.sh'
-        self.detecturl = 'https://detect.synopsys.com/detect7.sh'
+        # self.detecturl = 'https://detect.synopsys.com/detect7.sh'
+        # self.detecturl = 'https://detect.synopsys.com/detect8.sh'
+        self.detecturl = 'https://detect.synopsys.com/detect9.sh'
         self.baseurl = hub.config['baseurl']
         self.filename = '/tmp/hub-detect.sh'
         self.token=hub.config['api_token']
@@ -240,6 +252,7 @@ class ContainerImageScanner():
         if detect_options:
             self.extra_options = detect_options.split(" ")
         print ("<--{}-->".format(self.grouping))
+        self.binary = False
               
     def prepare_container_image(self):
         self.docker.initdir()
@@ -262,6 +275,7 @@ class ContainerImageScanner():
             self.grouping = history_grouping
         self.docker.save_container_image(self.container_image_name)
         self.docker.unravel_container()
+        self.oci_layout = self.docker.read_oci_layout()
     
     def process_container_image_by_user_defined_groups(self):
         self.manifest = self.docker.read_manifest()
@@ -333,25 +347,86 @@ class ContainerImageScanner():
             num = num + 1
         print (json.dumps(self.layers, indent=4))
 
+    def process_oci_container_image_by_user_defined_groups(self):
+        self.manifest = self.docker.read_manifest()
+        self.config = self.docker.read_config()
+
+        self.layers = self.config['history']
+        tagged_layers = [x for x in self.layers if '_group_end' in x.get('created_by')]
+        groups =  {re.search('echo (.+?)_group_end', str(x['created_by'])).group(1): self.layers.index(x) for x in tagged_layers}
+        print (groups)
+        layer_paths = self.manifest[0]['Layers'].copy()
+        empty_layers = [x for x in self.layers if x.get('empty_layer', False)]
+        print(f"Total layers: {len(self.layers)} total paths: {len(layer_paths)}  empty layers: {len(empty_layers)}")
+
+        assert len(self.layers) == len(layer_paths) + len(empty_layers), "Something is wrong with this image, Layer math does not add up."
+
+        for layer in self.layers:
+            layer['index'] = self.layers.index(layer)
+            if self.grouping:
+                layer['group_name'] = self.get_group_name(groups, layer['index'])
+                layer['project_version'] = "{}_{}".format(self.project_version,layer['group_name'])
+                layer['name'] = "{}_{}_{}_layer_{}".format(self.project_name,self.project_version,layer['group_name'],str(layer['index']))
+            else:
+                layer['project_version'] = self.project_version
+                layer['name'] = self.project_name + "_" + self.project_version + "_layer_" + str(layer['index'])
+            layer['project_name'] = self.project_name
+            if not layer.get('empty_layer', False):
+                layer['path'] = layer_paths.pop(0)
+        print (json.dumps(self.layers, indent=4))
+
+    def get_group_name(self, groups, index):
+        group_name  = 'undefined'
+        for group, value in groups.items():
+            if index <= value:
+                group_name = group
+                break
+        return group_name
+
+    def process_oci_container_image_by_base_image_info(self):
+        print ("Processing by BAse Image not supported for OCI images")
+        sys.exit(1)
+        pass
+
     def process_container_image(self):
+        if self.oci_layout:
+            self.process_oci_container_image()
+        else:
+            self.process_docker_container_image()
+
+    def process_docker_container_image(self):
         if self.grouping:
             self.process_container_image_by_user_defined_groups()
         else:
             self.process_container_image_by_base_image_info()
 
+    def process_oci_container_image(self):
+        if self.grouping:
+            self.process_oci_container_image_by_user_defined_groups()
+        else:
+            self.process_oci_container_image_by_base_image_info()
+
     def submit_layer_scans(self):
         for layer in self.layers:
-            options = []
-            options.append('--detect.project.name={}'.format(layer['project_name']))
-            options.append('--detect.project.version.name="{}"'.format(layer['project_version']))
-            # options.append('--detect.blackduck.signature.scanner.disabled=false')
-            options.append('--detect.code.location.name={}_{}_code_{}'.format(layer['name'],self.image_version,layer['path']))
-            options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path'].split('/')[0]))
-            if self.base_image or self.grouping or self.dockerfile:
-                options.extend(self.adorn_extra_options(layer))
-            else:
-                options.extend(self.extra_options)
-            self.hub_detect.detect_run(options)
+            if not layer.get('empty_layer', False):
+                options = []
+                options.append('--detect.project.name={}'.format(layer['project_name']))
+                options.append('--detect.project.version.name="{}"'.format(layer['project_version']))
+                options.append('--detect.code.location.name={}_{}_code_{}'.format(layer['name'],self.image_version,layer['path']))
+                if self.binary:
+                    options.append('--detect.tools=BINARY_SCAN')
+                    options.append('--detect.binary.scan.file.path={}/{}'.format(self.docker.imagedir, layer['path']))
+                else:
+                    options.append('--detect.tools=SIGNATURE_SCAN')
+                    if self.oci_layout:
+                       options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path']))
+                    else:
+                       options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path'].split('/')[0]))
+                if self.base_image or self.grouping or self.dockerfile:
+                    options.extend(self.adorn_extra_options(layer))
+                else:
+                    options.extend(self.extra_options)
+                self.hub_detect.detect_run(options)
 
     def adorn_extra_options(self, layer):
         result = list()
@@ -401,7 +476,7 @@ class ContainerImageScanner():
 
 def scan_container_image(
     imagespec, grouping=None, base_image=None, dockerfile=None, 
-    project_name=None, project_version=None, detect_options=None):
+    project_name=None, project_version=None, detect_options=None, binary=False):
     
     hub = HubInstance()
     scanner = ContainerImageScanner(
@@ -416,6 +491,8 @@ def scan_container_image(
             scanner.grouping = '1024:everything'
         else:
             scanner.base_layers = scanner.get_base_layers()
+    if binary:
+        scanner.binary = True
     scanner.prepare_container_image()
     scanner.process_container_image()
     scanner.submit_layer_scans()
@@ -429,12 +506,13 @@ def main(argv=None):
         
     parser = ArgumentParser()
     parser.add_argument('imagespec', help="Container image tag, e.g.  repository/imagename:version")
-    parser.add_argument('--grouping',default=None, type=str, help="Group layers into user defined provect versions (can't be used with --base-image)")
+    parser.add_argument('--grouping',default=None, type=str, help="Group layers into user defined project versions (can't be used with --base-image)")
     parser.add_argument('--base-image',default=None, type=str, help="Use base image spec to determine base image/layers (can't be used with --grouping or --dockerfile)")
     parser.add_argument('--dockerfile',default=None, type=str, help="Use Dockerfile to determine base image/layers (can't be used with --grouping or ---base-image)")
     parser.add_argument('--project-name',default=None, type=str, help="Specify project name (default is container image spec)")
     parser.add_argument('--project-version',default=None, type=str, help="Specify project version (default is container image tag/version)")
-    parser.add_argument('--detect-options',default=None, type=str, help="Extra detect options to be passed directlyto the detect")
+    parser.add_argument('--detect-options',default=None, type=str, help="Extra detect options to be passed directly to the detect")
+    parser.add_argument('--binary', action='store_true', help="Use Binary Scan instead of signature scan")
     
     args = parser.parse_args()
     
@@ -459,7 +537,8 @@ def main(argv=None):
         args.dockerfile, 
         args.project_name, 
         args.project_version,
-        args.detect_options)
+        args.detect_options,
+        args.binary)
         
     
 if __name__ == "__main__":
