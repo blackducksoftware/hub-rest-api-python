@@ -31,14 +31,9 @@ import argparse
 import logging
 import sys
 import io
-import os
-import re
 import time
-import subprocess
 import json
 import traceback
-import copy
-import ijson
 from blackduck import Client
 from zipfile import ZipFile
 from pprint import pprint
@@ -49,17 +44,6 @@ and component matched.  Removes matches found underneath other matched component
 
 This script assumes a project version exists and has scans associated with it (i.e. the project is not scanned as part of this process).
 
-Config file:
-API Token and Black Duck URL need to be placed in the .restconfig.json file which must be placed in the same folder where this script resides.
-    {
-      "baseurl": "https://hub-hostname",
-      "api_token": "<API token goes here>",
-      "insecure": true or false <Default is false>,
-      "debug": true or false <Default is false>
-    }
-
-Remarks:
-This script uses 3rd party PyPI package "ijson". This package must be installed.
 '''
 
 # BD report general
@@ -134,26 +118,24 @@ def create_version_details_report(bd, version):
     if (r.status_code == 403):
         logging.debug("Authorization Error - Please ensure the token you are using has write permissions!")
     r.raise_for_status()
-    pprint(r.headers)
     location = r.headers.get('Location')
     assert location, "Hmm, this does not make sense. If we successfully created a report then there needs to be a location where we can get it from"
     return location
 
 def download_report(bd, location, retries):
     report_id = location.split("/")[-1]
-    print (location)
+    logging.debug(f"Report location {location}")
     url_data = location.split('/')
     url_data.pop(4)
     url_data.pop(4)
     download_link = '/'.join(url_data)
-    print(download_link)
+    logging.debug(f"Report Download link {download_link}")
     if retries:
-        logging.debug(f"Retrieving generated report from {location}")
+        logging.debug(f"Retrieving generated report for {location}  via  {download_link}")
         response = bd.session.get(location)
         report_status = response.json().get('status', 'Not Ready')
         if response.status_code == 200 and report_status == 'COMPLETED':
             response = bd.session.get(download_link, headers={'Content-Type': 'application/zip', 'Accept':'application/zip'})
-            pprint(response)
             if response.status_code == 200:
                 return response.content
             else:
@@ -204,17 +186,18 @@ def main():
         
         project = find_project_by_name(hub_client, args.project_name)
         version = find_project_version_by_name(hub_client, project, args.project_version_name)
-        pprint(version)
         location = create_version_details_report(hub_client, version)
-        pprint(location)
         report_zip = download_report(hub_client, location, args.report_retries)
-        pprint(report_zip)
         logging.debug(f"Deleting report from Black Duck {hub_client.session.delete(location)}")
         zip=ZipFile(io.BytesIO(report_zip), "r")
         pprint(zip.namelist())
         report_data = {name: zip.read(name) for name in zip.namelist()}
         filename = [i for i in report_data.keys() if i.endswith(".json")][0]
-        pprint(json.loads(report_data[filename]))
+        version_report = json.loads(report_data[filename])
+        # TODO items
+        # Process file section of report data to identify primary paths
+        # Combine component data with selected file data
+        # Output result with CSV anf JSON as options.
 
 
     except (Exception, BaseException) as err:
