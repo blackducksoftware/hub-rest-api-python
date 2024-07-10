@@ -194,6 +194,8 @@ def main():
         report_data = {name: zip.read(name) for name in zip.namelist()}
         filename = [i for i in report_data.keys() if i.endswith(".json")][0]
         version_report = json.loads(report_data[filename])
+        with open("out.json", "w") as f:
+            json.dump(version_report, f)
         # TODO items
         # Process file section of report data to identify primary paths
         # Combine component data with selected file data
