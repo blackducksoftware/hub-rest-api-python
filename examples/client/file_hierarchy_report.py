@@ -28,6 +28,7 @@ under the License.
 '''
 
 import argparse
+import csv
 import logging
 import sys
 import io
@@ -47,15 +48,8 @@ This script assumes a project version exists and has scans associated with it (i
 '''
 
 # BD report general
-BLACKDUCK_REPORT_MEDIATYPE = "application/vnd.blackducksoftware.report-4+json"
-blackduck_report_download_api = "/api/projects/{projectId}/versions/{projectVersionId}/reports/{reportId}/download"
-# BD version details report
-blackduck_create_version_report_api = "/api/versions/{projectVersionId}/reports"
-blackduck_version_report_filename = "./blackduck_version_report_for_{projectVersionId}.zip"
-# Consolidated report
 BLACKDUCK_VERSION_MEDIATYPE = "application/vnd.blackducksoftware.status-4+json"
 BLACKDUCK_VERSION_API = "/api/current-version"
-REPORT_DIR = "./blackduck_component_source_report"
 # Retries to wait for BD report creation. RETRY_LIMIT can be overwritten by the script parameter. 
 RETRY_LIMIT = 30
 RETRY_TIMER = 30
@@ -122,7 +116,7 @@ def create_version_details_report(bd, version):
     assert location, "Hmm, this does not make sense. If we successfully created a report then there needs to be a location where we can get it from"
     return location
 
-def download_report(bd, location, retries):
+def download_report(bd, location, retries, timeout):
     report_id = location.split("/")[-1]
     logging.debug(f"Report location {location}")
     url_data = location.split('/')
@@ -142,10 +136,10 @@ def download_report(bd, location, retries):
                 logging.error("Ruh-roh, not sure what happened here")
                 return None
         else:
-            logging.debug(f"Report status request {response.status_code} {report_status} ,waiting {retries} seconds then retrying...")
-            time.sleep(60)
+            logging.debug(f"Report status request {response.status_code} {report_status} ,waiting {timeout} seconds then retrying...")
+            time.sleep(timeout)
             retries -= 1
-            return download_report(bd, location, retries)
+            return download_report(bd, location, retries, timeout)
     else:
         logging.debug(f"Failed to retrieve report {report_id} after multiple retries")
         return None
@@ -158,6 +152,47 @@ def get_blackduck_version(hub_client):
     else:
         sys.exit(f"Get BlackDuck version failed with status {res.status_code}")
 
+def reduce(path_set):
+    path_set.sort()
+    for path in path_set:
+        if len(path) < 3:
+            continue
+        index = path_set.index(path)
+        while index + 1 < len(path_set) and path in path_set[index+1]:
+            logging.debug(f"{path} is in {path_set[index+1]} deleting the sub-path from the list")
+            path_set.pop(index+1)
+    return path_set
+
+def trim_version_report(version_report, reduced_path_set):
+    file_bom_entries = version_report['detailedFileBomViewEntries']
+    aggregate_bom_view_entries = version_report['aggregateBomViewEntries']
+
+    reduced_file_bom_entries = [e for e in file_bom_entries if f"{e.get('archiveContext', "")}!{e['path']}" in reduced_path_set]
+    version_report['detailedFileBomViewEntries'] = reduced_file_bom_entries
+
+    component_identifiers = [f"{e['projectId']}:{e['versionId']}" for e in reduced_file_bom_entries]
+    deduplicated = list(dict.fromkeys(component_identifiers))
+
+    reduced_aggregate_bom_view_entries = [e for e in aggregate_bom_view_entries if f"{e['producerProject']['id']}:{e['producerReleases'][0]['id']}" in deduplicated]
+    version_report['aggregateBomViewEntries'] = reduced_aggregate_bom_view_entries
+
+def write_output_file(version_report, output_file):
+    if output_file.lower().endswith(".csv"):
+        logging.info(f"Writing CSV output into {output_file}")
+        field_names = list(version_report['aggregateBomViewEntries'][0].keys())
+        with open(output_file, "w") as f:
+            writer = csv.DictWriter(f, fieldnames = field_names)
+            writer.writeheader()
+            writer.writerows(version_report['aggregateBomViewEntries'])
+
+        return
+    # If it's neither, then .json
+    if not output_file.lower().endswith(".json"):
+        output_file += ".json"
+    logging.info(f"Writing JSON output into {output_file}")
+    with open(output_file,"w") as f:
+        json.dump(version_report, f)
+
 def parse_command_args():
     parser = argparse.ArgumentParser(description=program_description, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("-u", "--base-url",     required=True, help="Hub server URL e.g. https://your.blackduck.url")
@@ -166,8 +201,10 @@ def parse_command_args():
     parser.add_argument("-d", "--debug", action='store_true', help="Set debug output on")
     parser.add_argument("-pn", "--project-name", required=True, help="Project Name")
     parser.add_argument("-pv", "--project-version-name", required=True, help="Project Version Name")
+    parser.add_argument("-o", "--output-file", required=False, help="File name to write output. File extension determines format .json and .csv, json is the default.")
     parser.add_argument("-kh", "--keep_hierarchy", action='store_true', help="Set to keep all entries in the sources report. Will not remove components found under others.")
     parser.add_argument("--report-retries", metavar="", type=int, default=RETRY_LIMIT, help="Retries for receiving the generated BlackDuck report. Generating copyright report tends to take longer minutes.")
+    parser.add_argument("--report-timeout", metavar="", type=int, default=RETRY_TIMER, help="Wait time between subsequent download attempts.")
     parser.add_argument("--timeout", metavar="", type=int, default=60, help="Timeout for REST-API. Some API may take longer than the default 60 seconds")
     parser.add_argument("--retries", metavar="", type=int, default=4, help="Retries for REST-API. Some API may need more retries than the default 4 times")
     return parser.parse_args()
@@ -176,6 +213,9 @@ def main():
     args = parse_command_args()
     with open(args.token_file, 'r') as tf:
         token = tf.readline().strip()
+    output_file = args.output_file
+    if not args.output_file:
+        output_file = f"{args.project_name}-{args.project_version_name}.json".replace(" ","_")
     try:
         log_config(args.debug)    
         hub_client = Client(token=token,
@@ -187,7 +227,7 @@ def main():
         project = find_project_by_name(hub_client, args.project_name)
         version = find_project_version_by_name(hub_client, project, args.project_version_name)
         location = create_version_details_report(hub_client, version)
-        report_zip = download_report(hub_client, location, args.report_retries)
+        report_zip = download_report(hub_client, location, args.report_retries, args.report_timeout)
         logging.debug(f"Deleting report from Black Duck {hub_client.session.delete(location)}")
         zip=ZipFile(io.BytesIO(report_zip), "r")
         pprint(zip.namelist())
@@ -198,8 +238,22 @@ def main():
             json.dump(version_report, f)
         # TODO items
         # Process file section of report data to identify primary paths
+        path_set = [f"{entry.get('archiveContext', "")}!{entry['path']}" for entry in version_report['detailedFileBomViewEntries']]
+        reduced_path_set = reduce(path_set.copy())
+        logging.info(f"{len(path_set)-len(reduced_path_set)} path entries were scrubbed from the dataset.")
+
+        # Remove component entries that correspond to removed path entries.
+
+        logging.info(f"Original dataset contains {len(version_report['aggregateBomViewEntries'])} bom entries and {len(version_report['detailedFileBomViewEntries'])} file view entries")
+        if not args.keep_hierarchy:
+            trim_version_report(version_report, reduced_path_set)
+            logging.info(f"Truncated dataset contains {len(version_report['aggregateBomViewEntries'])} bom entries and {len(version_report['detailedFileBomViewEntries'])} file view entries")
+
+        write_output_file(version_report, output_file)
+
         # Combine component data with selected file data
         # Output result with CSV anf JSON as options.
+
 
 
     except (Exception, BaseException) as err:
