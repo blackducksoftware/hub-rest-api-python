@@ -167,7 +167,7 @@ def trim_version_report(version_report, reduced_path_set):
     file_bom_entries = version_report['detailedFileBomViewEntries']
     aggregate_bom_view_entries = version_report['aggregateBomViewEntries']
 
-    reduced_file_bom_entries = [e for e in file_bom_entries if f"{e.get('archiveContext', "")}!{e['path']}" in reduced_path_set]
+    reduced_file_bom_entries = [e for e in file_bom_entries if f"{e.get('archiveContext', '')}!{e['path']}" in reduced_path_set]
     version_report['detailedFileBomViewEntries'] = reduced_file_bom_entries
 
     component_identifiers = [f"{e['projectId']}:{e['versionId']}" for e in reduced_file_bom_entries]
