@@ -238,7 +238,7 @@ def main():
             json.dump(version_report, f)
         # TODO items
         # Process file section of report data to identify primary paths
-        path_set = [f"{entry.get('archiveContext', "")}!{entry['path']}" for entry in version_report['detailedFileBomViewEntries']]
+        path_set = [f"{entry.get('archiveContext', '')}!{entry['path']}" for entry in version_report['detailedFileBomViewEntries']]
         reduced_path_set = reduce(path_set.copy())
         logging.info(f"{len(path_set)-len(reduced_path_set)} path entries were scrubbed from the dataset.")
 
