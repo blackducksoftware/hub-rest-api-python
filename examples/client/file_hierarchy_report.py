@@ -79,25 +79,6 @@ def find_project_version_by_name(bd, project, version_name):
     assert len(versions) == 1, f"Project version {version_name} for project {project['name']} not found"
     return versions[0]
 
-def get_bd_project_data(hub_client, project_name, version_name):
-    """ Get and return project ID, version ID. """
-    project_id = ""
-    for project in hub_client.get_resource("projects"):
-        if project['name'] == project_name:
-            project_id = (project['_meta']['href']).split("projects/", 1)[1]
-            break
-    if project_id == "":
-        sys.exit(f"No project for {project_name} was found!")
-    version_id = codelocations = ""
-    for version in hub_client.get_resource("versions", project):
-        if version['versionName'] == version_name:
-            version_id = (version['_meta']['href']).split("versions/", 1)[1]
-            break
-    if version_id == "":
-        sys.exit(f"No project version for {version_name} was found!")
-
-    return project_id, version_id
-
 def create_version_details_report(bd, version):
     version_reports_url = bd.list_resources(version).get('versionReport')
     post_data = {
