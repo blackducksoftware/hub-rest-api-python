@@ -360,9 +360,12 @@ def scan_container_images(scan_params, hub):
                 params['project'], 
                 params['version'],
                 detect_options,
-                hub=hub
+                hub=hub,
+                binary=False
             )
         except Exception:
+            import traceback
+            traceback.print_exc()
             logging.error(f"Scanning of {params['image']} failed, skipping")
             skipped_scans.append(params)
 
