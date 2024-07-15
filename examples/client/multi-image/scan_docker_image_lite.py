@@ -4,7 +4,7 @@ Created on June 7, 2023
 
 Alternative version if Docker image layer by layer scan.
 
-This program will download docker image and scan it into Blackduck server layer by layer
+This program will download docker image and scan it into Black Duck server layer by layer
 Each layer will be scanned as a separate scan with a signature scan.
 
 Layers in the container images could be grouped into groups of contiguous layers.
@@ -49,16 +49,16 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --grouping GROUPING   Group layers into user defined provect versions (can't be used with --base-image)
+  --grouping GROUPING   Group layers into user defined project versions (can't be used with --base-image)
   --base-image BASE_IMAGE
                         Use base image spec to determine base image/layers (can't be used with --grouping or
                         --dockerfile)
   --dockerfile DOCKERFILE
                         Use Dockerfile to determine base image/layers (can't be used with --grouping or ---base-image)
   --project-name        Specify project name (default is container image spec)
-  --project-verson      Specify project version (default is container image tag/version)
+  --project-version      Specify project version (default is container image tag/version)
   --detect-options DETECT_OPTIONS
-                        Extra detect options to be passed directlyto the detect
+                        Extra detect options to be passed directly to the detect
 
 
 Using --detect-options
@@ -187,13 +187,23 @@ class DockerWrapper():
         with open(configFile) as fp:
             data = json.load(fp)
         return data
+    
+    def read_oci_layout(self):
+        oci_layout_file = self.imagedir + "/" + 'oci-layout'
+        if os.path.exists(oci_layout_file) and os.path.isfile(oci_layout_file):
+            with open(oci_layout_file) as fp:
+                data = json.load(fp)
+            return data
+        else:
+            return None
  
 class Detector():
     def __init__(self, hub):
         # self.detecturl = 'https://blackducksoftware.github.io/hub-detect/hub-detect.sh'
         # self.detecturl = 'https://detect.synopsys.com/detect.sh'
         # self.detecturl = 'https://detect.synopsys.com/detect7.sh'
-        self.detecturl = 'https://detect.synopsys.com/detect8.sh'
+        # self.detecturl = 'https://detect.synopsys.com/detect8.sh'
+        self.detecturl = 'https://detect.synopsys.com/detect9.sh'
         self.baseurl = hub.config['baseurl']
         self.filename = '/tmp/hub-detect.sh'
         self.token=hub.config['api_token']
@@ -240,6 +250,7 @@ class ContainerImageScanner():
         if detect_options:
             self.extra_options = detect_options.split(" ")
         print ("<--{}-->".format(self.grouping))
+        self.binary = False
 
     def prepare_container_image(self):
         self.docker.initdir()
@@ -262,28 +273,6 @@ class ContainerImageScanner():
         if len(history_grouping) and self.grouping == '1024:everything':
             self.grouping = history_grouping
 
-    def prepare_container_image_old(self):
-        self.docker.initdir()
-        self.docker.pull_container_image(self.container_image_name)
-        result = self.docker.get_container_image_history(self.container_image_name)
-        history = result.stdout.splitlines()
-        layer_count = 0
-        history_grouping = ''
-        for line in reversed(history):
-            print (line)
-            if not line.rstrip().endswith(b' 0B'):
-                layer_count +=1
-            match = re.search('echo (.+?)_group_end', str(line))
-            if match:
-                found = match.group(1)
-                if len(history_grouping):
-                    history_grouping += ','
-                history_grouping += str(layer_count) + ":" + found
-        if len(history_grouping) and self.grouping == '1024:everything':
-            self.grouping = history_grouping
-        self.docker.save_container_image(self.container_image_name)
-        self.docker.unravel_container()
-    
     def process_container_image_by_user_defined_groups(self):
         self.manifest = self.docker.read_manifest()
         print(self.manifest)
@@ -455,12 +444,12 @@ def main(argv=None):
         
     parser = ArgumentParser()
     parser.add_argument('imagespec', help="Container image tag, e.g.  repository/imagename:version")
-    parser.add_argument('--grouping',default=None, type=str, help="Group layers into user defined provect versions (can't be used with --base-image)")
+    parser.add_argument('--grouping',default=None, type=str, help="Group layers into user defined project versions (can't be used with --base-image)")
     parser.add_argument('--base-image',default=None, type=str, help="Use base image spec to determine base image/layers (can't be used with --grouping or --dockerfile)")
     parser.add_argument('--dockerfile',default=None, type=str, help="Use Dockerfile to determine base image/layers (can't be used with --grouping or ---base-image)")
     parser.add_argument('--project-name',default=None, type=str, help="Specify project name (default is container image spec)")
     parser.add_argument('--project-version',default=None, type=str, help="Specify project version (default is container image tag/version)")
-    parser.add_argument('--detect-options',default=None, type=str, help="Extra detect options to be passed directlyto the detect")
+    parser.add_argument('--detect-options',default=None, type=str, help="Extra detect options to be passed directly to the detect")
     
     args = parser.parse_args()
     
