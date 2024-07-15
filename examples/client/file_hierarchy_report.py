@@ -162,7 +162,7 @@ def write_output_file(version_report, output_file):
         logging.info(f"Writing CSV output into {output_file}")
         field_names = list(version_report['aggregateBomViewEntries'][0].keys())
         with open(output_file, "w") as f:
-            writer = csv.DictWriter(f, fieldnames = field_names, extrasaction = 'ignore')
+            writer = csv.DictWriter(f, fieldnames = field_names, extrasaction = 'ignore') # TODO
             writer.writeheader()
             writer.writerows(version_report['aggregateBomViewEntries'])
 
