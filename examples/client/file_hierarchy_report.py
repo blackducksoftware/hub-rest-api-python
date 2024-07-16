@@ -157,15 +157,45 @@ def trim_version_report(version_report, reduced_path_set):
     reduced_aggregate_bom_view_entries = [e for e in aggregate_bom_view_entries if f"{e['producerProject']['id']}:{e['producerReleases'][0]['id']}" in deduplicated]
     version_report['aggregateBomViewEntries'] = reduced_aggregate_bom_view_entries
 
+'''
+
+CSV output details
+
+component name  = aggregateBomViewEntries[].producerProject.name
+version name  = aggregateBomViewEntries[].producerReleases[0].version
+license  = licenses[].licenseDisplay
+file path = extract from detailedFileBomViewEntries
+match type = aggregateBomViewEntries[].matchTypes
+review status = aggregateBomViewEntries[].reviewSummary.reviewStatus
+
+'''
+def get_csv_fieldnames():
+    return ['component name', 'version name', 'license', 'file path', 'match type', 'review status']
+
+def get_csv_data(version_report):
+    csv_data = list()
+    for bom_view_entry in version_report['aggregateBomViewEntries']:
+        entry = dict()
+        entry['component name'] = bom_view_entry['producerProject']['name']
+        entry['version name'] = bom_view_entry['producerReleases'][0]['version']
+        entry['license'] = bom_view_entry['licenses'][0]['licenseDisplay'].replace(' AND ',';').replace('(','').replace(')','')
+        pid = bom_view_entry['producerProject']['id']
+        vid = bom_view_entry['producerReleases'][0]['id']
+        path_list = [p['path'] for p in version_report['detailedFileBomViewEntries'] if p['projectId'] == pid and p['versionId'] == vid]
+        entry['file path'] = ';'.join(path_list)
+        entry['match type'] = ';'.join(bom_view_entry['matchTypes'])
+        entry['review status'] = bom_view_entry['reviewSummary']['reviewStatus']
+        csv_data.append(entry)
+    return csv_data
+
 def write_output_file(version_report, output_file):
     if output_file.lower().endswith(".csv"):
         logging.info(f"Writing CSV output into {output_file}")
-        field_names = list(version_report['aggregateBomViewEntries'][0].keys())
+        field_names = get_csv_fieldnames()
         with open(output_file, "w") as f:
             writer = csv.DictWriter(f, fieldnames = field_names, extrasaction = 'ignore') # TODO
             writer.writeheader()
-            writer.writerows(version_report['aggregateBomViewEntries'])
-
+            writer.writerows(get_csv_data(version_report))
         return
     # If it's neither, then .json
     if not output_file.lower().endswith(".json"):
