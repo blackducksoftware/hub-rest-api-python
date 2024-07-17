@@ -193,7 +193,7 @@ def write_output_file(version_report, output_file):
         logging.info(f"Writing CSV output into {output_file}")
         field_names = get_csv_fieldnames()
         with open(output_file, "w") as f:
-            writer = csv.DictWriter(f, fieldnames = field_names, extrasaction = 'ignore') # TODO
+            writer = csv.DictWriter(f, fieldnames = field_names, extrasaction = 'ignore',quoting=csv.QUOTE_ALL) # TODO
             writer.writeheader()
             writer.writerows(get_csv_data(version_report))
         return
