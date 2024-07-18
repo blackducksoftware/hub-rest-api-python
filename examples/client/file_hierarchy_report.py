@@ -207,7 +207,7 @@ def remove_duplicates(data):
             buckets[version] = [row]
         else:
             buckets[version].append(row)
-    # Run reduction process in component names that start with existing component name
+    # Run reduction process for component names that start with existing component name
     # This process will ignore case in component names
     for set in buckets.values():
         set.sort(key = lambda d: d['component name'].lower())
