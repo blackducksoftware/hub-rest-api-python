@@ -170,22 +170,28 @@ review status = aggregateBomViewEntries[].reviewSummary.reviewStatus
 
 '''
 def get_csv_fieldnames():
-    return ['component name', 'version name', 'license', 'file path', 'match type', 'review status']
+    return ['component name', 'version name', 'license', 'match type', 'review status']
 
 def get_csv_data(version_report):
     csv_data = list()
+    components = list()
     for bom_view_entry in version_report['aggregateBomViewEntries']:
-        entry = dict()
+        entry = dict()   
         entry['component name'] = bom_view_entry['producerProject']['name']
         entry['version name'] = bom_view_entry['producerReleases'][0]['version']
         entry['license'] = bom_view_entry['licenses'][0]['licenseDisplay'].replace(' AND ',';').replace('(','').replace(')','')
         pid = bom_view_entry['producerProject']['id']
         vid = bom_view_entry['producerReleases'][0]['id']
-        path_list = [p['path'] for p in version_report['detailedFileBomViewEntries'] if p['projectId'] == pid and p['versionId'] == vid]
-        entry['file path'] = ';'.join(path_list)
+        #path_list = [p['path'] for p in version_report['detailedFileBomViewEntries'] if p['projectId'] == pid and p['versionId'] == vid]
+        #entry['file path'] = ';'.join(path_list)
         entry['match type'] = ';'.join(bom_view_entry['matchTypes'])
         entry['review status'] = bom_view_entry['reviewSummary']['reviewStatus']
-        csv_data.append(entry)
+        
+        # Only add if this component was not previously added.
+        composite_key = pid + vid
+        if composite_key not in components:
+            csv_data.append(entry)
+            components.append(composite_key)
     return csv_data
 
 def write_output_file(version_report, output_file):
