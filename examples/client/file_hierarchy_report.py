@@ -172,7 +172,7 @@ review status = aggregateBomViewEntries[].reviewSummary.reviewStatus
 def get_csv_fieldnames():
     return ['component name', 'version name', 'license', 'match type', 'review status']
 
-def get_csv_data(version_report):
+def get_csv_data(version_report, keep_dupes):
     csv_data = list()
     components = list()
     for bom_view_entry in version_report['aggregateBomViewEntries']:
@@ -192,16 +192,43 @@ def get_csv_data(version_report):
         if composite_key not in components:
             csv_data.append(entry)
             components.append(composite_key)
-    return csv_data
+    if keep_dupes:
+        return csv_data
+    else:
+        return remove_duplicates(csv_data)
+    
+def remove_duplicates(data):
+    # Put data into buckets by version
+    buckets = dict()
+    for row in data:
+        name = row['component name'].lower()
+        version = row['version name']
+        if not version in buckets:
+            buckets[version] = [row]
+        else:
+            buckets[version].append(row)
+    # Run reduction process in component names that start with existing component name
+    # This process will ignore case in component names
+    for set in buckets.values():
+        set.sort(key = lambda d: d['component name'].lower())
+        for row in set:
+            index = set.index(row)
+            name  = row['component name'].lower()
+            while index + 1 < len(set) and set[index+1]['component name'].lower().startswith(name):
+                set.pop(index+1)
+    reduced_data = list()
+    for b in buckets.values():
+        reduced_data.extend(b)
+    return reduced_data
 
-def write_output_file(version_report, output_file):
+def write_output_file(version_report, output_file, keep_dupes):
     if output_file.lower().endswith(".csv"):
         logging.info(f"Writing CSV output into {output_file}")
         field_names = get_csv_fieldnames()
         with open(output_file, "w") as f:
             writer = csv.DictWriter(f, fieldnames = field_names, extrasaction = 'ignore',quoting=csv.QUOTE_ALL) # TODO
             writer.writeheader()
-            writer.writerows(get_csv_data(version_report))
+            writer.writerows(get_csv_data(version_report, keep_dupes))
         return
     # If it's neither, then .json
     if not output_file.lower().endswith(".json"):
@@ -219,6 +246,7 @@ def parse_command_args():
     parser.add_argument("-pn", "--project-name", required=True, help="Project Name")
     parser.add_argument("-pv", "--project-version-name", required=True, help="Project Version Name")
     parser.add_argument("-o", "--output-file", required=False, help="File name to write output. File extension determines format .json and .csv, json is the default.")
+    parser.add_argument("-kd", "--keep-dupes", action='store_true', help="Do not reduce CVS data by fuzzy matching component names")
     parser.add_argument("-kh", "--keep_hierarchy", action='store_true', help="Set to keep all entries in the sources report. Will not remove components found under others.")
     parser.add_argument("--report-retries", metavar="", type=int, default=RETRY_LIMIT, help="Retries for receiving the generated BlackDuck report. Generating copyright report tends to take longer minutes.")
     parser.add_argument("--report-timeout", metavar="", type=int, default=RETRY_TIMER, help="Wait time between subsequent download attempts.")
@@ -266,7 +294,7 @@ def main():
             trim_version_report(version_report, reduced_path_set)
             logging.info(f"Truncated dataset contains {len(version_report['aggregateBomViewEntries'])} bom entries and {len(version_report['detailedFileBomViewEntries'])} file view entries")
 
-        write_output_file(version_report, output_file)
+        write_output_file(version_report, output_file, args.keep_dupes)
 
         # Combine component data with selected file data
         # Output result with CSV anf JSON as options.
