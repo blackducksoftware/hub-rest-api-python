@@ -20,64 +20,38 @@ software distributed under the License is distributed on an
 KIND, either express or implied. See the License for the
 specific language governing permissions and limitations
 under the License.
+'''
 
+program_description = \
+'''
 This script will scan a multi-container project into 
 hierarchical structure.
 
 Project Name
       Project Version
-           Subproject Name
-                Subproject Vesrsion
+           Sub-project Name
+                Sub-project Version
                     Base Image
                         Base Image Version
                     Add on Image
                         Add on Image Version
 
-usage: python3 manage_project_structure.py [-h] -u BASE_URL -t TOKEN_FILE [-pg PROJECT_GROUP] -p PROJECT_NAME -pv VERSION_NAME
-                                           [-sp SUBPROJECT_LIST | -ssf SUBPROJECT_SPEC_FILE] [-nv] [-rm] [--clone-from CLONE_FROM]
-                                           [--dry-run] [-str STRING_TO_PUT_IN_FRONT_OF_SUBPROJECT_NAME]
+Sub-projects are specified as sub-project:[container]:[tag]
+if container name omitted it will be set to sub-project
+if tag omitted it would be set to 'latest'
 
-options:
-  -h, --help            show this help message and exit
-  -u BASE_URL, --base-url BASE_URL
-                        Hub server URL e.g. https://your.blackduck.url
-  -t TOKEN_FILE, --token-file TOKEN_FILE
-                        File containing access token
-  -pg PROJECT_GROUP, --project_group PROJECT_GROUP
-                        Project Group to be used
-  -p PROJECT_NAME, --project-name PROJECT_NAME
-                        Project Name
-  -pv VERSION_NAME, --version-name VERSION_NAME
-                        Project Version Name
-  -sp SUBPROJECT_LIST, --subproject-list SUBPROJECT_LIST
-                        List of subprojects to generate with subproject:container:tag
-  -ssf SUBPROJECT_SPEC_FILE, --subproject-spec-file SUBPROJECT_SPEC_FILE
-                        Excel or txt file containing subproject specification
-  -nv, --no-verify      Disable TLS certificate verification
-  -rm, --remove         Remove project structure with all subprojects (DANGEROUS!)
-  --clone-from CLONE_FROM
-                        Main project version to use as template for cloning
-  --dry-run             Create structure only, do not execute scans
-  -str STRING_TO_PUT_IN_FRONT_OF_SUBPROJECT_NAME, --string-to-put-in-front-of-subproject-name STRING_TO_PUT_IN_FRONT_OF_SUBPROJECT_NAME
-
-Subprojects ae specified as subproject:[container]:[tag]
-if container name omited it will be set to subproject
-if tag omited it would be set to 'latest'
-
-Subprojects an be specified in excel file with -ssf --subproject-spec-file parameter.
+Sub-projects an be specified in excel file with -ssf --subproject-spec-file parameter.
 Excel file should contain one worksheet with first row containing column names as following:
 Container Name, Image ID, Version, Project Name
 and subsequent rows containing data
 
-Sublrojects could be specified in a text file with -ssf --subproject-spec-file parameter
+Sub-projects could be specified in a text file with -ssf --subproject-spec-file parameter
 Each line will have to contain full image specification.
-Specification will be parsed and image name prefixed by -str parameter will be used as a subproject name
+Specification will be parsed and image name prefixed by -str parameter will be used as a sub-project name
 In this mode any image that is not residing on ciena.com repository will be skipped.
 If -str parameter is empty, Project Name will be used instead.
 
 Container image name scanned will be written into project version nickname field
-
-  
 
 '''
 
@@ -90,289 +64,359 @@ import arrow
 from blackduck import Client
 from pprint import pprint,pformat
 
-logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', stream=sys.stderr, level=logging.DEBUG)
-logging.getLogger("requests").setLevel(logging.INFO)
-logging.getLogger("urllib3").setLevel(logging.INFO)
-logging.getLogger("blackduck").setLevel(logging.INFO)
+class MultiImageProjectManager():
 
-strict = False
+    def __init__(self, args):
+        self.debug = args.debug
+        self.log_config()
+        self.base_url = args.base_url
+        with open(args.token_file, 'r') as tf:
+            self.access_token = tf.readline().strip()
+        self.no_verify = args.no_verify
+        self.connect()
+        self.init_project_data(args)
 
-def remove_project_structure(project_name, version_name):
-    project = find_project_by_name(project_name)
-    if not project:
-        logging.info(f"Project {project_name} does not exist.")
-        return
-    num_versions = bd.get_resource('versions', project, items=False)['totalCount']
-    version = find_project_version_by_name(project,version_name)
-    if not version:
-        logging.info(f"Project {project_name} with version {version_name} does not exist.")
-        return
-    components = [
-        c for c in bd.get_resource('components',version) if c['componentType'] == "SUB_PROJECT"
-    ]
-    logging.info(f"Project {project_name}:{version_name} has {len(components)} subprojects")
-    for component in components:
-        component_name = component['componentName']
-        component_version_name = component['componentVersionName']
-        logging.info(f"Removing subproject {component_name} from {project_name}:{version_name}")
-        component_url = component['_meta']['href']
-        response = bd.session.delete(component_url) 
-        logging.info(f"Operation completed with {response}")
-        remove_project_structure(component_name, component_version_name)
-    logging.info(f"Removing {project_name}:{version_name}")
-    if num_versions > 1:
-        response = bd.session.delete(version['_meta']['href'])
-    else:
-        response = bd.session.delete(project['_meta']['href'])
-    logging.info(f"Operation completed with {response}")
+    def connect(self):
+        self.client = Client(base_url=self.base_url, token=self.access_token, verify=self.no_verify, timeout=60.0, retries=4)
+      
+    def init_project_data(self,args):
+        self.project_data = dict()
+        self.project_data['project_name'] = args.project_name
+        self.project_data['version_name'] = args.version_name
+        self.project_data['project_group'] = args.project_group
+        self.project_data['clone_from'] = args.clone_from
+        self.project_data['dry_run'] = args.dry_run
+        self.project_data['strict'] = args.strict
+        self.project_data['remove'] = args.remove
 
-def remove_codelocations_recursively(version):
-    components = bd.get_resource('components', version)
-    subprojects = [x for x in components if x['componentType'] == 'SUB_PROJECT']
-    logging.info(f"Found {len(subprojects)} subprojects")
-    unmap_all_codelocations(version)
-    for subproject in subprojects:
-        subproject_name = subproject['componentName']
-        subproject_version_name = subproject['componentVersionName']
-        project = find_project_by_name(subproject_name)
+        subprojects = dict()
+        child_spec_list = self.get_child_spec_list(args)
+        for child_spec in [x.split(':') for x in child_spec_list]:
+            subproject = dict()
+            i = iter(child_spec)
+            i = iter(child_spec)
+            child = next(i)
+            repo = next(i, child)
+            tag = next(i,'latest')
+            container_spec = f"{repo}:{tag}"
+            while child in subprojects:
+                child += "_"
+            subproject['image'] = container_spec
+            subproject['project_name'] = child
+            subproject['version_name'] = args.version_name
+            subproject['project_group'] = args.project_group
+            subproject['clone_from'] = args.clone_from
+            subprojects[child] = subproject
+
+        self.project_data['subprojects'] = subprojects
+
+    def log_config(self):
+        if self.debug:
+            logging.basicConfig(format='%(asctime)s:%(levelname)s:%(module)s: %(message)s', stream=sys.stderr, level=logging.DEBUG)
+        else:
+            logging.basicConfig(format='%(asctime)s:%(levelname)s:%(module)s: %(message)s', stream=sys.stderr, level=logging.INFO)
+        logging.getLogger("requests").setLevel(logging.WARNING)
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        logging.getLogger("blackduck").setLevel(logging.WARNING)
+
+    def log(self, level, msg, target=None):
+        if target:
+            target_log = target.get('log', None)
+            if not target_log:
+                target_log = list()
+                target['log'] = target_log
+            target_log.append(msg)
+        log_function = getattr(logging, level)
+        log_function(msg)
+
+    def remove_project_structure(self, project_name, version_name):
+        project = self.find_project_by_name(project_name)
+
         if not project:
-            logging.info(f"Project {subproject_name} does not exist.")
+            logging.info(f"Project {project_name} does not exist.")
             return
-        subproject_version = find_project_version_by_name(project, subproject_version_name)   
-        if not subproject_version:
-            logging.info(f"Project {subproject_name} with version {subversion_name} does not exist.")
+        num_versions = self.client.get_resource('versions', project, items=False)['totalCount']
+        version = self.find_project_version_by_name(project,version_name)
+        if not version:
+            logging.info(f"Project {project_name} with version {version_name} does not exist.")
             return
-        remove_codelocations_recursively(subproject_version)
-
-def unmap_all_codelocations(version):
-    codelocations = bd.get_resource('codelocations',version)
-    for codelocation in codelocations:
-        logging.info(f"Unmapping codelocation {codelocation['name']}")
-        codelocation['mappedProjectVersion'] = ""
-        response = bd.session.put(codelocation['_meta']['href'], json=codelocation)
-        pprint (response)
-
-
-def find_or_create_project_group(group_name):
-    url = '/api/project-groups'
-    params = {
-        'q': [f"name:{group_name}"]
-    }
-    groups = [p for p in bd.get_items(url, params=params) if p['name'] == group_name]
-    if len(groups) == 0:
-        headers = {
-            'Accept': 'application/vnd.blackducksoftware.project-detail-5+json',
-            'Content-Type': 'application/vnd.blackducksoftware.project-detail-5+json'
-        }
-        data = {
-            'name': group_name
-        }
-        response = bd.session.post(url, headers=headers, json=data)
-        return response.headers['Location'] 
-    else:
-        return groups[0]['_meta']['href']
-
-def find_project_by_name(project_name):
-    params = {
-        'q': [f"name:{project_name}"]
-    }
-    projects = [p for p in bd.get_resource('projects', params=params) if p['name'] == project_name]
-    if len(projects) == 1:
-        return projects[0]
-    else:
-        return None
-
-def find_project_version_by_name(project, version_name):
-    params = {
-        'q': [f"versionName:{version_name}"]
-    }
-    versions = [v for v in bd.get_resource('versions', project, params=params) if v['versionName'] == version_name]
-    if len(versions) == 1:
-        return versions[0]
-    else:
-        return None
-
-def create_project_version(project_name,version_name,args, nickname = None):
-    version_data = {"distribution": "EXTERNAL", "phase": "DEVELOPMENT", "versionName": version_name}
-    if nickname:
-        version_data['nickname'] = nickname
-    url = '/api/projects'
-    project = find_project_by_name(project_name)
-    if project:
-        data = version_data
-        url = project['_meta']['href'] + '/versions'
-    else:
-        data = {"name": project_name,
-                "projectGroup": find_or_create_project_group(args.project_group),
-                "versionRequest": version_data}
-    return bd.session.post(url, json=data)
-
-def add_component_to_version_bom(child_version, version):
-    url = version['_meta']['href'] + '/components'
-    data = { 'component': child_version['_meta']['href']}
-    return bd.session.post(url, json=data)
-
-def process_excel_spec_file(wb):
-    ws = wb.active
-    project_list = []
-    row_number = 0
-    for row in ws.values:
-        row_number += 1
-        if (row_number == 1 and
-            row[0] == 'Container Name' and
-            row[1] == 'Image ID' and
-            row[2] == 'Version' and
-            row[3] == 'Project Name'):
-            logging.info(f"File Format checks out (kind of)")
-            continue
-        elif row_number > 1:
-            project_list.append(f"{row[3]}:{row[0]}:{row[2]}")
+        components = [
+            c for c in self.client.get_resource('components',version) if c['componentType'] == "SUB_PROJECT"
+        ]
+        logging.info(f"Project {project_name}:{version_name} has {len(components)} subprojects")
+        for component in components:
+            component_name = component['componentName']
+            component_version_name = component['componentVersionName']
+            logging.info(f"Removing subproject {component_name} from {project_name}:{version_name}")
+            component_url = component['_meta']['href']
+            response = self.client.session.delete(component_url) 
+            logging.info(f"Operation completed with {response}")
+            self.remove_project_structure(component_name, component_version_name)
+        logging.info(f"Removing {project_name}:{version_name}")
+        if num_versions > 1:
+            response = self.client.session.delete(version['_meta']['href'])
         else:
-            logging.error(f"Could not parse input file {args.subproject_spec_file}")
-            sys.exit(1)
-    return (project_list)
+            response = self.client.session.delete(project['_meta']['href'])
+        logging.info(f"Operation completed with {response}")
 
-def process_text_spec_file(args):
-    project_list = []
-    prefix = args.string_to_put_in_front_of_subproject_name
-    if not prefix:
-        prefix = args.project_name
-    with open(args.subproject_spec_file, "r") as f:
-        lines = f.read().splitlines()
-    for line in lines:
-        image_name = line.split('/')[-1].split(':')[0]   # Don't look at me, you wrote it!
-        sub_project_name = "_".join((prefix, image_name))
-        spec_line = ":".join((sub_project_name, line))
-        if "ciena.com" in spec_line:
-            project_list.append(spec_line)    
-    return (project_list)
+    def remove_codelocations_recursively(version):
+        components = self.client.get_resource('components', version)
+        subprojects = [x for x in components if x['componentType'] == 'SUB_PROJECT']
+        logging.info(f"Found {len(subprojects)} subprojects")
+        unmap_all_codelocations(version)
+        for subproject in subprojects:
+            subproject_name = subproject['componentName']
+            subproject_version_name = subproject['componentVersionName']
+            project = find_project_by_name(subproject_name)
+            if not project:
+                logging.info(f"Project {subproject_name} does not exist.")
+                return
+            subproject_version = find_project_version_by_name(project, subproject_version_name)   
+            if not subproject_version:
+                logging.info(f"Project {subproject_name} with version {subversion_name} does not exist.")
+                return
+            remove_codelocations_recursively(subproject_version)
 
-def get_child_spec_list(args):
-    if args.subproject_list:
-        return args.subproject_list.split(',')
-    else:
-        # Excel and plaintext
-        logging.info(f"Processing excel file {args.subproject_spec_file}")
-        import openpyxl
-        try:
-            wb = openpyxl.load_workbook(args.subproject_spec_file)
-            return process_excel_spec_file(wb)
-        except Exception:
-            return process_text_spec_file(args)
+    def unmap_all_codelocations(version):
+        codelocations = self.client.get_resource('codelocations',version)
+        for codelocation in codelocations:
+            logging.info(f"Unmapping codelocation {codelocation['name']}")
+            codelocation['mappedProjectVersion'] = ""
+            response = self.client.session.put(codelocation['_meta']['href'], json=codelocation)
+            pprint (response)
 
-def create_and_add_child_projects(version, args):
-    version_url = version['_meta']['href'] + '/components'
-    child_spec_list = get_child_spec_list(args)
-    for child_spec in [x.split(':') for x in child_spec_list]:
-        i = iter(child_spec)
-        child = next(i)
-        repo = next(i, child)
-        tag = next(i,'latest')
-        container_spec = f"{repo}:{tag}"
-        scan_param = {'image': container_spec, 'project': child, 'version': args.version_name, 'project_group': args.project_group}
-        if args.clone_from:
-            scan_param['clone_from'] = args.clone_from
-        project = find_project_by_name(child)
+
+    def find_or_create_project_group(self, group_name):
+        url = '/api/project-groups'
+        params = {
+            'q': [f"name:{group_name}"]
+        }
+        groups = [p for p in self.client.get_items(url, params=params) if p['name'] == group_name]
+        if len(groups) == 0:
+            headers = {
+                'Accept': 'application/vnd.blackducksoftware.project-detail-5+json',
+                'Content-Type': 'application/vnd.blackducksoftware.project-detail-5+json'
+            }
+            data = {
+                'name': group_name
+            }
+            response = self.client.session.post(url, headers=headers, json=data)
+            return response.headers['Location'] 
+        else:
+            return groups[0]['_meta']['href']
+
+    def find_project_by_name(self, project_name):
+        params = {
+            'q': [f"name:{project_name}"]
+        }
+        projects = [p for p in self.client.get_resource('projects', params=params) if p['name'] == project_name]
+        if len(projects) == 1:
+            return projects[0]
+        else:
+            return None
+
+    def find_project_version_by_name(self, project, version_name):
+        params = {
+            'q': [f"versionName:{version_name}"]
+        }
+        versions = [v for v in self.client.get_resource('versions', project, params=params) if v['versionName'] == version_name]
+        if len(versions) == 1:
+            return versions[0]
+        else:
+            return None
+
+    def create_project_version(self,project_name,version_name,nickname = None):
+        version_data = {"distribution": "EXTERNAL", "phase": "DEVELOPMENT", "versionName": version_name}
+        if nickname:
+            version_data['nickname'] = nickname
+        url = '/api/projects'
+        project = self.find_project_by_name(project_name)
         if project:
-            version = find_project_version_by_name(project,args.version_name)
-            if version:
-                if strict:
-                    logging.error(f"Child project {project['name']} with version {args.version_name} exists.")
-                    sys.exit(1)
-                else:
-                    logging.info(f"Child project {project['name']} with version {args.version_name} found.")
-                    logging.info(f"Recursively removing codelocations for {project['name']} with version {args.version_name} ")
-                    try:
-                        logging.info(f"Adding project {child} {args.version_name} to the parent project")
-                        child_version_url = version['_meta']['href']
-                        response = bd.session.post(version_url,json={'component': child_version_url})
-                        logging.info(f"Adding {child} : {args.version_name} to parent project completed with {response}")
-                    except Exception as e:
-                        logging.info(f"Adding {child} : {args.version_name} to parent project completed with exception {e}")
-
-                    remove_codelocations_recursively(version)
-            else:
-                response = create_project_version(child,args.version_name, args, nickname=container_spec)
-                logging.info(f"Creating project {child} : {args.version_name} completed with {response}")
-                if response.ok:
-                    child_version = find_project_version_by_name(find_project_by_name(child),args.version_name)
-                    child_version_url = child_version['_meta']['href']
-                    response = bd.session.post(version_url,json={'component': child_version_url})
-                    logging.info(f"Adding {child} : {args.version_name} to parent project completed with {response}")
+            data = version_data
+            url = project['_meta']['href'] + '/versions'
         else:
-            response = create_project_version(child,args.version_name, args, nickname=container_spec)
-            logging.info(f"Creating project {child} : {args.version_name} completed with {response}")
-            if response.ok:
-                child_version = find_project_version_by_name(find_project_by_name(child),args.version_name)
-                child_version_url = child_version['_meta']['href']
-                response = bd.session.post(version_url,json={'component': child_version_url})
-                logging.info(f"Adding {child} : {args.version_name} to parent project completed with {response}")
-        scan_params.append(scan_param)
+            data = {"name": project_name,
+                    "projectGroup": self.find_or_create_project_group(self.project_data['project_group']),
+                    "versionRequest": version_data}
+        return self.client.session.post(url, json=data)
 
-def create_project_structure(args):
-    project = find_project_by_name(args.project_name)
-    logging.info(f"Project {args.project_name} located")
-    if project:
-        version = find_project_version_by_name(project,args.version_name)
-        if version:
-            if strict:
-                logging.error(f"Project {project['name']} with version {args.version_name} exists.")
-                sys.exit(1) 
+    def add_component_to_version_bom(child_version, version):
+        url = version['_meta']['href'] + '/components'
+        data = { 'component': child_version['_meta']['href']}
+        return self.client.session.post(url, json=data)
+
+    def process_excel_spec_file(self,wb):
+        ws = wb.active
+        project_list = []
+        row_number = 0
+        for row in ws.values:
+            row_number += 1
+            if (row_number == 1 and
+                row[0] == 'Container Name' and
+                row[1] == 'Image ID' and
+                row[2] == 'Version' and
+                row[3] == 'Project Name'):
+                logging.info(f"File Format checks out (kind of)")
+                continue
+            elif row_number > 1:
+                project_list.append(f"{row[3]}:{row[0]}:{row[2]}")
             else:
-                logging.info(f"Found Project {project['name']} with version {args.version_name}.")
-        else:
-            response = create_project_version(args.project_name,args.version_name,args)
-            if response.ok:
-                version = find_project_version_by_name(find_project_by_name(args.project_name),args.version_name)
-                logging.info(f"Project {args.project_name} : {args.version_name} created")
-            else:
-                logging.info(f"Failed to create Project {args.project_name} : {args.version_name} created")
+                logging.error(f"Could not parse input file ")
                 sys.exit(1)
-    else:
-        response = create_project_version(args.project_name,args.version_name,args)
-        if response.ok:
-            version = find_project_version_by_name(find_project_by_name(args.project_name),args.version_name)
-            logging.info(f"Project {args.project_name} : {args.version_name} created")
+        return (project_list)
+
+    def process_text_spec_file(self,args):
+        project_list = []
+        prefix = args.string_to_put_in_front_of_subproject_name
+        if not prefix:
+            prefix = args.project_name
+        with open(args.subproject_spec_file, "r") as f:
+            lines = f.read().splitlines()
+        for line in lines:
+            image_name = line.split('/')[-1].split(':')[0]   # Don't look at me, you wrote it!
+            sub_project_name = "_".join((prefix, image_name))
+            spec_line = ":".join((sub_project_name, line))
+            if "ciena.com" in spec_line:
+                project_list.append(spec_line)    
+        return (project_list)
+
+    def get_child_spec_list(self,args):
+        if args.subproject_list:
+            return args.subproject_list.split(',')
         else:
-            logging.info(f"Failed to create Project {args.project_name} : {args.version_name} created")
-            sys.exit(1)
-    logging.info(f"Checking/Adding subprojects to {args.project_name} : {version['versionName']}")
-    create_and_add_child_projects(version, args)
+            # Excel and plaintext
+            logging.debug(f"Processing excel file {args.subproject_spec_file}")
+            import openpyxl
+            try:
+                wb = openpyxl.load_workbook(args.subproject_spec_file)
+                return self.process_excel_spec_file(wb)
+            except Exception:
+                return self.process_text_spec_file(args)
 
-def scan_container_images(scan_params, hub):
-    from scan_docker_image_lite import scan_container_image
-    for params in scan_params:
-        detect_options =    (f"--detect.parent.project.name={params['project']} "
-                            f"--detect.parent.project.version.name={params['version']} " 
-                            f"--detect.project.version.nickname={params['image']}")
-        clone_from = params.get('clone_from', None)
-        if clone_from:
-            detect_options += f" --detect.clone.project.version.name={clone_from}"
-        project_group = params.get('project_group', None)
-        if project_group:
-            detect_options += f" --detect.project.group.name=\"{project_group}\""
-        try:
-            scan_container_image(
-                params['image'], 
-                None, 
-                None, 
-                None, 
-                params['project'], 
-                params['version'],
-                detect_options,
-                hub=hub,
-                binary=False
-            )
-        except Exception:
-            import traceback
-            traceback.print_exc()
-            logging.error(f"Scanning of {params['image']} failed, skipping")
-            skipped_scans.append(params)
+    def create_and_add_child_projects(self,version):
+        version_url = version['_meta']['href'] + '/components'
+        version_name = self.project_data['version_name']
+        for child_name, child in self.project_data['subprojects'].items():
+            child_name = child['project_name']
+            container_spec = child['image']
+            project = self.find_project_by_name(child_name)
+            if project:
+                version = self.find_project_version_by_name(project,version_name)
+                if version:
+                    if self.project_data['strict']:
+                        self.log('error', f"Child project {project['name']} with version {version_name} exists.", child)
+                        sys.exit(1)
+                    else:
+                        self.log('debug',f"Child project {project['name']} with version {version_name} found.", child)
+                        self.log('debug',f"Recursively removing codelocations for {project['name']} with version {version_name} ", child)
+                        try:
+                            self.log('debug',f"Adding project {child_name} {version_name} to the parent project", child)
+                            child_version_url = version['_meta']['href']
+                            response = self.client.session.post(version_url,json={'component': child_version_url})
+                            self.log('debug',f"Adding {child_name} : {version_name} to parent project completed with {response}", child)
+                        except Exception as e:
+                            self.log('debug',f"Adding {child_name} : {version_name} to parent project completed with exception {e}", child)
 
+                        # remove_codelocations_recursively(version)
+                else:
+                    response = self.create_project_version(child_name,version_name, nickname=container_spec)
+                    self.log('debug',f"Creating project {child_name} : {version_name} completed with {response}", child)
+                    if response.ok:
+                        child_version = self.find_project_version_by_name(self.find_project_by_name(child_name),version_name)
+                        child_version_url = child_version['_meta']['href']
+                        response = self.client.session.post(version_url,json={'component': child_version_url})
+                        self.log('debug',f"Adding {child_name} : {version_name} to parent project completed with {response}", child)
+            else:
+                response = self.create_project_version(child_name,version_name, nickname=container_spec)
+                self.log('debug',f"Creating project {child_name} : {version_name} completed with {response}",child)
+                if response.ok:
+                    child_version = self.find_project_version_by_name(self.find_project_by_name(child_name),version_name)
+                    child_version_url = child_version['_meta']['href']
+                    response = self.client.session.post(version_url,json={'component': child_version_url})
+                    self.log('debug',f"Adding {child_name} : {version_name} to parent project completed with {response}", child)
+
+    def create_project_structures(self):
+        project_name = self.project_data['project_name']
+        version_name = self.project_data['version_name']
+
+        project = self.find_project_by_name(project_name)
+        if project:
+            self.log('debug', f"Project {project_name} located", self.project_data)
+            version = self.find_project_version_by_name(project,version_name)
+            if version:
+                if self.project_data['strict']:
+                    self.log('error', f"Project {project['name']} with version {version_name} exists.", self.project_data)
+                    sys.exit(1) 
+                else:
+                    self.log('debug',f"Found Project {project['name']} with version {version_name}.", self.project_data)
+            else:
+                response = self.create_project_version(project_name,version_name)
+                if response.ok:
+                    version = self.find_project_version_by_name(self.find_project_by_name(project_name),version_name)
+                    self.log('debug', f"Project {project_name} : {version_name} created", self.project_data)
+                else:
+                    self.log('debug',f"Failed to create Project {project_name} : {version_name} created", self.project_data)
+                    sys.exit(1)
+        else:
+            self.log('debug',f"Project {project_name} was not found, creating ...", self.project_data)
+            response = self.create_project_version(project_name,version_name)
+            if response.ok:
+                version = self.find_project_version_by_name(self.find_project_by_name(project_name),version_name)
+                self.log('debug',f"Project {project_name} : {version_name} created", self.project_data)
+            else:
+                self.log('debug',f"Failed to create Project {project_name} : {version_name} created", self.project_data)
+                sys.exit(1)
+        self.log('debug',f"Checking/Adding subprojects to {project_name} : {version['versionName']}", self.project_data)
+        self.create_and_add_child_projects(version)
+
+    def scan_container_images(self):
+        from scan_docker_image_lite import scan_container_image
+        from blackduck.HubRestApi import HubInstance
+        hub = HubInstance(self.base_url, api_token=self.access_token, insecure= not self.no_verify, debug=self.debug)
+
+        for child_name, child in self.project_data['subprojects'].items():
+            parent_project = child['project_name']
+            parent_version = child['version_name']
+            image_name = child['image']
+            clone_from = child['clone_from']
+            project_group = child['project_group']
+            detect_options =    (f"--detect.parent.project.name={parent_project} "
+                                f"--detect.parent.project.version.name={parent_version} " 
+                                f"--detect.project.version.nickname={image_name}")
+            if clone_from:
+                detect_options += f" --detect.clone.project.version.name={clone_from}"
+            if project_group:
+                detect_options += f" --detect.project.group.name=\"{project_group}\""
+            try:
+                scan_container_image(
+                    image_name, 
+                    None, 
+                    None, 
+                    None, 
+                    parent_project, 
+                    parent_version,
+                    detect_options,
+                    hub=hub,
+                    binary=False
+                )
+            except Exception:
+                import traceback
+                traceback.print_exc()
+                logging.error(f"Scanning of {image_name} failed, skipping")
+
+    def proceed(self):
+        if self.project_data['remove']:
+            project_name = self.project_data['project_name']
+            version_name = self.project_data['version_name']
+            self.remove_project_structure(project_name, version_name)
+        else:
+            self.create_project_structures()
+            self.scan_container_images()
+        
 
 def parse_command_args():
 
-    parser = argparse.ArgumentParser("python3 manage_project_structure.py")
+    parser = argparse.ArgumentParser(description=program_description, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("-u", "--base-url",     required=True, help="Hub server URL e.g. https://your.blackduck.url")
     parser.add_argument("-t", "--token-file",   required=True, help="File containing access token")
     parser.add_argument("-pg", "--project_group", required=False, default='Multi-Image', help="Project Group to be used")
@@ -386,23 +430,30 @@ def parse_command_args():
     parser.add_argument("--clone-from", required=False, help="Main project version to use as template for cloning")
     parser.add_argument("--dry-run", action='store_true', required=False, help="Create structure only, do not execute scans")
     parser.add_argument("-str", "--string-to-put-in-front-of-subproject-name", required=False, help="Prefix string for subproject names" )
+    parser.add_argument("-d", "--debug", action='store_true', help="Set debug output on")
+    parser.add_argument("--strict", action='store_true', help="Fail if existing (sub)project versions already exist")
     return parser.parse_args()
 
 def main():
     args = parse_command_args()
-    with open(args.token_file, 'r') as tf:
-        access_token = tf.readline().strip()
-    global bd
+    mipm = MultiImageProjectManager(args)
+    logging.info(f"Parsed {len(mipm.project_data['subprojects'])} projects from specification data")
+    mipm.proceed()
+    pprint(mipm.project_data)
+    sys.exit(1)
+
+    log_config(args.debug)
     global scan_params, skipped_scans
     scan_params = []
     skipped_scans = []
-    bd = Client(base_url=args.base_url, token=access_token, verify=args.no_verify, timeout=60.0, retries=4)
-    logging.info(f"{args}")
+    logging.debug(f"{args}")
+    structure = define_project_structure(args)
 
     if args.remove:
-        remove_project_structure(args.project_name, args.version_name)
+        remove_project_structure(args.project_name, args.version_name, structure)
     else:
-        create_project_structure(args)
+        create_project_structure(structure)
+        sys.exit(10)
         if args.dry_run:
             logging.info(f"{pformat(scan_params)}")
         else:
