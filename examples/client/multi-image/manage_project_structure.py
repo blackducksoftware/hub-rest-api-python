@@ -91,6 +91,7 @@ class MultiImageProjectManager():
 
         subprojects = dict()
         child_spec_list = self.get_child_spec_list(args)
+        # pprint (child_spec_list)
         for child_spec in [x.split(':') for x in child_spec_list]:
             subproject = dict()
             i = iter(child_spec)
@@ -133,57 +134,57 @@ class MultiImageProjectManager():
         project = self.find_project_by_name(project_name)
 
         if not project:
-            logging.info(f"Project {project_name} does not exist.")
+            logging.debug(f"Project {project_name} does not exist.")
             return
         num_versions = self.client.get_resource('versions', project, items=False)['totalCount']
         version = self.find_project_version_by_name(project,version_name)
         if not version:
-            logging.info(f"Project {project_name} with version {version_name} does not exist.")
+            logging.debug(f"Project {project_name} with version {version_name} does not exist.")
             return
         components = [
             c for c in self.client.get_resource('components',version) if c['componentType'] == "SUB_PROJECT"
         ]
-        logging.info(f"Project {project_name}:{version_name} has {len(components)} subprojects")
+        logging.debug(f"Project {project_name}:{version_name} has {len(components)} subprojects")
         for component in components:
             component_name = component['componentName']
             component_version_name = component['componentVersionName']
-            logging.info(f"Removing subproject {component_name} from {project_name}:{version_name}")
+            logging.debug(f"Removing subproject {component_name} from {project_name}:{version_name}")
             component_url = component['_meta']['href']
             response = self.client.session.delete(component_url) 
-            logging.info(f"Operation completed with {response}")
+            logging.debug(f"Operation completed with {response}")
             self.remove_project_structure(component_name, component_version_name)
-        logging.info(f"Removing {project_name}:{version_name}")
+        logging.debug(f"Removing {project_name}:{version_name}")
         if num_versions > 1:
             response = self.client.session.delete(version['_meta']['href'])
         else:
             response = self.client.session.delete(project['_meta']['href'])
-        logging.info(f"Operation completed with {response}")
+        logging.debug(f"Operation completed with {response}")
 
-    def remove_codelocations_recursively(version):
+    def remove_codelocations_recursively(self, version):
         components = self.client.get_resource('components', version)
         subprojects = [x for x in components if x['componentType'] == 'SUB_PROJECT']
-        logging.info(f"Found {len(subprojects)} subprojects")
-        unmap_all_codelocations(version)
+        logging.debug(f"Found {len(subprojects)} subprojects")
+        self.unmap_all_codelocations(version)
         for subproject in subprojects:
             subproject_name = subproject['componentName']
             subproject_version_name = subproject['componentVersionName']
-            project = find_project_by_name(subproject_name)
+            project = self.find_project_by_name(subproject_name)
             if not project:
-                logging.info(f"Project {subproject_name} does not exist.")
+                logging.debug(f"Project {subproject_name} does not exist.")
                 return
-            subproject_version = find_project_version_by_name(project, subproject_version_name)   
+            subproject_version = self.find_project_version_by_name(project, subproject_version_name)   
             if not subproject_version:
-                logging.info(f"Project {subproject_name} with version {subversion_name} does not exist.")
+                logging.debug(f"Project {subproject_name} with version {subproject_version_name} does not exist.")
                 return
-            remove_codelocations_recursively(subproject_version)
+            self.remove_codelocations_recursively(subproject_version)
 
-    def unmap_all_codelocations(version):
+    def unmap_all_codelocations(self, version):
         codelocations = self.client.get_resource('codelocations',version)
         for codelocation in codelocations:
-            logging.info(f"Unmapping codelocation {codelocation['name']}")
+            logging.debug(f"Un-mapping of code location {codelocation['name']}")
             codelocation['mappedProjectVersion'] = ""
             response = self.client.session.put(codelocation['_meta']['href'], json=codelocation)
-            pprint (response)
+            logging.debug(f"Un-mapping of code location {codelocation['name']} completed with {response}")
 
 
     def find_or_create_project_group(self, group_name):
@@ -316,8 +317,7 @@ class MultiImageProjectManager():
                             self.log('debug',f"Adding {child_name} : {version_name} to parent project completed with {response}", child)
                         except Exception as e:
                             self.log('debug',f"Adding {child_name} : {version_name} to parent project completed with exception {e}", child)
-
-                        # remove_codelocations_recursively(version)
+                        self.remove_codelocations_recursively(version)
                 else:
                     response = self.create_project_version(child_name,version_name, nickname=container_spec)
                     self.log('debug',f"Creating project {child_name} : {version_name} completed with {response}", child)
@@ -335,7 +335,7 @@ class MultiImageProjectManager():
                     response = self.client.session.post(version_url,json={'component': child_version_url})
                     self.log('debug',f"Adding {child_name} : {version_name} to parent project completed with {response}", child)
 
-    def create_project_structures(self):
+    def create_project_structure(self):
         project_name = self.project_data['project_name']
         version_name = self.project_data['version_name']
 
@@ -369,6 +369,21 @@ class MultiImageProjectManager():
         self.log('debug',f"Checking/Adding subprojects to {project_name} : {version['versionName']}", self.project_data)
         self.create_and_add_child_projects(version)
 
+    def validate_project_structure(self):
+        parent_project = self.find_project_by_name(self.project_data['project_name'])
+        parent_version = self.find_project_version_by_name(parent_project, self.project_data['version_name'])
+        components = [c for c in self.client.get_resource('components', parent_version) if c['componentType'] == 'SUB_PROJECT']
+        for spn, sp in self.project_data['subprojects'].items():
+            spn = sp['project_name']
+            spvn = sp['version_name']
+            ca = [c for c in components if spn == c['componentName'] and spvn == c['componentVersionName']]
+            if len(ca) == 1:
+                sp['status'] = 'PRESENT'
+                self.log('debug',f"Sub-project project {spn} : {spvn} is present in the BOM ", sp)
+            else:
+                sp['status'] = 'ABSENT'
+                self.log('debug',f"Sub-project project {spn} : {spvn} could not be added to the BOM ", sp)
+
     def scan_container_images(self):
         from scan_docker_image_lite import scan_container_image
         from blackduck.HubRestApi import HubInstance
@@ -388,7 +403,7 @@ class MultiImageProjectManager():
             if project_group:
                 detect_options += f" --detect.project.group.name=\"{project_group}\""
             try:
-                scan_container_image(
+                results = scan_container_image(
                     image_name, 
                     None, 
                     None, 
@@ -399,6 +414,7 @@ class MultiImageProjectManager():
                     hub=hub,
                     binary=False
                 )
+                child['scan_results'] = results
             except Exception:
                 import traceback
                 traceback.print_exc()
@@ -410,7 +426,8 @@ class MultiImageProjectManager():
             version_name = self.project_data['version_name']
             self.remove_project_structure(project_name, version_name)
         else:
-            self.create_project_structures()
+            self.create_project_structure()
+            self.validate_project_structure()
             self.scan_container_images()
         
 
@@ -439,33 +456,7 @@ def main():
     mipm = MultiImageProjectManager(args)
     logging.info(f"Parsed {len(mipm.project_data['subprojects'])} projects from specification data")
     mipm.proceed()
-    pprint(mipm.project_data)
-    sys.exit(1)
-
-    log_config(args.debug)
-    global scan_params, skipped_scans
-    scan_params = []
-    skipped_scans = []
-    logging.debug(f"{args}")
-    structure = define_project_structure(args)
-
-    if args.remove:
-        remove_project_structure(args.project_name, args.version_name, structure)
-    else:
-        create_project_structure(structure)
-        sys.exit(10)
-        if args.dry_run:
-            logging.info(f"{pformat(scan_params)}")
-        else:
-            logging.info("Now executing scans")
-            from blackduck.HubRestApi import HubInstance
-            hub = HubInstance(args.base_url, api_token=access_token, insecure=True, debug=False)
-            scan_container_images(scan_params, hub)
-            if len(skipped_scans) > 0:
-                logging.info(f"The following images were not scanned")
-                logging.info(f"{pformat(skipped_scans)}")
-                
-
+    
 
 if __name__ == "__main__":
     sys.exit(main())

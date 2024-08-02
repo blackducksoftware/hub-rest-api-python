@@ -253,9 +253,14 @@ class ContainerImageScanner():
 
     def prepare_container_image(self):
         self.docker.initdir()
-        self.docker.pull_container_image(self.container_image_name)
-        self.docker.save_container_image(self.container_image_name)
-        self.docker.unravel_container()
+        result = self.docker.pull_container_image(self.container_image_name)
+        logging.debug(f"Command {" ".join(result.args)} exited with returncode {result.returncode}")
+        result = self.docker.save_container_image(self.container_image_name)
+        if result.returncode:
+            raise Exception (f"Command {" ".join(result.args)} failed with returncode {result.returncode} error = {result.stdout}")
+        result = self.docker.unravel_container()
+        if result.returncode:
+            raise Exception (f"Command {" ".join(result.args)} failed with returncode {result.returncode} error = {result.stdout}")
         # result = self.docker.get_container_image_history(self.container_image_name)
         history = self.docker.read_config()['history']
         layer_count = 0
@@ -378,7 +383,7 @@ class ContainerImageScanner():
         return group_name
 
     def process_oci_container_image_by_base_image_info(self):
-        print ("Processing by BAse Image not supported for OCI images")
+        print ("Processing by Base Image not supported for OCI images")
         sys.exit(1)
         pass
 
@@ -420,10 +425,16 @@ class ContainerImageScanner():
                     options.extend(self.adorn_extra_options(layer))
                 else:
                     options.extend(self.extra_options)
-                logging.info(f"Submitting scan for {layer['name']}")
+                logging.debug(f"Submitting scan for {layer['name']}")
                 completed = self.hub_detect.detect_run(options)
-                logging.info(f"Detect run for {layer['name']} completed with returncode {completed.returncode}")
-                
+                scan_results = dict()
+                for key, value in vars(completed).items():
+                    if type(value) is bytes:
+                        scan_results[key] = value.decode('utf-8')
+                    else:
+                        scan_results[key] = value
+                layer['scan_results'] = scan_results
+                logging.debug(f"Detect run for {layer['name']} completed with returncode {completed.returncode}")
 
     def adorn_extra_options(self, layer):
         result = list()
@@ -494,9 +505,11 @@ def scan_container_image(
             scanner.base_layers = scanner.get_base_layers()
     if binary:
         scanner.binary = True
+    logging.info(f"Scanning image {imagespec}")
     scanner.prepare_container_image()
     scanner.process_container_image()
     scanner.submit_layer_scans()
+    return scanner.layers
 
 def main(argv=None):
     
