@@ -416,9 +416,10 @@ class MultiImageProjectManager():
                     binary=self.binary
                 )
                 child['scan_results'] = results
-            except Exception:
-                import traceback
-                traceback.print_exc()
+            except Exception as e:
+                # import traceback
+                # traceback.print_exc()
+                self.log('error', repr(e), child)
                 logging.error(f"Scanning of {image_name} failed, skipping")
 
     def proceed(self):
@@ -465,6 +466,23 @@ def main():
     # write full processing log
     with open (filename_complete, "w") as f:
         json.dump(mipm.project_data, f, indent=2)
+
+    failures = list()
+    for sname, sub in mipm.project_data['subprojects'].items(): 
+        structure = False
+        runtime = False
+        if sub['status'] != 'PRESENT':
+            structure = True
+        if not sub.get('scan_results', None):
+            runtime = True
+        else:
+            rcodes = [r['scan_results']['returncode'] for r in sub['scan_results'] if r.get('scan_results', None)]
+            if sum(rcodes) > 0:
+                runtime = True
+        if structure or runtime:
+            failures.append(sub)
+    with open (filename_failures, "w") as f:
+        json.dump(failures, f, indent=2)
 
 if __name__ == "__main__":
     sys.exit(main())
