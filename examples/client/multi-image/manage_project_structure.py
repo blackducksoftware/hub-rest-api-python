@@ -68,6 +68,7 @@ class MultiImageProjectManager():
 
     def __init__(self, args):
         self.debug = args.debug
+        self.binary = args.binary
         self.log_config()
         self.base_url = args.base_url
         with open(args.token_file, 'r') as tf:
@@ -412,7 +413,7 @@ class MultiImageProjectManager():
                     parent_version,
                     detect_options,
                     hub=hub,
-                    binary=False
+                    binary=self.binary
                 )
                 child['scan_results'] = results
             except Exception:
@@ -449,14 +450,21 @@ def parse_command_args():
     parser.add_argument("-str", "--string-to-put-in-front-of-subproject-name", required=False, help="Prefix string for subproject names" )
     parser.add_argument("-d", "--debug", action='store_true', help="Set debug output on")
     parser.add_argument("--strict", action='store_true', help="Fail if existing (sub)project versions already exist")
+    parser.add_argument("--binary", action='store_true', help="Use binary scan for analysis")
     return parser.parse_args()
 
 def main():
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     args = parse_command_args()
     mipm = MultiImageProjectManager(args)
     logging.info(f"Parsed {len(mipm.project_data['subprojects'])} projects from specification data")
     mipm.proceed()
-    
+    filename_complete = f"{args.project_name}-{args.version_name}-{timestamp}-full.json"
+    filename_failures = f"{args.project_name}-{args.version_name}-{timestamp}-failures.json"
+    # write full processing log
+    with open (filename_complete, "w") as f:
+        json.dump(mipm.project_data, f, indent=2)
 
 if __name__ == "__main__":
     sys.exit(main())
