@@ -69,6 +69,7 @@ class MultiImageProjectManager():
     def __init__(self, args):
         self.debug = args.debug
         self.binary = args.binary
+        self.individual_file_matching = args.individual_file_matching
         self.log_config()
         self.base_url = args.base_url
         with open(args.token_file, 'r') as tf:
@@ -399,6 +400,8 @@ class MultiImageProjectManager():
             detect_options =    (f"--detect.parent.project.name={parent_project} "
                                 f"--detect.parent.project.version.name={parent_version} " 
                                 f"--detect.project.version.nickname={image_name}")
+            if self.individual_file_matching:
+                detect_options += f" --detect.blackduck.signature.scanner.individual.file.matching=ALL"
             if clone_from:
                 detect_options += f" --detect.clone.project.version.name={clone_from}"
             if project_group:
@@ -452,6 +455,7 @@ def parse_command_args():
     parser.add_argument("-d", "--debug", action='store_true', help="Set debug output on")
     parser.add_argument("--strict", action='store_true', help="Fail if existing (sub)project versions already exist")
     parser.add_argument("--binary", action='store_true', help="Use binary scan for analysis")
+    parser.add_argument("-ifm", "--individual-file-matching", action='store_true', help="Turn Individual file matching on")
     return parser.parse_args()
 
 def main():
@@ -461,28 +465,30 @@ def main():
     mipm = MultiImageProjectManager(args)
     logging.info(f"Parsed {len(mipm.project_data['subprojects'])} projects from specification data")
     mipm.proceed()
-    filename_complete = f"{args.project_name}-{args.version_name}-{timestamp}-full.json"
-    filename_failures = f"{args.project_name}-{args.version_name}-{timestamp}-failures.json"
-    # write full processing log
-    with open (filename_complete, "w") as f:
-        json.dump(mipm.project_data, f, indent=2)
 
-    failures = list()
-    for sname, sub in mipm.project_data['subprojects'].items(): 
-        structure = False
-        runtime = False
-        if sub['status'] != 'PRESENT':
-            structure = True
-        if not sub.get('scan_results', None):
-            runtime = True
-        else:
-            rcodes = [r['scan_results']['returncode'] for r in sub['scan_results'] if r.get('scan_results', None)]
-            if sum(rcodes) > 0:
+    if not args.remove:
+        filename_complete = f"{args.project_name}-{args.version_name}-{timestamp}-full.json"
+        filename_failures = f"{args.project_name}-{args.version_name}-{timestamp}-failures.json"
+        # write full processing log
+        with open (filename_complete, "w") as f:
+            json.dump(mipm.project_data, f, indent=2)
+
+        failures = list()
+        for sname, sub in mipm.project_data['subprojects'].items(): 
+            structure = False
+            runtime = False
+            if sub['status'] != 'PRESENT':
+                structure = True
+            if not sub.get('scan_results', None):
                 runtime = True
-        if structure or runtime:
-            failures.append(sub)
-    with open (filename_failures, "w") as f:
-        json.dump(failures, f, indent=2)
+            else:
+                rcodes = [r['scan_results']['returncode'] for r in sub['scan_results'] if r.get('scan_results', None)]
+                if sum(rcodes) > 0:
+                    runtime = True
+            if structure or runtime:
+                failures.append(sub)
+        with open (filename_failures, "w") as f:
+            json.dump(failures, f, indent=2)
 
 if __name__ == "__main__":
     sys.exit(main())
