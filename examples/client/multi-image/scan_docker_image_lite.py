@@ -254,13 +254,13 @@ class ContainerImageScanner():
     def prepare_container_image(self):
         self.docker.initdir()
         result = self.docker.pull_container_image(self.container_image_name)
-        logging.debug(f"Command {" ".join(result.args)} exited with returncode {result.returncode}")
+        logging.debug(f"Command {' '.join(result.args)} exited with returncode {result.returncode}")
         result = self.docker.save_container_image(self.container_image_name)
         if result.returncode:
-            raise Exception (f"Command {" ".join(result.args)} failed with returncode {result.returncode} error = {result.stdout}")
+            raise Exception (f"Command {' '.join(result.args)} failed with returncode {result.returncode} error = {result.stdout}")
         result = self.docker.unravel_container()
         if result.returncode:
-            raise Exception (f"Command {" ".join(result.args)} failed with returncode {result.returncode} error = {result.stdout}")
+            raise Exception (f"Command {' '.join(result.args)} failed with returncode {result.returncode} error = {result.stdout}")
         # result = self.docker.get_container_image_history(self.container_image_name)
         history = self.docker.read_config()['history']
         layer_count = 0
