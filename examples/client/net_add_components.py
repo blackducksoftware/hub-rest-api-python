@@ -59,14 +59,17 @@ def add_component_to_a_project_version(bd, component, components_url):
     data = dict()
     component_version = component.get('componentVersion', component.get('component'))
     component_origins = component['origins']
+    component_license = component['licenses'][0]['license']
     if len(component_origins) > 0:
         for origin in component_origins:
             origin_url = origin['origin']
             payload = {"component": origin_url}
+            payload['license'] = component_license
             result = bd.session.post(components_url, json=payload, headers=headers)
             pprint(result)
     else:
         data['component'] = component_version
+        data['license'] = component_license
         result = bd.session.post(components_url, json=data, headers=headers)
         pprint(result) 
 
