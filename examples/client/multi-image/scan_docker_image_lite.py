@@ -268,7 +268,7 @@ class ContainerImageScanner():
         for item in history:
             if not item.get('empty_layer', None):
                 layer_count += 1
-            match = re.search('echo (.+?)_group_end', item['created_by'])
+            match = re.search('echo (.+?)_group_end', item.get('created_by',''))
             if match:
                 found = match.group(1)
                 if len(history_grouping):
@@ -350,8 +350,8 @@ class ContainerImageScanner():
         self.config = self.docker.read_config()
 
         self.layers = self.config['history']
-        tagged_layers = [x for x in self.layers if '_group_end' in x.get('created_by')]
-        groups =  {re.search('echo (.+?)_group_end', str(x['created_by'])).group(1): self.layers.index(x) for x in tagged_layers}
+        tagged_layers = [x for x in self.layers if '_group_end' in x.get('created_by','')]
+        groups =  {re.search('echo (.+?)_group_end', str(x.get('created_by',''))).group(1): self.layers.index(x) for x in tagged_layers}
         logging.debug(f"Container configuration defines following groups {groups}")
         layer_paths = self.manifest[0]['Layers'].copy()
         empty_layers = [x for x in self.layers if x.get('empty_layer', False)]

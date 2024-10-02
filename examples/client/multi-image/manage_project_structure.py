@@ -61,6 +61,8 @@ import logging
 import sys
 import arrow
 
+from io import StringIO
+
 from blackduck import Client
 from pprint import pprint,pformat
 
@@ -75,12 +77,48 @@ class MultiImageProjectManager():
         with open(args.token_file, 'r') as tf:
             self.access_token = tf.readline().strip()
         self.no_verify = args.no_verify
+        self.reprocess_run_file = args.reprocess_run_file
         self.connect()
-        self.init_project_data(args)
+        if self.reprocess_run_file:
+            self.load_project_data()
+        else:
+            self.init_project_data(args)
 
     def connect(self):
         self.client = Client(base_url=self.base_url, token=self.access_token, verify=self.no_verify, timeout=60.0, retries=4)
-      
+
+    def load_project_data(self):
+        with open(self.reprocess_run_file, "r") as f:
+            data = json.load(f)
+        self.project_data = data
+        self.project_data.pop('log', None)
+        discard = list()
+        for name, subproject in self.project_data['subprojects'].items():
+            if not self.has_errors(subproject):
+                discard.append(name)
+            else:
+                self.project_data['subprojects'][name].pop('log', None)
+                self.project_data['subprojects'][name].pop('status', None)
+                self.project_data['subprojects'][name].pop('scan_results',None)
+        for name in discard:
+            del self.project_data['subprojects'][name]
+
+    def has_errors(self, subproject):
+        structure = False
+        runtime = False
+        if subproject['status'] != 'PRESENT':
+            structure = True
+        if not subproject.get('scan_results', None):
+            runtime = True
+        else:
+            rcodes = [r['scan_results']['returncode'] for r in subproject['scan_results'] if r.get('scan_results', None)]
+            if sum(rcodes) > 0:
+                runtime = True
+        if structure or runtime:
+            return True
+        else:
+            return False
+
     def init_project_data(self,args):
         self.project_data = dict()
         self.project_data['project_name'] = args.project_name
@@ -435,6 +473,42 @@ class MultiImageProjectManager():
             self.validate_project_structure()
             self.scan_container_images()
         
+def write_failure_report(data, output_file_name):
+    s = StringIO()
+    subprojects = data['subprojects']
+    for subproject_name, subproject in subprojects.items():
+        structure = False
+        runtime = False
+        if subproject['status'] != 'PRESENT':
+            structure = True
+        if not subproject.get('scan_results', None):
+            runtime = True
+        else:
+            rcodes = [r['scan_results']['returncode'] for r in subproject['scan_results'] if r.get('scan_results', None)]
+            if sum(rcodes) > 0:
+                runtime = True
+        if structure or runtime:
+            print (f"\nStatus for {subproject['project_name']} {subproject['version_name']}", file = s)
+            print (f"\tStructural failures present {structure}", file = s)
+            print (f"\t   Runtime failures present {runtime}\n", file = s)
+            
+            if subproject['status'] != 'PRESENT':
+                for line in subproject['log']:
+                    print ('\t', line, file = s)
+            scan_results = subproject.get('scan_results',[])
+            if len(scan_results) == 0:
+                print ("No scans were performed", file = s)
+            else:
+                for invocation in scan_results:
+                    returncode = invocation['scan_results']['returncode']
+                    if returncode > 0:
+                        print (f"\n\tScan for {invocation['name']} failed with returncode {returncode}\n", file = s)
+                        stdout = invocation['scan_results']['stdout'].split('\n')
+                        for line in stdout:
+                            if 'ERROR' in line and 'certificates' not in line:
+                                print ('\t', line, file = s)
+    with open(output_file_name, "w") as f:
+        f.write(s.getvalue())
 
 def parse_command_args():
 
@@ -442,8 +516,8 @@ def parse_command_args():
     parser.add_argument("-u", "--base-url",     required=True, help="Hub server URL e.g. https://your.blackduck.url")
     parser.add_argument("-t", "--token-file",   required=True, help="File containing access token")
     parser.add_argument("-pg", "--project_group", required=False, default='Multi-Image', help="Project Group to be used")
-    parser.add_argument("-p", "--project-name",   required=True, help="Project Name")
-    parser.add_argument("-pv", "--version-name",   required=True, help="Project Version Name")
+    parser.add_argument("-p", "--project-name",   required=False, help="Project Name")
+    parser.add_argument("-pv", "--version-name",   required=False, help="Project Version Name")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-sp", "--subproject-list",   required=False, help="List of subprojects to generate with subproject:container:tag")
     group.add_argument("-ssf", "--subproject-spec-file",   required=False, help="Excel or txt file containing subproject specification")
@@ -456,7 +530,13 @@ def parse_command_args():
     parser.add_argument("--strict", action='store_true', help="Fail if existing (sub)project versions already exist")
     parser.add_argument("--binary", action='store_true', help="Use binary scan for analysis")
     parser.add_argument("-ifm", "--individual-file-matching", action='store_true', help="Turn Individual file matching on")
-    return parser.parse_args()
+    parser.add_argument("--reprocess-run-file", help="Reprocess Failures from previous run report.")
+    args =  parser.parse_args()
+    if not args.reprocess_run_file and not (args.project_name and args.version_name):
+        parser.error("[ -p/--project-name and -pv/--version-name ] or --reprocess-run-file are required")
+    if args.reprocess_run_file and (args.project_name or args.version_name):
+        parser.error("[ -p/--project-name and -pv/--version-name ] or --reprocess-run-file are required")
+    return args
 
 def main():
     from datetime import datetime
@@ -467,28 +547,14 @@ def main():
     mipm.proceed()
 
     if not args.remove:
-        filename_complete = f"{args.project_name}-{args.version_name}-{timestamp}-full.json"
-        filename_failures = f"{args.project_name}-{args.version_name}-{timestamp}-failures.json"
+        filename_base = f"{mipm.project_data['project_name']}-{mipm.project_data['version_name']}"
+        filename_complete = f"{filename_base}-{timestamp}-full.json"
+        filename_failure_report = f"{filename_base}-{timestamp}-failures.txt"
         # write full processing log
         with open (filename_complete, "w") as f:
             json.dump(mipm.project_data, f, indent=2)
 
-        failures = list()
-        for sname, sub in mipm.project_data['subprojects'].items(): 
-            structure = False
-            runtime = False
-            if sub['status'] != 'PRESENT':
-                structure = True
-            if not sub.get('scan_results', None):
-                runtime = True
-            else:
-                rcodes = [r['scan_results']['returncode'] for r in sub['scan_results'] if r.get('scan_results', None)]
-                if sum(rcodes) > 0:
-                    runtime = True
-            if structure or runtime:
-                failures.append(sub)
-        with open (filename_failures, "w") as f:
-            json.dump(failures, f, indent=2)
+        write_failure_report(mipm.project_data, filename_failure_report)
 
 if __name__ == "__main__":
     sys.exit(main())
