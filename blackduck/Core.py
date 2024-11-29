@@ -1,4 +1,5 @@
 import logging
+import os
 import requests
 import json
 from operator import itemgetter
@@ -17,7 +18,9 @@ def read_config(self):
         raise
         
 def write_config(self):
-    with open(self.configfile,'w') as f:
+    def openfn(cfg, flags):
+        return os.open(cfg, flags, mode=0o600)
+    with open(self.configfile, 'w', opener=openfn) as f:
         json.dump(self.config, f, indent=3)
         
 def get_auth_token(self):
