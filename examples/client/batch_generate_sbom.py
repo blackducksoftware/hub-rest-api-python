@@ -262,7 +262,7 @@ def sanitize_filename(filename):
 
 def parse_command_args():
 
-    parser = argparse.ArgumentParser("Generate and download reports for projets in a spreadsheet")
+    parser = argparse.ArgumentParser("Generate and download reports for projects in a spreadsheet")
     parser.add_argument("-u", "--base-url",     required=True, help="Hub server URL e.g. https://your.blackduck.url")
     parser.add_argument("-t", "--token-file",   required=True, help="File containing access token")
     parser.add_argument("-i", "--input-file",   required=True, help="Project Name")

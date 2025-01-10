@@ -205,7 +205,7 @@ class Detector():
         # self.detecturl = 'https://detect.synopsys.com/detect.sh'
         # self.detecturl = 'https://detect.synopsys.com/detect7.sh'
         # self.detecturl = 'https://detect.synopsys.com/detect8.sh'
-        self.detecturl = 'https://detect.synopsys.com/detect9.sh'
+        self.detecturl = 'https://detect.blackduck.com/detect9.sh'
         self.baseurl = hub.config['baseurl']
         self.filename = '/tmp/hub-detect.sh'
         self.token=hub.config['api_token']
