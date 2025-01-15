@@ -83,6 +83,7 @@ class MultiImageProjectManager():
             self.load_project_data()
         else:
             self.init_project_data(args)
+        self.serialize = args.serialize
 
     def connect(self):
         self.client = Client(base_url=self.base_url, token=self.access_token, verify=self.no_verify, timeout=60.0, retries=4)
@@ -438,6 +439,8 @@ class MultiImageProjectManager():
             detect_options =    (f"--detect.parent.project.name={parent_project} "
                                 f"--detect.parent.project.version.name={parent_version} " 
                                 f"--detect.project.version.nickname={image_name}")
+            if self.serialize:
+                detect_options += f" --detect.wait.for.results=true"
             if self.individual_file_matching:
                 detect_options += f" --detect.blackduck.signature.scanner.individual.file.matching=ALL"
             if clone_from:
@@ -531,6 +534,7 @@ def parse_command_args():
     parser.add_argument("--binary", action='store_true', help="Use binary scan for analysis")
     parser.add_argument("-ifm", "--individual-file-matching", action='store_true', help="Turn Individual file matching on")
     parser.add_argument("--reprocess-run-file", help="Reprocess Failures from previous run report.")
+    parser.add_argument("--serialize", action='store_true', help="Serialize scan submissions by adding --detect.wait.for.results=true to scan invocations")
     args =  parser.parse_args()
     if not args.reprocess_run_file and not (args.project_name and args.version_name):
         parser.error("[ -p/--project-name and -pv/--version-name ] or --reprocess-run-file are required")
