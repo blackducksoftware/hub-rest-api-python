@@ -116,6 +116,7 @@ if (r.status_code == 403):
 	logging.debug("Authorization Error - Please ensure the token you are using has write permissions!")
 r.raise_for_status()
 location = r.headers.get('Location')
+print(f"location {location}")
 assert location, "Hmm, this does not make sense. If we successfully created a report then there needs to be a location where we can get it from"
 
 logging.debug(f"Created SBOM report of type {args.type} for project {args.project_name}, version {args.version_name} at location {location}")

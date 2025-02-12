@@ -146,6 +146,17 @@ def execute_put(self, url, data, custom_headers={}):
     response = requests.put(url, headers=headers, data=json_data, verify = not self.config['insecure'])
     return response
 
+def execute_patch(self, url, data, custom_headers={}) -> requests.Response:
+    '''
+    Work-around to add missing execute_patch()
+    '''
+    json_data = self._validated_json_data(data)
+    headers = self.get_headers()
+    headers["Content-Type"] = "application/json"
+    headers.update(custom_headers)
+    response = requests.patch(url, headers=headers, data=json_data, verify=not self.config['insecure'])
+    return response
+
 def _create(self, url, json_body):
     response = self.execute_post(url, json_body)
     # v4+ returns the newly created location in the response headers

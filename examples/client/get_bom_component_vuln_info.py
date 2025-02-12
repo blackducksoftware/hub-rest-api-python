@@ -49,20 +49,23 @@ logging.debug(f"Found {project['name']}:{version['versionName']}")
 all_bom_component_vulns = []
 
 for bom_component_vuln in bd.get_resource('vulnerable-components', version):
-    vuln_name = bom_component_vuln['vulnerabilityWithRemediation']['vulnerabilityName']
-    vuln_source = bom_component_vuln['vulnerabilityWithRemediation']['source']
+    vulnerabilities = bd.get_resource('vulnerabilities', bom_component_vuln)
     upgrade_guidance = bd.get_json(f"{bom_component_vuln['componentVersion']}/upgrade-guidance")
     bom_component_vuln['upgrade_guidance'] = upgrade_guidance
-
-    vuln_details = bd.get_json(f"/api/vulnerabilities/{vuln_name}")
-    bom_component_vuln['vulnerability_details'] = vuln_details
-
-    if 'related-vulnerability' in bd.list_resources(vuln_details):
-        related_vuln = bd.get_resource("related-vulnerability", vuln_details, items=False)
-    else:
-        related_vuln = None
-    bom_component_vuln['related_vulnerability'] = related_vuln
     all_bom_component_vulns.append(bom_component_vuln)
+    #for vuln in vulnerabilities:
+        #pprint(vuln)
+        #vuln_name = vuln['name']
+        #vuln_source = vuln['source']
+
+        #vuln_details = bd.get_json(f"/api/vulnerabilities/{vuln_name}")
+        #bom_component_vuln['vulnerability_details'] = vuln_details
+
+        #if 'related-vulnerability' in bd.list_resources(vuln_details):
+        #    related_vuln = bd.get_resource("related-vulnerability", vuln_details, items=False)
+        #else:
+        #    related_vuln = None
+        #bom_component_vuln['related_vulnerability'] = related_vuln
 
 if args.csv_file:
     '''Note: See the BD API doc and in particular .../api-doc/public.html#_bom_vulnerability_endpoints
@@ -73,13 +76,13 @@ if args.csv_file:
     with open(args.csv_file, 'w') as csv_f:
         field_names = [
             'Vulnerability Name',
-            'Vulnerability Description',
+            #'Vulnerability Description',
             'Remediation Status',
             'Component',
             'Component Version',
-            'Exploit Available',
-            'Workaround Available',
-            'Solution Available',
+            #'Exploit Available',
+            #'Workaround Available',
+            #'Solution Available',
             'Upgrade Guidance - short term',
             'Upgrade Guidance - long term',
         ]
@@ -87,14 +90,14 @@ if args.csv_file:
         writer.writeheader()
         for comp_vuln in all_bom_component_vulns:
             row_data = {
-                'Vulnerability Name': comp_vuln['vulnerabilityWithRemediation']['vulnerabilityName'],
-                'Vulnerability Description': comp_vuln['vulnerabilityWithRemediation']['description'],
-                'Remediation Status': comp_vuln['vulnerabilityWithRemediation']['remediationStatus'],
+                'Vulnerability Name': comp_vuln['vulnerability']['vulnerabilityId'],
+                #'Vulnerability Description': comp_vuln['vulnerabilityWithRemediation']['description'],
+                'Remediation Status': comp_vuln['vulnerability']['remediationStatus'],
                 'Component': comp_vuln['componentName'],
                 'Component Version': comp_vuln['componentVersionName'],
-                'Exploit Available': comp_vuln['vulnerability_details'].get('exploitPublishDate', 'None available'),
-                'Workaround Available': comp_vuln['vulnerability_details'].get('workaround', 'None available'),
-                'Solution Available': comp_vuln['vulnerability_details'].get('solution', 'None available'),
+                #'Exploit Available': comp_vuln['vulnerability_details'].get('exploitPublishDate', 'None available'),
+                #'Workaround Available': comp_vuln['vulnerability_details'].get('workaround', 'None available'),
+                #'Solution Available': comp_vuln['vulnerability_details'].get('solution', 'None available'),
                 'Upgrade Guidance - short term': comp_vuln['upgrade_guidance'].get('shortTerm', 'None available'),
                 'Upgrade Guidance - long term': comp_vuln['upgrade_guidance'].get('longTerm', 'None available')
             }
