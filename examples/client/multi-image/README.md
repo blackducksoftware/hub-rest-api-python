@@ -1,2 +1,2 @@
-# Large scal containerized project scan automation
+# Large scale containerized project scan automation
 ##
