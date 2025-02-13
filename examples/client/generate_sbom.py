@@ -45,10 +45,10 @@ parser.add_argument("bd_url", help="Hub server URL e.g. https://your.blackduck.u
 parser.add_argument("token_file", help="containing access token")
 parser.add_argument("project_name")
 parser.add_argument("version_name")
-parser.add_argument("-z", "--zip_file_name", default="reports.zip")
-parser.add_argument("-t", "--type", type=str, nargs='?', default="SPDX_22", choices=["SPDX_22", "CYCLONEDX_13"], help="Choose the type of SBOM report")
+parser.add_argument("-t", "--type", type=str, nargs='?', default="SPDX_23", choices=["SPDX_22", "SPDX_23", "CYCLONEDX_13", "CYCLONEDX_14"], help="Choose the type of SBOM report")
 parser.add_argument('-r', '--retries', default=4, type=int, help="How many times to retry downloading the report, i.e. wait for the report to be generated")
-parser.add_argument('-s', '--sleep_time', default=5, type=int, help="The amount of time to sleep in-between (re-)tries to download the report")
+parser.add_argument('-s', '--sleep_seconds', default=60, type=int, help="The amount of time to sleep in-between (re-)tries to download the report")
+parser.add_argument('--include-subprojects', dest='include_subprojects', action='store_false', help="whether subprojects should be included")
 parser.add_argument('--no-verify', dest='verify', action='store_false', help="disable TLS certificate verification")
 
 args = parser.parse_args()
@@ -75,8 +75,8 @@ def download_report(bd_client, location, filename, retries=args.retries):
 				logging.error("Ruh-roh, not sure what happened here")
 		else:
 			logging.debug(f"Failed to retrieve report {report_id}, report status: {report_status}")
-			logging.debug("Probably not ready yet, waiting 5 seconds then retrying...")
-			time.sleep(args.sleep_time)
+			logging.debug(f"Probably not ready yet, waiting {args.sleep_seconds} seconds then retrying...")
+			time.sleep(args.sleep_seconds)
 			retries -= 1
 			download_report(bd_client, location, filename, retries)
 	else:
@@ -105,16 +105,20 @@ logging.debug(f"Found {project['name']}:{version['versionName']}")
 
 post_data = {
         'reportFormat': "JSON",
-        'reportType': 'SBOM',
-        'sbomType': args.type,	
+        'sbomType': args.type,
+		'includeSubprojects': args.include_subprojects	
 }
 sbom_reports_url = version['_meta']['href'] + "/sbom-reports"
 
+bd.session.headers["Content-Type"] = "application/vnd.blackducksoftware.report-4+json"
 r = bd.session.post(sbom_reports_url, json=post_data)
+if (r.status_code == 403):
+	logging.debug("Authorization Error - Please ensure the token you are using has write permissions!")
 r.raise_for_status()
 location = r.headers.get('Location')
+print(f"location {location}")
 assert location, "Hmm, this does not make sense. If we successfully created a report then there needs to be a location where we can get it from"
 
 logging.debug(f"Created SBOM report of type {args.type} for project {args.project_name}, version {args.version_name} at location {location}")
-download_report(bd, location, args.zip_file_name)
+download_report(bd, location, f"{args.project_name}({args.version_name}).zip")
 

@@ -65,6 +65,7 @@ def main():
     files = {"file": open(args.filename,"rb")}
     response = bd.session.post("/api/scan/data", files = files)
     logging.info(response)
+    logging.info(response.headers)
 
 def parse_command_args():
     parser = argparse.ArgumentParser(prog = "upload_bdio", description="Uploads BDIO file to a Blackduck server", epilog="Blackduck examples collection")

@@ -1,6 +1,5 @@
 '''
-Created on March 25, 2021
-
+Created on June 7, 2023
 @author: kumykov
 
 Alternative version if Docker image layer by layer scan.
@@ -95,6 +94,7 @@ from blackduck.HubRestApi import HubInstance
 from pprint import pprint
 from sys import argv
 import json
+import logging
 import os
 import requests
 import shutil
@@ -137,7 +137,6 @@ class DockerWrapper():
         proc = subprocess.Popen(['which','docker'], stdout=subprocess.PIPE)
         out, err = proc.communicate()
         lines = out.decode().split('\n')
-        print(lines)
         if 'docker' in lines[0]:
             return lines[0]
         else:
@@ -148,7 +147,7 @@ class DockerWrapper():
         args.append(self.docker_path)
         args.append('pull')
         args.append(image_name)
-        return subprocess.run(args)
+        return subprocess.run(args, capture_output=True)
 
     def get_container_image_history(self, image_name):
         args = []
@@ -174,7 +173,7 @@ class DockerWrapper():
         args.append(self.imagefile)
         args.append('-C')
         args.append(self.imagedir)
-        return subprocess.run(args)
+        return subprocess.run(args, capture_output=True)
     
     def read_manifest(self):
         filename = self.imagedir + "/manifest.json"
@@ -197,7 +196,6 @@ class DockerWrapper():
             return data
         else:
             return None
-
  
 class Detector():
     def __init__(self, hub):
@@ -205,8 +203,8 @@ class Detector():
         # self.detecturl = 'https://detect.synopsys.com/detect.sh'
         # self.detecturl = 'https://detect.synopsys.com/detect7.sh'
         # self.detecturl = 'https://detect.synopsys.com/detect8.sh'
-        self.detecturl = 'https://detect.blackduck.com/detect9.sh'
-        # self.detecturl = 'https://detect.blackduck.com/detect10.sh'
+        # self.detecturl = 'https://detect.blackduck.com/detect9.sh'
+        self.detecturl = 'https://detect.blackduck.com/detect10.sh'
         self.baseurl = hub.config['baseurl']
         self.filename = '/tmp/hub-detect.sh'
         self.token=hub.config['api_token']
@@ -225,7 +223,7 @@ class Detector():
         cmd.append('--blackduck.api.token=' + self.token)
         cmd.append('--blackduck.trust.cert=true')
         cmd.extend(options)
-        subprocess.run(cmd)
+        return subprocess.run(cmd, capture_output=True)
 
 class ContainerImageScanner():
     
@@ -252,21 +250,26 @@ class ContainerImageScanner():
         self.extra_options = []
         if detect_options:
             self.extra_options = detect_options.split(" ")
-        print ("<--{}-->".format(self.grouping))
         self.binary = False
-              
+
     def prepare_container_image(self):
         self.docker.initdir()
-        self.docker.pull_container_image(self.container_image_name)
-        result = self.docker.get_container_image_history(self.container_image_name)
-        history = result.stdout.splitlines()
+        result = self.docker.pull_container_image(self.container_image_name)
+        logging.debug(f"Command {' '.join(result.args)} exited with returncode {result.returncode}")
+        result = self.docker.save_container_image(self.container_image_name)
+        if result.returncode:
+            raise Exception (f"Command {' '.join(result.args)} failed with returncode {result.returncode} error = {result.stdout}")
+        result = self.docker.unravel_container()
+        if result.returncode:
+            raise Exception (f"Command {' '.join(result.args)} failed with returncode {result.returncode} error = {result.stdout}")
+        # result = self.docker.get_container_image_history(self.container_image_name)
+        history = self.docker.read_config()['history']
         layer_count = 0
         history_grouping = ''
-        for line in reversed(history):
-            print (line)
-            if not line.rstrip().endswith(b' 0B'):
-                layer_count +=1
-            match = re.search('echo (.+?)_group_end', str(line))
+        for item in history:
+            if not item.get('empty_layer', None):
+                layer_count += 1
+            match = re.search('echo (.+?)_group_end', item.get('created_by',''))
             if match:
                 found = match.group(1)
                 if len(history_grouping):
@@ -274,15 +277,11 @@ class ContainerImageScanner():
                 history_grouping += str(layer_count) + ":" + found
         if len(history_grouping) and self.grouping == '1024:everything':
             self.grouping = history_grouping
-        self.docker.save_container_image(self.container_image_name)
-        self.docker.unravel_container()
         self.oci_layout = self.docker.read_oci_layout()
-    
+
     def process_container_image_by_user_defined_groups(self):
         self.manifest = self.docker.read_manifest()
-        print(self.manifest)
         self.config = self.docker.read_config()
-        print (json.dumps(self.config, indent=4))
         
         if self.grouping:
             self.groups = dict(x.split(":") for x in self.grouping.split(","))
@@ -300,12 +299,13 @@ class ContainerImageScanner():
                     layer['group_name'] = "undefined"
                 else:
                     layer['group_name'] = self.groups.get(str(intlist[key_number]))
-                layer['project_version'] = "{}_{}".format(self.project_version,layer['group_name'])
+                layer['project_version'] = self.project_version
                 layer['name'] = "{}_{}_{}_layer_{}".format(self.project_name,self.project_version,layer['group_name'],str(num))
+                layer['project_name'] = "{}_{}".format(self.project_name,layer['group_name'])
             else:
                 layer['project_version'] = self.project_version
                 layer['name'] = self.project_name + "_" + self.project_version + "_layer_" + str(num)
-            layer['project_name'] = self.project_name
+                layer['project_name'] = self.project_name
             layer['path'] = i
             while self.config['history'][num + offset -1].get('empty_layer', False):
                 offset = offset + 1
@@ -313,14 +313,12 @@ class ContainerImageScanner():
             layer['shaid'] = self.config['rootfs']['diff_ids'][num - 1]
             self.layers.append(layer)
             num = num + 1
-        print (json.dumps(self.layers, indent=4))
+        # print (json.dumps(self.layers, indent=4))
 
     def process_container_image_by_base_image_info(self):
         self.manifest = self.docker.read_manifest()
-        print(self.manifest)
         self.config = self.docker.read_config()
-        print (json.dumps(self.config, indent=4))
-
+        
         self.layers = []
         num = 1
         offset = 0
@@ -346,19 +344,19 @@ class ContainerImageScanner():
                 layer['name'] = self.project_name + "_" + self.project_version + "_layer_" + str(num)
             self.layers.append(layer)
             num = num + 1
-        print (json.dumps(self.layers, indent=4))
+        # print (json.dumps(self.layers, indent=4))
 
     def process_oci_container_image_by_user_defined_groups(self):
         self.manifest = self.docker.read_manifest()
         self.config = self.docker.read_config()
 
         self.layers = self.config['history']
-        tagged_layers = [x for x in self.layers if '_group_end' in x.get('created_by')]
-        groups =  {re.search('echo (.+?)_group_end', str(x['created_by'])).group(1): self.layers.index(x) for x in tagged_layers}
-        print (groups)
+        tagged_layers = [x for x in self.layers if '_group_end' in x.get('created_by','')]
+        groups =  {re.search('echo (.+?)_group_end', str(x.get('created_by',''))).group(1): self.layers.index(x) for x in tagged_layers}
+        logging.debug(f"Container configuration defines following groups {groups}")
         layer_paths = self.manifest[0]['Layers'].copy()
         empty_layers = [x for x in self.layers if x.get('empty_layer', False)]
-        print(f"Total layers: {len(self.layers)} total paths: {len(layer_paths)}  empty layers: {len(empty_layers)}")
+        logging.debug(f"Total layers: {len(self.layers)} total paths: {len(layer_paths)}  empty layers: {len(empty_layers)}")
 
         assert len(self.layers) == len(layer_paths) + len(empty_layers), "Something is wrong with this image, Layer math does not add up."
 
@@ -366,15 +364,16 @@ class ContainerImageScanner():
             layer['index'] = self.layers.index(layer)
             if self.grouping:
                 layer['group_name'] = self.get_group_name(groups, layer['index'])
-                layer['project_version'] = "{}_{}".format(self.project_version,layer['group_name'])
+                layer['project_name'] = "{}_{}".format(self.project_name,layer['group_name'])
+                layer['project_version'] = self.project_version
                 layer['name'] = "{}_{}_{}_layer_{}".format(self.project_name,self.project_version,layer['group_name'],str(layer['index']))
             else:
+                layer['project_name'] = self.project_name
                 layer['project_version'] = self.project_version
                 layer['name'] = self.project_name + "_" + self.project_version + "_layer_" + str(layer['index'])
-            layer['project_name'] = self.project_name
             if not layer.get('empty_layer', False):
                 layer['path'] = layer_paths.pop(0)
-        print (json.dumps(self.layers, indent=4))
+        # print (json.dumps(self.layers, indent=4))
 
     def get_group_name(self, groups, index):
         group_name  = 'undefined'
@@ -385,7 +384,7 @@ class ContainerImageScanner():
         return group_name
 
     def process_oci_container_image_by_base_image_info(self):
-        print ("Processing by BAse Image not supported for OCI images")
+        print ("Processing by Base Image not supported for OCI images")
         sys.exit(1)
         pass
 
@@ -427,14 +426,24 @@ class ContainerImageScanner():
                     options.extend(self.adorn_extra_options(layer))
                 else:
                     options.extend(self.extra_options)
-                self.hub_detect.detect_run(options)
+                logging.debug(f"Submitting scan for {layer['name']}")
+                completed = self.hub_detect.detect_run(options)
+                scan_results = dict()
+                for key, value in vars(completed).items():
+                    if type(value) is bytes:
+                        scan_results[key] = value.decode('utf-8')
+                    else:
+                        scan_results[key] = value
+                layer['scan_results'] = scan_results
+                logging.debug(f"Detect run for {layer['name']} completed with returncode {completed.returncode}")
 
     def adorn_extra_options(self, layer):
         result = list()
         option_to_adorn = '--detect.clone.project.version.name='
         for option in self.extra_options:
             if option.startswith(option_to_adorn):
-                result.append(option.rstrip() + "_" + layer['group_name'])
+                # result.append(option.rstrip() + "_" + layer['group_name'])
+                result.append(option.rstrip())
             else:
                 result.append(option)
         return result
@@ -460,7 +469,7 @@ class ContainerImageScanner():
         if self.base_image:
             imagelist.append(self.base_image)
         
-        print (imagelist)
+        # print (imagelist)
         base_layers = []
         for image in imagelist:
             self.docker.initdir()
@@ -468,18 +477,21 @@ class ContainerImageScanner():
             self.docker.save_container_image(image)
             self.docker.unravel_container()
             manifest = self.docker.read_manifest()
-            print(manifest)
+            # print(manifest)
             config = self.docker.read_config()
-            print(config)
+            # print(config)
             base_layers.extend(config['rootfs']['diff_ids'])
         return base_layers  
     
 
 def scan_container_image(
     imagespec, grouping=None, base_image=None, dockerfile=None, 
-    project_name=None, project_version=None, detect_options=None, binary=False):
+    project_name=None, project_version=None, detect_options=None, hub=None, binary=False):
     
-    hub = HubInstance()
+    if hub:
+        hub = hub
+    else:
+        hub = HubInstance()
     scanner = ContainerImageScanner(
         hub, imagespec, grouping=grouping, base_image=base_image, 
         dockerfile=dockerfile, detect_options=detect_options)
@@ -494,9 +506,11 @@ def scan_container_image(
             scanner.base_layers = scanner.get_base_layers()
     if binary:
         scanner.binary = True
+    logging.info(f"Scanning image {imagespec}")
     scanner.prepare_container_image()
     scanner.process_container_image()
     scanner.submit_layer_scans()
+    return scanner.layers
 
 def main(argv=None):
     
@@ -514,10 +528,10 @@ def main(argv=None):
     parser.add_argument('--project-version',default=None, type=str, help="Specify project version (default is container image tag/version)")
     parser.add_argument('--detect-options',default=None, type=str, help="Extra detect options to be passed directly to the detect")
     parser.add_argument('--binary', action='store_true', help="Use Binary Scan instead of signature scan")
-    
+
     args = parser.parse_args()
     
-    print (args);
+    logging.debug(args);
 
     if not args.imagespec:
         parser.print_help(sys.stdout)

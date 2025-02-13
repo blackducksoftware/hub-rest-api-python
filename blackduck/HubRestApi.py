@@ -68,7 +68,7 @@ class HubInstance(object):
         _create,_get_hub_rest_api_version_info,_get_major_version,_get_parameter_string,_validated_json_data,
         execute_delete,execute_get,execute_post,execute_put,get_api_version,get_apibase,get_auth_token,get_headers,
         get_limit_paramstring,get_link,get_matched_components,get_tags_url,get_urlbase,read_config,write_config,
-        _check_version_compatibility
+        _check_version_compatibility,execute_patch
     )
     from .Roles import (
         _get_role_url, assign_role_given_role_url, assign_role_to_user_or_group, 

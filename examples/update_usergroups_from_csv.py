@@ -102,6 +102,8 @@ def update_user_group(hub_client, existing_name, new_name, user_group):
 
     # Update the name.
     user_group['name'] = new_name
+    #if user_group.get('externalGroupName') and user['externalGroupName'] == name:
+    user_group['externalName'] = new_name
 
     logging.info(f"Updating user group {existing_name} to {user_group['name']} for user group {user_group_url}")
     hub_client.session.put(user_group_url, json=user_group)

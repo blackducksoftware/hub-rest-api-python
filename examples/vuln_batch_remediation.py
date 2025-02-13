@@ -84,7 +84,9 @@ __updated__ = '2021-12-26'
 
 def load_remediation_input(remediation_file):
     with open(remediation_file, mode='r', encoding="utf-8") as infile:
-        reader = csv.reader(infile)
+        dialect = csv.Sniffer().sniff(infile.read(), delimiters=';,')
+        infile.seek(0)
+        reader = csv.reader(infile, dialect)
         #return {rows[0]:[rows[1],rows[2]] for rows in reader}
         return {rows[0]:rows[1:] for rows in reader}
 
@@ -95,7 +97,7 @@ def remediation_is_valid(vuln, remediation_data):
     
     if vulnerability_name in remediation_data.keys():
         remediation = remediation_data[vulnerability_name]
-        if (remediation_status == remediation[0] and remediation_comment == remediation[1]):
+        if (remediation_status == remediation[0] and remediation_comment == remediation[1].replace('\\n','\n')):
             return None
         return remediation_data[vulnerability_name]
     else:
@@ -127,11 +129,11 @@ def set_vulnerablity_remediation(hub, vuln, remediation_status, remediation_comm
     url = vuln['_meta']['href']
     update={}
     update['remediationStatus'] = remediation_status
-    update['comment'] = remediation_comment
+    update['comment'] = remediation_comment.replace('\\n','\n')
     response = hub.execute_put(url, data=update)
     return response
 
-def process_vulnerabilities(hub, vulnerable_components, remediation_data=None, exclusion_data=None, dry_run=False):
+def process_vulnerabilities(hub, vulnerable_components, remediation_data=None, exclusion_data=None, dry_run=False, overwrite_existing=False):
 
     if (dry_run):
         print(f"Opening dry run output file: {dry_run}")
@@ -142,8 +144,8 @@ def process_vulnerabilities(hub, vulnerable_components, remediation_data=None, e
     print('"Component Name","Component Version","CVE","Reason","Remeidation Status","HTTP response code"')
 
     for vuln in vulnerable_components['items']:
-        if vuln['vulnerabilityWithRemediation']['remediationStatus'] == "NEW":
-            remediation_action = None 
+        if overwrite_existing or vuln['vulnerabilityWithRemediation']['remediationStatus'] == "NEW":
+            remediation_action = None
             exclusion_action = None
 
             if (remediation_data):
@@ -164,8 +166,7 @@ def process_vulnerabilities(hub, vulnerable_components, remediation_data=None, e
 
             if (remediation_action):
                 if (dry_run):
-                    remediation_action.insert(0, vuln['vulnerabilityWithRemediation']['vulnerabilityName'])
-                    csv_writer.writerow(remediation_action)
+                    csv_writer.writerow([vuln['vulnerabilityWithRemediation']['vulnerabilityName']] + remediation_action)
                 else:
                     resp = set_vulnerablity_remediation(hub, vuln, remediation_action[0],remediation_action[1])
                     count += 1
@@ -218,6 +219,7 @@ USAGE
         parser.add_argument("--cve-remediation-list-custom-field-label", default='CVE Remediation List', help='Label of Custom Field on Black Duck that contains remeidation list file name')
         parser.add_argument("--origin-exclusion-list-custom-field-label", default='Origin Exclusion List', help='Label of Custom Field on Black Duck that containts origin exclusion list file name')
         parser.add_argument('-V', '--version', action='version', version=program_version_message)
+        parser.add_argument("--overwrite-existing", dest='overwrite_existing', action="store_true", help='By default only NEW vulnerabilities are remediated. Enabling this flag will update all vulnerabilities.')
 
         # Process arguments
         args = parser.parse_args()
@@ -231,6 +233,7 @@ USAGE
         #dry_run = args.dry_run
         #dry_run_output = args.dry_run_output
         dry_run = args.dry_run
+        overwrite_existing = args.overwrite_existing
         print(args.dry_run)
 
         message = f"{program_version_message}\n\n Project: {projectname}\n Version: {projectversion}\n Process origin exclusion list: {process_origin_exclulsion}\n Process CVE remediation list: {process_cve_remediation}"
@@ -271,11 +274,12 @@ USAGE
             exclusion_data = None
     
 
-        # Retrieve the vulnerabiltites for the project version
-        vulnerable_components = hub.get_vulnerable_bom_components(version)
 
-        process_vulnerabilities(hub, vulnerable_components, remediation_data, exclusion_data, dry_run)
-        
+        # Retrieve the vulnerabiltites for the project version. Newer API versions only allow 1000 items at most.
+        vulnerable_components = hub.get_vulnerable_bom_components(version, 1000)
+
+        process_vulnerabilities(hub, vulnerable_components, remediation_data, exclusion_data, dry_run, overwrite_existing)
+
         return 0
     except Exception:
         ### handle keyboard interrupt ###

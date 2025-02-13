@@ -130,22 +130,22 @@ def find_or_create_project_version(project_name, version_name, project_group):
         sys.exit(1)
 
 def get_sbom_mime_type(filename):
+    import json
     with open(filename, 'r') as f:
-        data = f.readlines()
-        content = " ".join(data)
-    if 'CycloneDX' in content:
+        data = json.load(f)
+    if data.get('bomFormat', None) == "CycloneDX":
         return 'application/vnd.cyclonedx'
-    if 'SPDX' in content:
+    elif data.get('spdxVersion', None):
         return 'application/spdx'
     return None
 
 def upload_sbom_file(filename, project, version, project_group):
     find_or_create_project_version(project, version, project_group)
     mime_type = get_sbom_mime_type(filename)
-    print (mime_type)
     if not mime_type:
         logging.error(f"Could not identify file content for {filename}")
         sys.exit(1)
+    logging.info(f"Mime type {mime_type} will be used for file {filename}")
     files = {"file": (filename, open(filename,"rb"), mime_type)}
     fields = {"projectName": project, "versionName": version}
     response = bd.session.post("/api/scan/data", files = files, data=fields)
