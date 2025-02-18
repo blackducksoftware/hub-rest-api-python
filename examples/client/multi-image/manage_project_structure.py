@@ -129,6 +129,8 @@ class MultiImageProjectManager():
         self.project_data['dry_run'] = args.dry_run
         self.project_data['strict'] = args.strict
         self.project_data['remove'] = args.remove
+        if args.remove:
+            return
 
         subprojects = dict()
         child_spec_list = self.get_child_spec_list(args)
@@ -547,7 +549,8 @@ def main():
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     args = parse_command_args()
     mipm = MultiImageProjectManager(args)
-    logging.info(f"Parsed {len(mipm.project_data['subprojects'])} projects from specification data")
+    if not args.remove:
+        logging.info(f"Parsed {len(mipm.project_data['subprojects'])} projects from specification data")
     mipm.proceed()
 
     if not args.remove:
