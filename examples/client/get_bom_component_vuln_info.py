@@ -48,7 +48,22 @@ logging.debug(f"Found {project['name']}:{version['versionName']}")
 
 all_bom_component_vulns = []
 
-for bom_component_vuln in bd.get_resource('vulnerable-components', version):
+# version of API to call
+api_version = 8
+
+media_type = "application/vnd.blackducksoftware.bill-of-materials-" + str(api_version) + "+json"
+#media_type = "application/json"
+
+# lower case keys
+lc_keys = {}
+lc_keys['accept'] = media_type
+lc_keys['content-type'] = media_type
+
+# keyword arguments to pass
+kwargs={}
+kwargs['headers'] = lc_keys
+
+for bom_component_vuln in bd.get_resource('vulnerable-components', version, **kwargs):
     vulnerabilities = bd.get_resource('vulnerabilities', bom_component_vuln)
     upgrade_guidance = bd.get_json(f"{bom_component_vuln['componentVersion']}/upgrade-guidance")
     bom_component_vuln['upgrade_guidance'] = upgrade_guidance
