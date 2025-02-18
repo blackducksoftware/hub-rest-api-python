@@ -320,8 +320,8 @@ class MultiImageProjectManager():
             image_name = line.split('/')[-1].split(':')[0]   # Don't look at me, you wrote it!
             sub_project_name = "_".join((prefix, image_name))
             spec_line = ":".join((sub_project_name, line))
-            if "ciena.com" in spec_line:
-                project_list.append(spec_line)    
+            # if "ciena.com" in spec_line:
+            project_list.append(spec_line)    
         return (project_list)
 
     def get_child_spec_list(self,args):
