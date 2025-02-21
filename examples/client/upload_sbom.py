@@ -98,7 +98,7 @@ def find_or_create_project_group(group_name):
     else:
         return groups[0]['_meta']['href']
 
-def create_project_version(project_name,version_name,project_group, nickname = None):
+def create_project_version(project_name, version_name, project_group, nickname = None):
     version_data = {"distribution": "EXTERNAL", "phase": "DEVELOPMENT", "versionName": version_name}
     if nickname:
         version_data['nickname'] = nickname
@@ -120,7 +120,7 @@ def find_or_create_project_version(project_name, version_name, project_group):
         if version:
             pass
         else:
-            version = create_project_version(project_name, version_name)
+            version = create_project_version(project_name, version_name, project_group)
     else:
         version = create_project_version(project_name, version_name, project_group)
     project = find_project_by_name(project_name)
