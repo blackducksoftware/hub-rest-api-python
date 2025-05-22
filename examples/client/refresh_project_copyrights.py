@@ -5,6 +5,7 @@
 #
 import http.client
 from sys import api_version
+import sys
 import csv
 import datetime
 from blackduck import Client
@@ -26,6 +27,10 @@ def RepDebug(level, msg):
         return True
     return False
 
+def RepWarning(msg):
+    print("WARNING: " + msg)
+    return True
+
 
 # Parse command line arguments
 parser = argparse.ArgumentParser("Refresh copyrights for project/version components")
@@ -46,6 +51,9 @@ parser.add_argument("--max-components", dest='max_components', type=int, help="M
 parser.add_argument("--debug", dest='debug', type=int, default=0, help="Debug verbosity (0=none)")
 
 parser.add_argument("--no-verify", dest='verify', action='store_false', help="Disable TLS certificate verification")
+parser.add_argument("-t", "--timeout", default=15, type=int, help="Adjust the (HTTP) session timeout value (default: 15s)")
+parser.add_argument("-r", "--retries", default=3, type=int, help="Adjust the number of retries on failure (default: 3)")
+
 args = parser.parse_args()
 
 # open the access token file
@@ -53,7 +61,13 @@ with open(args.token_file, 'r') as tf:
     access_token = tf.readline().strip()
 
 # access the Black Duck platform
-bd = Client(base_url=args.base_url, token=access_token, verify=args.verify)
+bd = Client(
+    base_url=args.base_url,
+    token=access_token,
+    verify=args.verify,
+    timeout=args.timeout,
+    retries=args.retries,
+)
 
 # initialise
 all_my_comp_data = []
@@ -102,6 +116,9 @@ my_statistics['_cntProjects'] = 0
 my_statistics['_cntVersions'] = 0
 my_statistics['_cntComponents'] = 0
 my_statistics['_cntRefresh'] = 0
+my_statistics['_cntNoOrigins'] = 0
+my_statistics['_cntNoIDs'] = 0
+
 
 # record any control values
 if args.project_name:
@@ -187,25 +204,48 @@ for this_project in projects:
                 break
 
             my_statistics['_cntComponents'] += 1
-            RepDebug(4, '     Component: %s' % this_comp_data['componentName'])
+            RepDebug(4, '     Component: %s (%s)' %
+                     (this_comp_data['componentName'], this_comp_data['componentVersionName']))
 
-            # refresh the copyrights for this component
-            url = this_comp_data['origins'][0]['origin']
-            url += "/copyrights-refresh"
-
-            response = bd.session.put(url, data=None, **refresh_kwargs)
-            RepDebug(5,'Refresh response %s' % response)
-
-            inputExternalIds = this_comp_data['inputExternalIds'][0]
+            if this_comp_data['inputExternalIds'].__len__() > 0:
+                inputExternalIds = this_comp_data['inputExternalIds'][0]
+            else:
+                my_statistics['_cntNoIDs'] += 1
+                inputExternalIds = "n/a"
             RepDebug(2, '       ID: %s' % inputExternalIds)
 
-            my_statistics['_cntRefresh'] += 1
+
+            # refresh the copyrights for this component
+            if this_comp_data['origins'].__len__() > 0:
+                url = this_comp_data['origins'][0]['origin']
+            else:
+                # no origins
+                RepWarning('No origin defined for [%s]' % this_comp_data['componentVersion'])
+#                url = this_comp_data['componentVersion']
+                url = ''
+
+            if len(url) > 0:
+                # refresh end point
+                url += "/copyrights-refresh"
+
+                try:
+                    response = bd.session.put(url, data=None, **refresh_kwargs)
+                    RepDebug(5,'Refresh response %s' % response)
+                except urllib3.exceptions.ReadTimeoutError:
+                    print('Failed to confirm copyrights refresh')
+
+                my_statistics['_cntRefresh'] += 1
+            else:
+                my_statistics['_cntNoOrigins'] += 1
+                url = 'n/a'
+
 
             # if recording the data - perhaps outputting to a CSV file
             if args.dump_data:
                 my_data = {}
                 my_data['componentName'] = this_comp_data['componentName']
                 my_data['componentVersion'] = this_comp_data['componentVersionName']
+                my_data['url'] = url
 
                 if hasattr(args, 'debug') and 5 <= args.debug:
                     pprint(my_data)
@@ -234,7 +274,8 @@ if args.dump_data:
         with open(args.csv_file, 'w') as csv_f:
             field_names = [
                 'Component',
-                'Component Version'
+                'Component Version',
+                'Url'
             ]
 
             writer = csv.DictWriter(csv_f, fieldnames=field_names)
@@ -243,7 +284,8 @@ if args.dump_data:
             for my_comp_data in all_my_comp_data:
                 row_data = {
                     'Component': my_comp_data['componentName'],
-                    'Component Version': my_comp_data['componentVersion']
+                    'Component Version': my_comp_data['componentVersion'],
+                    'Url': my_comp_data['url']
                 }
                 writer.writerow(row_data)
     else:
