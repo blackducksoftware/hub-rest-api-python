@@ -14,6 +14,8 @@ import logging
 from pprint import pprint
 import array as arr
 
+from urllib3.exceptions import ReadTimeoutError
+
 http.client._MAXHEADERS = 1000
 
 logging.basicConfig(
@@ -52,8 +54,8 @@ parser.add_argument("--debug", dest='debug', type=int, default=0, help="Debug ve
 parser.add_argument("--dryrun", dest='dry_run', type=int, default=0, help="Dry run test (0=no 1=yes)")
 
 parser.add_argument("--no-verify", dest='verify', action='store_false', help="Disable TLS certificate verification")
-parser.add_argument("-t", "--timeout", default=15, type=int, help="Adjust the (HTTP) session timeout value (default: 15s)")
-parser.add_argument("-r", "--retries", default=3, type=int, help="Adjust the number of retries on failure (default: 3)")
+parser.add_argument("--timeout", default=60, type=int, help="Adjust the (HTTP) session timeout value (default: 60s)")
+parser.add_argument("--retries", default=3, type=int, help="Adjust the number of retries on failure (default: 3)")
 
 args = parser.parse_args()
 
@@ -64,8 +66,8 @@ with open(args.token_file, 'r') as tf:
 # access the Black Duck platform
 bd = Client(
     base_url=args.base_url,
-    token=access_token,
     verify=args.verify,
+    token=access_token,
     timeout=args.timeout,
     retries=args.retries,
 )
@@ -205,8 +207,9 @@ for this_project in projects:
                 break
 
             my_statistics['_cntComponents'] += 1
-            RepDebug(4, '     Component: %s (%s)' %
-                     (this_comp_data['componentName'], this_comp_data['componentVersionName']))
+            comp_label = "{} ({})".format(this_comp_data['componentName'], this_comp_data['componentVersionName'])
+
+            RepDebug(4, '     Component: %s' % comp_label)
 
             if this_comp_data['inputExternalIds'].__len__() > 0:
                 inputExternalIds = this_comp_data['inputExternalIds'][0]
@@ -218,46 +221,69 @@ for this_project in projects:
 
             # refresh the copyrights for this component
             if this_comp_data['origins'].__len__() > 0:
-                url = this_comp_data['origins'][0]['origin']
+
+                n_origin = 0
+
+                for this_origin in this_comp_data['origins']:
+
+                    n_origin += 1
+                    origin_id = this_origin['externalId']
+                    url = this_origin['origin']
+
+                    # refresh with end point
+                    url += "/copyrights-refresh"
+
+                    status = -1
+
+                    if args.dry_run != 0:
+                        RepDebug(1, "DryRun: no=%d origin=%s url=%s" % (n_origin, origin_id, url))
+                    else:
+                        try:
+                            response = bd.session.put(url, data=None, **refresh_kwargs)
+                            RepDebug(5,'Refresh response: origin [%s] [%s]' % (this_origin, response))
+                            my_statistics['_cntRefresh'] += 1
+                            status= 0
+
+                        except Exception:
+                            print('Failed to confirm copyrights refresh')
+                            status = 1
+
+
+                    # if recording the data - perhaps outputting to a CSV file
+                    if args.dump_data:
+                        my_data = {}
+                        my_data['componentName'] = this_comp_data['componentName']
+                        my_data['componentVersion'] = this_comp_data['componentVersionName']
+                        my_data['status'] = status
+                        my_data['url'] = url
+
+                        if hasattr(args, 'debug') and 5 <= args.debug:
+                            pprint(my_data)
+
+                        # add to our list
+                        all_my_comp_data.append(my_data)
+
             else:
-                # no origins
-                RepWarning('No origin defined for [%s]' % this_comp_data['componentVersion'])
-#                url = this_comp_data['componentVersion']
-                url = ''
-
-            if len(url) > 0:
-                # refresh end point
-                url += "/copyrights-refresh"
-
-                if args.dry_run != 0:
-                    RepDebug(1, "DryRun: %s" % url)
-                else:
-                    try:
-                        response = bd.session.put(url, data=None, **refresh_kwargs)
-                        RepDebug(5,'Refresh response %s' % response)
-                    except ReadTimeoutError:
-                        print('Failed to confirm copyrights refresh')
-
-                    my_statistics['_cntRefresh'] += 1
-
-            else:
+                # no origins defined
+                RepWarning('No origin(s) defined for [%s]' % comp_label)
                 my_statistics['_cntNoOrigins'] += 1
+                origin_id = ''
+                status = 3
                 url = 'n/a'
 
+                # if recording the data
+                if args.dump_data:
+                    my_data = {}
+                    my_data['componentName'] = this_comp_data['componentName']
+                    my_data['componentVersion'] = this_comp_data['componentVersionName']
+                    my_data['status'] = status
+                    my_data['url'] = url
 
-            # if recording the data - perhaps outputting to a CSV file
-            if args.dump_data:
-                my_data = {}
-                my_data['componentName'] = this_comp_data['componentName']
-                my_data['componentVersion'] = this_comp_data['componentVersionName']
-                my_data['url'] = url
+                    if hasattr(args, 'debug') and 5 <= args.debug:
+                        pprint(my_data)
 
-                if hasattr(args, 'debug') and 5 <= args.debug:
-                    pprint(my_data)
-
-                # add to our list
-                all_my_comp_data.append(my_data)
-
+                    # add to our list
+                    all_my_comp_data.append(my_data)
 
 # end of processing loop
 
@@ -280,6 +306,7 @@ if args.dump_data:
             field_names = [
                 'Component',
                 'Component Version',
+                'Status',
                 'Url'
             ]
 
@@ -290,6 +317,7 @@ if args.dump_data:
                 row_data = {
                     'Component': my_comp_data['componentName'],
                     'Component Version': my_comp_data['componentVersion'],
+                    'Status': my_comp_data['status'],
                     'Url': my_comp_data['url']
                 }
                 writer.writerow(row_data)
