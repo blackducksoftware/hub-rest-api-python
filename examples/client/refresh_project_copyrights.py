@@ -48,7 +48,8 @@ parser.add_argument("--max-projects", dest='max_projects', type=int, help="Maxim
 parser.add_argument("--max-versions-per-project", dest='max_versions_per_project', type=int, help="Maximum versions per project to inspect else all")
 parser.add_argument("--max-components", dest='max_components', type=int, help="Maximum components to inspect in total else all")
 
-parser.add_argument("--debug", dest='debug', type=int, default=0, help="Debug verbosity (0=none)")
+parser.add_argument("--debug", dest='debug', type=int, default=0, help="Debug verbosity (0=none 'n'=level)")
+parser.add_argument("--dryrun", dest='dry_run', type=int, default=0, help="Dry run test (0=no 1=yes)")
 
 parser.add_argument("--no-verify", dest='verify', action='store_false', help="Disable TLS certificate verification")
 parser.add_argument("-t", "--timeout", default=15, type=int, help="Adjust the (HTTP) session timeout value (default: 15s)")
@@ -228,13 +229,17 @@ for this_project in projects:
                 # refresh end point
                 url += "/copyrights-refresh"
 
-                try:
-                    response = bd.session.put(url, data=None, **refresh_kwargs)
-                    RepDebug(5,'Refresh response %s' % response)
-                except urllib3.exceptions.ReadTimeoutError:
-                    print('Failed to confirm copyrights refresh')
+                if args.dry_run != 0:
+                    RepDebug(1, "DryRun: %s" % url)
+                else:
+                    try:
+                        response = bd.session.put(url, data=None, **refresh_kwargs)
+                        RepDebug(5,'Refresh response %s' % response)
+                    except ReadTimeoutError:
+                        print('Failed to confirm copyrights refresh')
 
-                my_statistics['_cntRefresh'] += 1
+                    my_statistics['_cntRefresh'] += 1
+
             else:
                 my_statistics['_cntNoOrigins'] += 1
                 url = 'n/a'
