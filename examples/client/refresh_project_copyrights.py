@@ -136,6 +136,7 @@ bd = Client(
 )
 
 
+str_unknown = "n/a"
 
 str_unknown = "n/a"
 
@@ -388,5 +389,4 @@ for this_project in projects:
 # end of processing loop
 
 CompleteTask(0)
-
 #end
