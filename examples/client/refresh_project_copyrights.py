@@ -14,6 +14,8 @@ import logging
 from pprint import pprint
 import array as arr
 
+from urllib3.exceptions import ReadTimeoutError
+
 http.client._MAXHEADERS = 1000
 
 logging.basicConfig(
@@ -44,15 +46,18 @@ parser.add_argument("--csv-file", dest='csv_file', help="File name for dumped da
 parser.add_argument("--project", dest='project_name', help="Project name")
 parser.add_argument("--version", dest='version_name', help="Version name")
 
-parser.add_argument("--max-projects", dest='max_projects', type=int, help="Maximum projects to inspect else all")
+parser.add_argument("--max-projects", dest='max_projects', type=int, help="Maximum number of projects to inspect else all")
 parser.add_argument("--max-versions-per-project", dest='max_versions_per_project', type=int, help="Maximum versions per project to inspect else all")
 parser.add_argument("--max-components", dest='max_components', type=int, help="Maximum components to inspect in total else all")
 
-parser.add_argument("--debug", dest='debug', type=int, default=0, help="Debug verbosity (0=none)")
+parser.add_argument("--skip-projects", dest='skip_projects', type=int, help="Skip first 'n' projects to inspect")
+
+parser.add_argument("--debug", dest='debug', type=int, default=0, help="Debug verbosity (0=none 'n'=level)")
+parser.add_argument("--dryrun", dest='dry_run', type=int, default=0, help="Dry run test (0=no 1=yes)")
 
 parser.add_argument("--no-verify", dest='verify', action='store_false', help="Disable TLS certificate verification")
-parser.add_argument("-t", "--timeout", default=15, type=int, help="Adjust the (HTTP) session timeout value (default: 15s)")
-parser.add_argument("-r", "--retries", default=3, type=int, help="Adjust the number of retries on failure (default: 3)")
+parser.add_argument("--timeout", default=60, type=int, help="Adjust the (HTTP) session timeout value (default: 60s)")
+parser.add_argument("--retries", default=3, type=int, help="Adjust the number of retries on failure (default: 3)")
 
 args = parser.parse_args()
 
@@ -63,8 +68,8 @@ with open(args.token_file, 'r') as tf:
 # access the Black Duck platform
 bd = Client(
     base_url=args.base_url,
-    token=access_token,
     verify=args.verify,
+    token=access_token,
     timeout=args.timeout,
     retries=args.retries,
 )
@@ -73,6 +78,7 @@ bd = Client(
 all_my_comp_data = []
 my_statistics = {}
 
+str_unknown = "n/a"
 
 # version of components API to call
 comp_api_version = 6
@@ -118,7 +124,7 @@ my_statistics['_cntComponents'] = 0
 my_statistics['_cntRefresh'] = 0
 my_statistics['_cntNoOrigins'] = 0
 my_statistics['_cntNoIDs'] = 0
-
+my_statistics['_cntSkippedProjects'] = 0
 
 # record any control values
 if args.project_name:
@@ -149,18 +155,32 @@ else:
     # all projects are in scope
     projects = bd.get_resource('projects')
 
+
+cnt_projects = 0
+
 # loop through projects list
 for this_project in projects:
 
+    cnt_projects += 1
+
+    # check if we are skipping over this project
+    if args.skip_projects and cnt_projects <= args.skip_projects:
+        my_statistics['_cntSkippedProjects'] += 1
+        RepDebug(1, 'Skipping project [%d] [%s]' % (cnt_projects, this_project['name']))
+        continue
+
     # check if we have hit any limit
     if args.max_components and my_statistics['_cntComponents'] >= args.max_components:
+        RepDebug(1, 'Reached component limit [%d]' % args.max_components)
         break
 
     if args.max_projects and my_statistics['_cntProjects'] >= args.max_projects:
+        RepDebug(1, 'Reached project limit [%d]' % args.max_projects)
         break
 
+    # process this project
     my_statistics['_cntProjects'] += 1
-    RepDebug(1, '## Project %d: %s' % (my_statistics['_cntProjects'], this_project['name']))
+    RepDebug(1, '## Project: [%d] [%s]' % (cnt_projects, this_project['name']))
 
     if args.version_name:
         # note the specific project version of interest
@@ -181,11 +201,11 @@ for this_project in projects:
 
         # check if we have hit any limit
         if args.max_components and my_statistics['_cntComponents'] >= args.max_components:
-            # exit component loop - at the limit
+            RepDebug(1, 'Reached component limit [%d]' % args.max_components)
             break
 
         if args.max_versions_per_project and nVersionsPerProject >= args.max_versions_per_project:
-            # exit loop - at the version per project limit
+            RepDebug(1, 'Reached versions per project limit [%d]' % args.max_versions_per_project)
             break
 
         nVersionsPerProject += 1
@@ -193,66 +213,109 @@ for this_project in projects:
 
         # Announce
 #        logging.debug(f"Found {this_project['name']}:{this_version['versionName']}")
-        RepDebug(3, '   Version: %s' % this_version['versionName'])
+        RepDebug(3, '   Version: [%s]' % this_version['versionName'])
 
 
         # iterate through all components for this project version
         for this_comp_data in bd.get_resource('components', this_version, **comp_kwargs):
 
             if args.max_components and my_statistics['_cntComponents'] >= args.max_components:
-                # exit component loop - at the limit
+                RepDebug(1, 'Reached component limit [%d]' % args.max_components)
                 break
 
             my_statistics['_cntComponents'] += 1
-            RepDebug(4, '     Component: %s (%s)' %
-                     (this_comp_data['componentName'], this_comp_data['componentVersionName']))
+
+            if this_comp_data.get("componentName"):
+                comp_name = this_comp_data['componentName']
+            else:
+                comp_name = str_unknown
+
+            if this_comp_data.get("componentVersionName"):
+                comp_version_name = this_comp_data['componentVersionName']
+            else:
+                comp_version_name = str_unknown
+
+            comp_label = "{} ({})".format(comp_name, comp_version_name)
+
+            RepDebug(4, '     Component: [%s]' % comp_label)
 
             if this_comp_data['inputExternalIds'].__len__() > 0:
                 inputExternalIds = this_comp_data['inputExternalIds'][0]
             else:
                 my_statistics['_cntNoIDs'] += 1
-                inputExternalIds = "n/a"
-            RepDebug(2, '       ID: %s' % inputExternalIds)
+                inputExternalIds = str_unknown
+            RepDebug(2, '       ID: [%s]' % inputExternalIds)
 
 
-            # refresh the copyrights for this component
+            # refresh the copyrights for this component-origin
             if this_comp_data['origins'].__len__() > 0:
-                url = this_comp_data['origins'][0]['origin']
+
+                n_origin = 0
+
+                for this_origin in this_comp_data['origins']:
+
+                    n_origin += 1
+                    if this_origin.get('externalId'):
+                        origin_id = this_origin['externalId']
+                    else:
+                        origin_id = str_unknown
+
+                    url = this_origin['origin']
+
+                    # refresh with end point
+                    url += "/copyrights-refresh"
+
+                    status = -1
+
+                    if args.dry_run != 0:
+                        RepDebug(2, "DryRun: origin - no [%d]  id [%s]  url [%s]" % (n_origin, origin_id, url))
+                    else:
+                        try:
+                            response = bd.session.put(url, data=None, **refresh_kwargs)
+                            RepDebug(5,'Refresh response: origin [%s] [%s]' % (this_origin, response))
+                            my_statistics['_cntRefresh'] += 1
+                            status= 0
+
+                        except Exception:
+                            print('Failed to confirm copyrights refresh')
+                            status = 1
+
+
+                    # if recording the data - perhaps outputting to a CSV file
+                    if args.dump_data:
+                        my_data = {}
+                        my_data['componentName'] = this_comp_data['componentName']
+                        my_data['componentVersion'] = this_comp_data['componentVersionName']
+                        my_data['status'] = status
+                        my_data['url'] = url
+
+                        if hasattr(args, 'debug') and 5 <= args.debug:
+                            pprint(my_data)
+
+                        # add to our list
+                        all_my_comp_data.append(my_data)
+
             else:
-                # no origins
-                RepWarning('No origin defined for [%s]' % this_comp_data['componentVersion'])
-#                url = this_comp_data['componentVersion']
-                url = ''
-
-            if len(url) > 0:
-                # refresh end point
-                url += "/copyrights-refresh"
-
-                try:
-                    response = bd.session.put(url, data=None, **refresh_kwargs)
-                    RepDebug(5,'Refresh response %s' % response)
-                except urllib3.exceptions.ReadTimeoutError:
-                    print('Failed to confirm copyrights refresh')
-
-                my_statistics['_cntRefresh'] += 1
-            else:
+                # no origins defined
+                RepWarning('No origin(s) defined for [%s]' % comp_label)
                 my_statistics['_cntNoOrigins'] += 1
+                origin_id = ''
+                status = 3
                 url = 'n/a'
 
+                # if recording the data
+                if args.dump_data:
+                    my_data = {}
+                    my_data['componentName'] = comp_name
+                    my_data['componentVersion'] = comp_version_name
+                    my_data['status'] = status
+                    my_data['url'] = url
 
-            # if recording the data - perhaps outputting to a CSV file
-            if args.dump_data:
-                my_data = {}
-                my_data['componentName'] = this_comp_data['componentName']
-                my_data['componentVersion'] = this_comp_data['componentVersionName']
-                my_data['url'] = url
+                    if hasattr(args, 'debug') and 5 <= args.debug:
+                        pprint(my_data)
 
-                if hasattr(args, 'debug') and 5 <= args.debug:
-                    pprint(my_data)
-
-                # add to our list
-                all_my_comp_data.append(my_data)
-
+                    # add to our list
+                    all_my_comp_data.append(my_data)
 
 # end of processing loop
 
@@ -275,6 +338,7 @@ if args.dump_data:
             field_names = [
                 'Component',
                 'Component Version',
+                'Status',
                 'Url'
             ]
 
@@ -285,6 +349,7 @@ if args.dump_data:
                 row_data = {
                     'Component': my_comp_data['componentName'],
                     'Component Version': my_comp_data['componentVersion'],
+                    'Status': my_comp_data['status'],
                     'Url': my_comp_data['url']
                 }
                 writer.writerow(row_data)
