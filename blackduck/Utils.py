@@ -101,7 +101,7 @@ def get_resource_name(obj):
     print("parts =", get_url(obj))
     for part in reversed(parts[:-1]):
         # regex for id 8-4-4-12
-        if re.search("^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$", part):
+        if re.search(r"^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$", part):
             continue    
         return part
     
