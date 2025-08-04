@@ -229,7 +229,7 @@ class ContainerImageScanner():
     
     def __init__(
         self, hub, container_image_name, workdir='/tmp/workdir', 
-        grouping=None, base_image=None, dockerfile=None, detect_options=None):
+        grouping=None, base_image=None, dockerfile=None, detect_options=None, skip_group=None):
         self.hub = hub
         self.hub_detect = Detector(hub)
         self.docker = DockerWrapper(workdir)
@@ -251,6 +251,11 @@ class ContainerImageScanner():
         if detect_options:
             self.extra_options = detect_options.split(" ")
         self.binary = False
+        if skip_group:
+            self.skip_group=skip_group.split(",")
+        else:
+            self.skip_group=[]
+
 
     def prepare_container_image(self):
         self.docker.initdir()
@@ -344,7 +349,7 @@ class ContainerImageScanner():
                 layer['name'] = self.project_name + "_" + self.project_version + "_layer_" + str(num)
             self.layers.append(layer)
             num = num + 1
-        # print (json.dumps(self.layers, indent=4))
+        #print (json.dumps(self.layers, indent=4))
 
     def process_oci_container_image_by_user_defined_groups(self):
         self.manifest = self.docker.read_manifest()
@@ -373,7 +378,7 @@ class ContainerImageScanner():
                 layer['name'] = self.project_name + "_" + self.project_version + "_layer_" + str(layer['index'])
             if not layer.get('empty_layer', False):
                 layer['path'] = layer_paths.pop(0)
-        # print (json.dumps(self.layers, indent=4))
+        #print (json.dumps(self.layers, indent=4))
 
     def get_group_name(self, groups, index):
         group_name  = 'undefined'
@@ -408,34 +413,39 @@ class ContainerImageScanner():
 
     def submit_layer_scans(self):
         for layer in self.layers:
-            if not layer.get('empty_layer', False):
-                options = []
-                options.append('--detect.project.name={}'.format(layer['project_name']))
-                options.append('--detect.project.version.name="{}"'.format(layer['project_version']))
-                options.append('--detect.code.location.name={}_{}_code_{}'.format(layer['name'],self.image_version,layer['path']))
-                if self.binary:
-                    options.append('--detect.tools=BINARY_SCAN')
-                    options.append('--detect.binary.scan.file.path={}/{}'.format(self.docker.imagedir, layer['path']))
-                else:
-                    options.append('--detect.tools=SIGNATURE_SCAN')
-                    if self.oci_layout:
-                       options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path']))
+
+            #print(f"layer group name={layer['group_name']} skip_group ={self.skip_group}")
+
+            if layer['group_name'] not in self.skip_group:
+
+                if not layer.get('empty_layer', False):
+                    options = []
+                    options.append('--detect.project.name={}'.format(layer['project_name']))
+                    options.append('--detect.project.version.name="{}"'.format(layer['project_version']))
+                    options.append('--detect.code.location.name={}_{}_code_{}'.format(layer['name'],self.image_version,layer['path']))
+                    if self.binary:
+                        options.append('--detect.tools=BINARY_SCAN')
+                        options.append('--detect.binary.scan.file.path={}/{}'.format(self.docker.imagedir, layer['path']))
                     else:
-                       options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path'].split('/')[0]))
-                if self.base_image or self.grouping or self.dockerfile:
-                    options.extend(self.adorn_extra_options(layer))
-                else:
-                    options.extend(self.extra_options)
-                logging.debug(f"Submitting scan for {layer['name']}")
-                completed = self.hub_detect.detect_run(options)
-                scan_results = dict()
-                for key, value in vars(completed).items():
-                    if type(value) is bytes:
-                        scan_results[key] = value.decode('utf-8')
+                        options.append('--detect.tools=SIGNATURE_SCAN')
+                        if self.oci_layout:
+                           options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path']))
+                        else:
+                           options.append('--detect.source.path={}/{}'.format(self.docker.imagedir, layer['path'].split('/')[0]))
+                    if self.base_image or self.grouping or self.dockerfile:
+                        options.extend(self.adorn_extra_options(layer))
                     else:
-                        scan_results[key] = value
-                layer['scan_results'] = scan_results
-                logging.debug(f"Detect run for {layer['name']} completed with returncode {completed.returncode}")
+                        options.extend(self.extra_options)
+                    logging.debug(f"Submitting scan for {layer['name']}")
+                    completed = self.hub_detect.detect_run(options)
+                    scan_results = dict()
+                    for key, value in vars(completed).items():
+                        if type(value) is bytes:
+                            scan_results[key] = value.decode('utf-8')
+                        else:
+                            scan_results[key] = value
+                    layer['scan_results'] = scan_results
+                    logging.debug(f"Detect run for {layer['name']} completed with returncode {completed.returncode}")
 
     def adorn_extra_options(self, layer):
         result = list()
@@ -486,7 +496,7 @@ class ContainerImageScanner():
 
 def scan_container_image(
     imagespec, grouping=None, base_image=None, dockerfile=None, 
-    project_name=None, project_version=None, detect_options=None, hub=None, binary=False):
+    project_name=None, project_version=None, detect_options=None, hub=None, binary=False, skip_group=None ):
     
     if hub:
         hub = hub
@@ -494,7 +504,7 @@ def scan_container_image(
         hub = HubInstance()
     scanner = ContainerImageScanner(
         hub, imagespec, grouping=grouping, base_image=base_image, 
-        dockerfile=dockerfile, detect_options=detect_options)
+        dockerfile=dockerfile, detect_options=detect_options, skip_group=skip_group)
     if project_name:
         scanner.project_name = project_name
     if project_version:
@@ -507,6 +517,7 @@ def scan_container_image(
     if binary:
         scanner.binary = True
     logging.info(f"Scanning image {imagespec}")
+
     scanner.prepare_container_image()
     scanner.process_container_image()
     scanner.submit_layer_scans()

@@ -48,7 +48,7 @@ and subsequent rows containing data
 Sub-projects could be specified in a text file with -ssf --subproject-spec-file parameter
 Each line will have to contain full image specification.
 Specification will be parsed and image name prefixed by -str parameter will be used as a sub-project name
-In this mode any image that is not residing on ciena.com repository will be skipped.
+In this mode any image that is not residing on //your domain for example abc.com// repository will be skipped.
 If -str parameter is empty, Project Name will be used instead.
 
 Container image name scanned will be written into project version nickname field
@@ -84,6 +84,7 @@ class MultiImageProjectManager():
         else:
             self.init_project_data(args)
         self.serialize = args.serialize
+        self.skip_group=args.skip_group
 
     def connect(self):
         self.client = Client(base_url=self.base_url, token=self.access_token, verify=self.no_verify, timeout=60.0, retries=4)
@@ -314,15 +315,17 @@ class MultiImageProjectManager():
         prefix = args.string_to_put_in_front_of_subproject_name
         if not prefix:
             prefix = args.project_name
-        with open(args.subproject_spec_file, "r") as f:
-            lines = f.read().splitlines()
-        for line in lines:
-            image_name = line.split('/')[-1].split(':')[0]   # Don't look at me, you wrote it!
-            sub_project_name = "_".join((prefix, image_name))
-            spec_line = ":".join((sub_project_name, line))
-            # if "ciena.com" in spec_line:
-            project_list.append(spec_line)    
-        return (project_list)
+        if args.subproject_spec_file is not None :    
+            with open(args.subproject_spec_file, "r") as f:
+                lines = f.read().splitlines()
+            for line in lines:
+                #print(line)
+                image_name = line.split('/')[-1].split(':')[0]   # Don't look at me, you wrote it!
+                sub_project_name = "_".join((prefix, image_name))
+                spec_line = ":".join((sub_project_name, line))
+                # if "//your domain ex. abc.com //" in spec_line:
+                project_list.append(spec_line)    
+            return (project_list)
 
     def get_child_spec_list(self,args):
         if args.subproject_list:
@@ -459,7 +462,8 @@ class MultiImageProjectManager():
                     parent_version,
                     detect_options,
                     hub=hub,
-                    binary=self.binary
+                    binary=self.binary,
+                    skip_group = self.skip_group
                 )
                 child['scan_results'] = results
             except Exception as e:
@@ -537,6 +541,7 @@ def parse_command_args():
     parser.add_argument("-ifm", "--individual-file-matching", action='store_true', help="Turn Individual file matching on")
     parser.add_argument("--reprocess-run-file", help="Reprocess Failures from previous run report.")
     parser.add_argument("--serialize", action='store_true', help="Serialize scan submissions by adding --detect.wait.for.results=true to scan invocations")
+    parser.add_argument("--skip-group", required=False, help="exclude layers belog to specific groups, ex. 'base' ")
     args =  parser.parse_args()
     if not args.reprocess_run_file and not (args.project_name and args.version_name):
         parser.error("[ -p/--project-name and -pv/--version-name ] or --reprocess-run-file are required")
@@ -565,3 +570,5 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
