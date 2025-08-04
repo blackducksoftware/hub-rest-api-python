@@ -349,7 +349,7 @@ class ContainerImageScanner():
                 layer['name'] = self.project_name + "_" + self.project_version + "_layer_" + str(num)
             self.layers.append(layer)
             num = num + 1
-        print (json.dumps(self.layers, indent=4))
+        #print (json.dumps(self.layers, indent=4))
 
     def process_oci_container_image_by_user_defined_groups(self):
         self.manifest = self.docker.read_manifest()
@@ -378,7 +378,7 @@ class ContainerImageScanner():
                 layer['name'] = self.project_name + "_" + self.project_version + "_layer_" + str(layer['index'])
             if not layer.get('empty_layer', False):
                 layer['path'] = layer_paths.pop(0)
-        print (json.dumps(self.layers, indent=4))
+        #print (json.dumps(self.layers, indent=4))
 
     def get_group_name(self, groups, index):
         group_name  = 'undefined'
@@ -414,7 +414,7 @@ class ContainerImageScanner():
     def submit_layer_scans(self):
         for layer in self.layers:
 
-            print(f"layer group name={layer['group_name']} skip_group ={self.skip_group}")
+            #print(f"layer group name={layer['group_name']} skip_group ={self.skip_group}")
 
             if layer['group_name'] not in self.skip_group:
 
