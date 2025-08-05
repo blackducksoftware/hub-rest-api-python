@@ -1,2 +1,3 @@
 # for use of the template to generate the html
 jinja2
+python-slugify
