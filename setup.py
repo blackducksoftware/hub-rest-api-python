@@ -26,6 +26,11 @@ REQUIRED = [
     'requests', 'python-dateutil'
 ]
 
+# Optional dependencies for MCP server
+EXTRAS = {
+    'mcp': ['fastmcp']
+}
+
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
 # Except, perhaps the License and Trove Classifiers!
@@ -100,9 +105,9 @@ setup(
     # If your package is a single module, use this instead of 'packages':
     # py_modules=['mypackage'],
 
-    # entry_points={
-    #     'console_scripts': ['mycli=mymodule:cli'],
-    # },
+    entry_points={
+        'console_scripts': ['blackduck=blackduck.__main__:main'],
+    },
 
     # Seems like dependency_links is potentiall going away. That said, using pip 10
     # I was able to install using 'pip install dist/hubpy-0.0.1.tar.gz --process-dependency-links'
@@ -111,6 +116,7 @@ setup(
     #     'git+git://github.com/blackducksoftware/tortilla#egg=tortilla-0.5.1b'
     # ],
     install_requires=REQUIRED,
+    extras_require=EXTRAS,
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'requests-mock', 'pytest-datadir'],
     include_package_data=True,
