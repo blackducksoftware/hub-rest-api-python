@@ -67,9 +67,67 @@ Example code showing how to work with the new Client can be found in the *exampl
 
 **Examples which use the old HubInstance interface -which is not maintained- are not guaranteed to work. Use at your own risk.**
 
+# MCP Integration
+
+The BlackDuck library now includes Model Context Protocol (MCP) support, enabling AI assistants to interact with BlackDuck Hub programmatically.
+
+## Installation with MCP Support
+
+```bash
+pip3 install blackduck[mcp]
+```
+
+## Usage
+
+### 1. Set Environment Variables
+```bash
+export BLACKDUCK_URL="https://your.blackduck.url"
+export BLACKDUCK_TOKEN="your-api-token"
+```
+
+### 2. Start MCP Server
+```bash
+blackduck --mcp
+```
+
+### 3. Configure MCP Client
+For Claude Code, add to your MCP configuration:
+```json
+{
+  "mcpServers": {
+    "blackduck": {
+      "command": "blackduck",
+      "args": ["--mcp"],
+      "env": {
+        "BLACKDUCK_URL": "https://your.blackduck.url",
+        "BLACKDUCK_TOKEN": "your-api-token"
+      }
+    }
+  }
+}
+```
+
+### Available MCP Tools
+- `list_projects` - List BlackDuck projects
+- `get_project_details` - Get project information
+- `list_project_versions` - List project versions
+- `search_projects` - Search projects by name
+- `get_project_vulnerabilities` - Get security vulnerabilities
+- `list_project_components` - List project components
+
+See [MCP_INTEGRATION.md](MCP_INTEGRATION.md) for detailed documentation.
+
 # Version History
 
 Including a version history on a go-forward basis. 
+
+## v1.1.4 (Upcoming)
+
+Added Model Context Protocol (MCP) integration:
+- New `blackduck --mcp` CLI command to start MCP server
+- Support for AI assistants via MCP tools
+- Optional FastMCP dependency via `pip install blackduck[mcp]`
+- Six core MCP tools for project and vulnerability management
 
 ## v1.1.0
 
