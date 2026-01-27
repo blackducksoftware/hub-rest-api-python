@@ -45,7 +45,7 @@ parser.add_argument("bd_url", help="Hub server URL e.g. https://your.blackduck.u
 parser.add_argument("token_file", help="containing access token")
 parser.add_argument("project_name")
 parser.add_argument("version_name")
-parser.add_argument("-t", "--type", type=str, nargs='?', default="SPDX_23", choices=["SPDX_22", "SPDX_23", "CYCLONEDX_13", "CYCLONEDX_14"], help="Choose the type of SBOM report")
+parser.add_argument("-t", "--type", type=str, nargs='?', default="SPDX_23", choices=["SPDX_22", "SPDX_23","SPDX_30", "CYCLONEDX_13", "CYCLONEDX_14","CYCLONEDX_16", "CYCLONEDX_15"], help="Choose the type of SBOM report")
 parser.add_argument('-r', '--retries', default=4, type=int, help="How many times to retry downloading the report, i.e. wait for the report to be generated")
 parser.add_argument('-s', '--sleep_seconds', default=60, type=int, help="The amount of time to sleep in-between (re-)tries to download the report")
 parser.add_argument('--include-subprojects', dest='include_subprojects', action='store_false', help="whether subprojects should be included")
