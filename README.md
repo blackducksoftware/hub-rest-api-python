@@ -4,7 +4,7 @@ The hub-rest-api-python provides Python bindings for Hub REST API.
 
 # Paging and Black Duck v2022.2
 
-In v2022.2 of Black Duck the REST API introduced a max page size to protect system resource usage. See the Black Duck [release notes on Synopsys Community](https://community.synopsys.com/s/article/Black-Duck-Release-Notes) for the details of which API endpoints are affected. Users of the the python bindings here should leverage the Client interface which provides automatic paging support to make best use of these endpoints.
+In v2022.2 of Black Duck the REST API introduced a max page size to protect system resource usage. See the Black Duck [release notes on Blackduck Community](https://community.blackduck.com/s/article/Black-Duck-Release-Notes) for the details of which API endpoints are affected. Users of the the python bindings here should leverage the Client interface which provides automatic paging support to make best use of these endpoints.
 
 **The old HubInstance interface and many of the examples using it do not perform paging and will break as a result of the changes in v2022.2**.
 
