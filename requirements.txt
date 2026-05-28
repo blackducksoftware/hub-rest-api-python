@@ -1,6 +1,6 @@
 # For the library itself
-requests==2.31.0
-python-dateutil>=2.8.0
+requests==2.32.4
+python-dateutil==2.9.0.post0
 
 # for examples printing tables to the terminal
 terminaltables
