@@ -104,9 +104,3 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# Polaris / Black Duck
-polaris-results.sarif
-polaris-reports/
-.polaris/
-polaris-output/
-bridge-cli*
