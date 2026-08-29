@@ -284,18 +284,20 @@ class BlackDuckMCPServer:
                     for i, vuln in enumerate(vulnerabilities):
                         if limit and i >= limit:
                             break
-                            
+
+                        # BlackDuck's default vulnerable-components response nests
+                        # CVE details under 'vulnerability', not at the top level.
+                        detail = vuln.get('vulnerability') or {}
+
                         result.append({
                             'componentName': vuln.get('componentName'),
                             'componentVersionName': vuln.get('componentVersionName'),
-                            'vulnerabilityName': vuln.get('vulnerabilityName'),
-                            'severity': vuln.get('severity'),
-                            'baseScore': vuln.get('baseScore'),
-                            'overallScore': vuln.get('overallScore'),
-                            'remediationStatus': vuln.get('remediationStatus'),
-                            'description': vuln.get('description', ''),
-                            'publishedDate': vuln.get('publishedDate'),
-                            'updatedDate': vuln.get('updatedDate')
+                            'vulnerabilityName': detail.get('vulnerabilityId'),
+                            'severity': detail.get('severity'),
+                            'remediationStatus': detail.get('remediationStatus'),
+                            'description': detail.get('description', ''),
+                            'source': detail.get('source'),
+                            'cweIds': detail.get('cweIds', []),
                         })
                     
                     return result
