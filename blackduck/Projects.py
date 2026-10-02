@@ -391,9 +391,9 @@ def assign_user_group_to_project(self, project_name, user_group_name, project_ro
                 # The POST endpoint changes based on whether we found any project-roles to assign
                 # Also, due to what appears to be a defect, the Content-Type changes
                 if project_roles_urls:
-                    url = user_group_url + "/roles"
+                    url = project_url + "/roles"
                     # one dict per project role assignment
-                    post_data = [{'role': r, 'scope': project_url} for r in project_roles_urls]
+                    post_data = [{'role': r, 'usergroup': user_group_url} for r in project_roles_urls]
                     # I found I had to use this Content-Type (application/json resulted in 412)
                     # ref: https://jira.dc1.lan/browse/HUB-18417
                     headers['Content-Type'] = 'application/vnd.blackducksoftware.internal-1+json'
