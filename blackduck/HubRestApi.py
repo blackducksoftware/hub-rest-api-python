@@ -143,7 +143,7 @@ class HubInstance(object):
             self.config['insecure'] = kwargs.get('insecure', False)
             self.config['debug'] = kwargs.get('debug', False)
 
-            if kwargs.get('write_config_flag', True):
+            if kwargs.get('write_config_flag', False):
                 self.write_config()
         except Exception:
             self.read_config()
