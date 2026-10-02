@@ -363,9 +363,14 @@ class BlackDuckMCPServer:
                     licenses = component.get('licenses', [])
                     license_display = licenses[0].get('licenseDisplay', 'Unknown') if licenses else 'Unknown'
                     
+                    component_id = safe_get(component, 'component')
+                    component_version_id = safe_get(component, 'componentVersion')
+
                     result.append({
                         'componentName': component.get('componentName'),
                         'componentVersionName': component.get('componentVersionName'),
+                        'componentId': component_id.rstrip('/').split('/')[-1] if component_id else None,
+                        'componentVersionId': component_version_id.rstrip('/').split('/')[-1] if component_version_id else None,
                         'matchTypes': component.get('matchTypes', []),
                         'usages': component.get('usages', []),
                         'licenseDisplay': license_display,
@@ -373,12 +378,46 @@ class BlackDuckMCPServer:
                         'securityRiskProfile': component.get('securityRiskProfile'),
                         'activityData': component.get('activityData')
                     })
-                
+
                 return result
-                
+
             except Exception as e:
                 logger.error(f"Error listing components: {e}")
                 raise
+
+        @self.mcp.tool
+        def get_upgrade_guidance(component_id: str, component_version_id: str) -> Dict[str, Any]:
+            """Get BlackDuck's recommended safe upgrade versions for a component version.
+
+            Tries the transitive-aware upgrade-guidance endpoint first (accounts for
+            upgrade paths that also work for components pulled in transitively),
+            falling back to the standard upgrade-guidance endpoint if unavailable.
+
+            Args:
+                component_id: componentId from list_project_components
+                component_version_id: componentVersionId from list_project_components
+
+            Returns:
+                Dict with shortTerm/longTerm recommended upgrade versions, or an
+                'available': False marker if BlackDuck has no guidance for this version.
+            """
+            base_path = f"/api/components/{component_id}/versions/{component_version_id}"
+            for suffix in ('/transitive-upgrade-guidance', '/upgrade-guidance'):
+                try:
+                    guidance = self.client.get_json(base_path + suffix)
+                    return {
+                        'available': True,
+                        'source': suffix.strip('/'),
+                        'componentName': guidance.get('componentName'),
+                        'versionName': guidance.get('versionName'),
+                        'shortTerm': safe_get(guidance, 'shortTerm'),
+                        'longTerm': safe_get(guidance, 'longTerm'),
+                    }
+                except Exception as e:
+                    logger.info(f"{suffix} unavailable for {component_id}/{component_version_id}: {e}")
+                    continue
+
+            return {'available': False, 'componentId': component_id, 'componentVersionId': component_version_id}
     
     def run(self):
         """Run the MCP server"""
